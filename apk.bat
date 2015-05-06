@@ -1,0 +1,1 @@
+copy bin\CinemaSDK-release-unsigned.apk ..\..\bin\apks\release\CinemaSDK.apk
