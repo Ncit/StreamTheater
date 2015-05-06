@@ -7,3 +7,6 @@ APP_ABI 		:= armeabi-v7a
 
 APP_STL := gnustl_static
 
+# We want an optimized build
+APP_OPTIM := release
+#APP_OPTIM := debug

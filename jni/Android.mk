@@ -1,4 +1,8 @@
-LOCAL_PATH := $(call my-dir)
+TOP_LOCAL_PATH := $(call my-dir)
+
+include $(call all-subdir-makefiles)
+
+LOCAL_PATH := $(TOP_LOCAL_PATH)
 
 include $(CLEAR_VARS)					# clean everything up to prepare for a module
 
@@ -15,13 +19,16 @@ LOCAL_SRC_FILES	:= 	CinemaApp.cpp \
 					ViewManager.cpp \
 					ShaderManager.cpp \
 					ModelManager.cpp \
-					MovieManager.cpp \
+					AppManager.cpp \
+					PcManager.cpp \
 					MoviePlayerView.cpp \
-					MovieSelectionView.cpp \
+					SelectionView.cpp \
+					PcSelectionView.cpp \
+					AppSelectionView.cpp \
 					TheaterSelectionView.cpp \
 					TheaterSelectionComponent.cpp \
 					CarouselBrowserComponent.cpp \
-					MovieCategoryComponent.cpp \
+					PcCategoryComponent.cpp \
 					MoviePosterComponent.cpp \
 					MovieSelectionComponent.cpp \
 					ResumeMovieView.cpp \
@@ -40,3 +47,4 @@ NDK_MODULE_PATH := ../../Tools/
 $(call import-add-path,$(NDK_MODULE_PATH))
 
 include $(BUILD_SHARED_LIBRARY)			# start building based on everything since CLEAR_VARS
+
