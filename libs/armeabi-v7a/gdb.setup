@@ -1,0 +1,3 @@
+set solib-search-path ./obj/local/armeabi-v7a
+source C:/dev/ndk/prebuilt/common/gdb/common.setup
+directory C:/dev/ndk/platforms/android-19/arch-arm/usr/include jni/nv_avc_dec/ffmpeg ../../VRLib/jni/LibOVR/Include ../../VRLib/jni/LibOVR/Src ../../VRLib/jni/3rdParty/TinyXml ../../VRLib/jni/3rdParty/minizip C:/dev/ndk/sources/cxx-stl/gnu-libstdc++/4.6/include C:/dev/ndk/sources/cxx-stl/gnu-libstdc++/4.6/libs/armeabi-v7a/include C:/dev/ndk/sources/cxx-stl/gnu-libstdc++/4.6/include/backward jni/evdev_reader jni/nv_avc_dec/ffmpeg/armeabi-v7a/include jni/nv_avc_dec/ffmpeg/include jni/nv_opus_dec/libopus/inc
