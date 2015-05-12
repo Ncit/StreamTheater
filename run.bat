@@ -1,4 +1,4 @@
-@rem Run.bat for CinemaSDK
+@rem Run.bat for StreamTheater
 @if "%1" NEQ "debug" (
     @if "%1" NEQ "release" (
 	    @if "%1" NEQ "clean" (
@@ -7,4 +7,4 @@
 		)
 	)
 )
-@call ..\build.cmd com.oculus.cinemasdk bin/CinemaSDK-debug.apk com.oculus.cinemasdk.MainActivity %1 %2
+@call ..\build.cmd com.vrmatter.streamtheater bin/StreamTheater-debug.apk com.vrmatter.streamtheater.MainActivity %1 %2

@@ -28,7 +28,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 using namespace OVR;
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 enum ePlaybackControlsEvent
 {
@@ -248,6 +248,6 @@ private:
 	void 					HideUI();
 };
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater
 
 #endif // MoviePlayerView_h

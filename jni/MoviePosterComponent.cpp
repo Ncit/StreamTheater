@@ -18,7 +18,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "UI/UIImage.h"
 #include "UI/UILabel.h"
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 bool MoviePosterComponent::ShowShadows = true;
 
@@ -88,4 +88,4 @@ void MoviePosterComponent::SetItem( VRMenuObject * self, const CarouselItem * it
 	}
 }
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater

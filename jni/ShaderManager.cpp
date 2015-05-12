@@ -19,7 +19,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 using namespace OVR;
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 //=======================================================================================
 
@@ -241,4 +241,4 @@ void ShaderManager::OneTimeShutdown()
 	DeleteProgram( ProgSkinnedReflectionMapped );
 }
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater

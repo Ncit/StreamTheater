@@ -17,7 +17,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "CinemaApp.h"
 
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 const Vector4f MovieCategoryComponent::FocusColor( 1.0f, 1.0f, 1.0f, 1.0f );
 const Vector4f MovieCategoryComponent::HighlightColor( 1.0f, 1.0f, 1.0f, 1.0f );
@@ -119,4 +119,4 @@ eMsgStatus MovieCategoryComponent::FocusLost( App * app, VrFrame const & vrFrame
 	return MSG_STATUS_ALIVE;
 }
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater

@@ -19,7 +19,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "View.h"
 #include "VRMenu/VRMenu.h"
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 class CinemaApp;
 
@@ -58,6 +58,6 @@ private:
     void 				CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont const & font );
 };
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater
 
 #endif // ResumeMovieView_h

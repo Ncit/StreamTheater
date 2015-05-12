@@ -18,7 +18,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "VrApi/Vsync.h"
 #include "Input.h"
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 //==============================
 //  TheaterSelectionComponent::
@@ -170,4 +170,4 @@ eMsgStatus TheaterSelectionComponent::Frame( App * app, VrFrame const & vrFrame,
     return MSG_STATUS_ALIVE;
 }
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater

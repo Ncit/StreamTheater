@@ -20,7 +20,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "PackageFiles.h"
 
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 static const char * TheatersDirectory = "Oculus/Cinema/Theaters";
 
@@ -254,4 +254,4 @@ bool ModelManager::Command( const char * msg )
 	return false;
 }
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater

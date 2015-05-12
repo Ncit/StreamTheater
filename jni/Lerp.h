@@ -20,7 +20,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 using namespace OVR;
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 	class Lerp
 {
@@ -45,6 +45,6 @@ public:
 	double	endValue;
 };
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater
 
 #endif // Lerp_h

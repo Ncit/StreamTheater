@@ -21,7 +21,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #if !defined( ViewManager_h )
 #define ViewManager_h
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 class ViewManager
 {
@@ -54,6 +54,6 @@ private:
 	bool			ClosedCurrent;
 };
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater
 
 #endif // ViewManager_h

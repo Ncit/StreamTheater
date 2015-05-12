@@ -12,7 +12,7 @@ LICENSE file in the Cinema/ directory. An additional grant
 of patent rights can be found in the PATENTS file in the same directory.
 
 *************************************************************************************/
-package com.oculus.cinemasdk;
+package com.vrmatter.streamtheater;
 
 import java.io.File;
 import java.io.IOException;

@@ -18,7 +18,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "VRMenu/VRMenuMgr.h"
 #include "CinemaApp.h"
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 UIWidget::UIWidget( CinemaApp &cinema ) :
 	Cinema( cinema ),
@@ -486,4 +486,4 @@ void UIWidget::SetLocalBoundsExpand( Vector3f const mins, Vector3f const & maxs 
 	object->SetLocalBoundsExpand( mins, maxs );
 }
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater

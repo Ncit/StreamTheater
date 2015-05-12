@@ -26,7 +26,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "Native.h"
 
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 const int MovieManager::PosterWidth = 228;
 const int MovieManager::PosterHeight = 344;
@@ -373,4 +373,4 @@ Array<const MovieDef *> MovieManager::GetMovieList( MovieCategory category ) con
 	return result;
 }
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater

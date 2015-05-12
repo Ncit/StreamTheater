@@ -26,7 +26,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "Native.h"
 
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 VRMenuId_t TheaterSelectionView::ID_CENTER_ROOT( 1000 );
 VRMenuId_t TheaterSelectionView::ID_ICONS( 1001 );
@@ -395,4 +395,4 @@ Matrix4f TheaterSelectionView::Frame( const VrFrame & vrFrame )
 	return Cinema.SceneMgr.Frame( vrFrame );
 }
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater

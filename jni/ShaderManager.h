@@ -19,7 +19,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "GlProgram.h"
 #include "ModelFile.h"
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 class CinemaApp;
 
@@ -64,6 +64,6 @@ public:
 	ModelGlPrograms 		DefaultPrograms;
 };
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater
 
 #endif // ShaderManager_h

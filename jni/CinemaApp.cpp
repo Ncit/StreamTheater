@@ -21,7 +21,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 //=======================================================================================
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 CinemaApp::CinemaApp() :
 	StartTime( 0 ),
@@ -367,4 +367,4 @@ bool CinemaApp::OnKeyEvent( const int keyCode, const KeyState::eKeyEventType eve
 	return ViewMgr.OnKeyEvent( keyCode, eventType );
 }
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater

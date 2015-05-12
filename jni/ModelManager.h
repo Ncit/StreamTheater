@@ -20,7 +20,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "LibOVR/Src/Kernel/OVR_String.h"
 #include "LibOVR/Src/Kernel/OVR_Array.h"
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 class CinemaApp;
 
@@ -80,6 +80,6 @@ private:
 	SceneDef *			LoadScene( const char *filename, bool useDynamicProgram, bool useScreenGeometry, bool loadFromApplicationPackage ) const;
 };
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater
 
 #endif // ModelManager_h

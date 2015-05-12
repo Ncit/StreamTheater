@@ -18,7 +18,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "CinemaApp.h"
 #include "BitmapFont.h"
 
-namespace OculusCinema
+namespace VRMatterStreamTheater
 {
 String CinemaStrings::LoadingMenu_Title;
 
@@ -65,4 +65,4 @@ void CinemaStrings::OneTimeInit( CinemaApp &cinema )
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/MoviePlayer_Reorient", 	"@string/MoviePlayer_Reorient", 	MoviePlayer_Reorient );
 }
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater

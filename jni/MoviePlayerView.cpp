@@ -21,7 +21,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 #include "CinemaStrings.h"
 
-namespace OculusCinema
+namespace VRMatterStreamTheater
 {
 
 const int MoviePlayerView::MaxSeekSpeed = 5;
@@ -1175,4 +1175,4 @@ void ScrubBarComponent::OnClick( App * app, VrFrame const & vrFrame, VRMenuEvent
 	}
 }
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater

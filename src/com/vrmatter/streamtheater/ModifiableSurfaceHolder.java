@@ -1,4 +1,4 @@
-package com.oculus.cinemasdk;
+package com.vrmatter.streamtheater;
 
 import android.graphics.Canvas;
 import android.graphics.Rect;

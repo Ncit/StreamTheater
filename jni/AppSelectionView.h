@@ -29,7 +29,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 using namespace OVR;
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 class CinemaApp;
 class CarouselBrowserComponent;
@@ -157,6 +157,6 @@ private:
 	bool								ErrorShown() const;
 };
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater
 
 #endif // MovieSelectionView_h

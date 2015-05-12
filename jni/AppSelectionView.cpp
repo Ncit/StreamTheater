@@ -28,7 +28,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "BitmapFont.h"
 #include "Native.h"
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 static const int PosterWidth = 228;
 static const int PosterHeight = 344;
@@ -982,4 +982,4 @@ Matrix4f MovieSelectionView::Frame( const VrFrame & vrFrame )
 	return Cinema.SceneMgr.Frame( vrFrame );
 }
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater

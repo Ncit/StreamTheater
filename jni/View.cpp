@@ -16,7 +16,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "View.h"
 
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 View::View( const char *_name ) :
 	name( _name ),
@@ -30,4 +30,4 @@ View::~View()
 {
 }
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater

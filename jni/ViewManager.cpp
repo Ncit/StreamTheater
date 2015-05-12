@@ -16,7 +16,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "ViewManager.h"
 #include "App.h"
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 ViewManager::ViewManager() :
 	LastViewMatrix(),
@@ -135,4 +135,4 @@ Matrix4f ViewManager::Frame( const VrFrame & vrFrame )
 	return LastViewMatrix;
 }
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater

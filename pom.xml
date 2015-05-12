@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.oculus</groupId>
-  <artifactId>Cinema</artifactId>
+  <groupId>com.vrmatter</groupId>
+  <artifactId>StreamTheater</artifactId>
   <version>0.2.5-SNAPSHOT</version>
   <packaging>apk</packaging>
   <build>
@@ -69,7 +69,7 @@
           <ndk>
             <path>${env.ANDROID_NDK}</path>
           </ndk>
-         <ndkFinalLibraryName>Cinema</ndkFinalLibraryName>
+         <ndkFinalLibraryName>StreamTheater</ndkFinalLibraryName>
          <target>all</target>
                             <!--
                             Configure the plugin to remove all built artifacts from the libs/armeabi folder
@@ -105,9 +105,9 @@
            </goals>
          </pluginExecutionFilter>
          <action>
-           <ignore >
+           <ignore>
              <runOnIncremental>false</runOnIncremental>
-           </ignore >
+           </ignore>
          </action>
        </pluginExecution>
      </pluginExecutions>
@@ -126,13 +126,13 @@
   <scope>provided</scope>
 </dependency>
 <dependency>
-  <groupId>com.oculus</groupId>
+  <groupId>com.vrmatter</groupId>
   <artifactId>VRLib</artifactId>
   <version>0.2.5-SNAPSHOT</version>
   <type>apklib</type>
 </dependency>
   <dependency>
-  	<groupId>com.oculus</groupId>
+  	<groupId>com.vrmatter</groupId>
   	<artifactId>VRLib</artifactId>
   	<version>0.2.5-SNAPSHOT</version>
     <scope>runtime</scope>

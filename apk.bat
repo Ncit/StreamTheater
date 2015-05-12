@@ -1,1 +1,1 @@
-copy bin\CinemaSDK-release-unsigned.apk ..\..\bin\apks\release\CinemaSDK.apk
+copy bin\StreamTheater-release-unsigned.apk ..\..\bin\apks\release\StreamTheater.apk

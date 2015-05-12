@@ -17,7 +17,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "CinemaApp.h"
 #include "PackageFiles.h"
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 UITexture::UITexture() :
 	Width( 0 ),
@@ -36,4 +36,4 @@ void UITexture::LoadTextureFromApplicationPackage( const char *assetPath )
 	Texture = OVR::LoadTextureFromApplicationPackage( assetPath, TextureFlags_t( TEXTUREFLAG_NO_DEFAULT ), Width, Height );
 }
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater

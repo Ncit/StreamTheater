@@ -1,6 +1,6 @@
 ./build.sh $1
 
-export BUILD_MODULE=CinemaSDK
+export BUILD_MODULE=StreamTheater
 echo "========================== Install & Run "${BUILD_MODULE}" ==========================="
 
 if [ "$1" != "clean" ]; then
@@ -11,7 +11,7 @@ if [ "$1" != "clean" ]; then
 
     cp bin/${BUILD_MODULE}-debug.apk bin/${BUILD_MODULE}.apk
     adb install -r bin/${BUILD_MODULE}.apk
-    adb shell am start com.oculus.cinemasdk/com.oculus.cinemasdk.MainActivity
+    adb shell am start com.vrmatter.streamtheater/com.vrmatter.streamtheater.MainActivity
 fi 
 
 

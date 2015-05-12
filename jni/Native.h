@@ -16,7 +16,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #if !defined( Native_h )
 #define Native_h
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 class Native {
 public:
@@ -43,6 +43,6 @@ public:
 	static bool			TogglePlaying( App *app );
 };
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater
 
 #endif // Native_h

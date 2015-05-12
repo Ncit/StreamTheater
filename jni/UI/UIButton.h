@@ -23,7 +23,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 using namespace OVR;
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 class CinemaApp;
 class UIButton;
@@ -92,6 +92,6 @@ private:
 
 };
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater
 
 #endif // UIButton_h

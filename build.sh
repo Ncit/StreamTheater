@@ -2,7 +2,7 @@ pushd ../../VRLib
 ./build.sh $1
 pushd
 
-export BUILD_MODULE=CinemaSDK
+export BUILD_MODULE=StreamTheater
 
 echo "========================== Update "${BUILD_MODULE}" Project ==========================="
 android update project -t android-19 -p . -s

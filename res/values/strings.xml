@@ -5,76 +5,76 @@
     xsi:schemaLocation="http://schemas.android.com/apk/res-auto"
     >
   <string
-      name="app_name"      project="oculus-cinemasdk"
-      description="The title of the application, Oculus Cinema, which let's you watch movies inside of Oculus"
-      >Oculus Cinema</string>
+      name="app_name"      project="vrmatter-streamtheater"
+      description="The title of the application, StreamTheater, which lets you play PC games in a VR theater"
+      >Stream Theater</string>
   <string
-      name="action_settings"      project="oculus-cinemasdk"
+      name="action_settings"      project="vrmatter-streamtheater"
       description="The name of the settings menu."
       >Settings</string>
   <string
-      name="title_activity_scrubber"      project="oculus-cinemasdk"
+      name="title_activity_scrubber"      project="vrmatter-streamtheater"
       description="The name of the scrubber activity.  Never displayed."
       translatable="false"
       >ScrubberActivity</string>
   <string
       name="Category_Trailers"
-      project="oculus-cinemasdk"
+      project="vrmatter-streamtheater"
       description="Category title for movie trailers."
       >Trailers</string>
   <string
       name="Category_MyVideos"
-      project="oculus-cinemasdk"
+      project="vrmatter-streamtheater"
       description="Category title for videos loaded by the user."
       >My Videos</string>
   <string
       name="MovieSelection_Resume"
-      project="oculus-cinemasdk"
+      project="vrmatter-streamtheater"
       description="Resume movie icon text for movie selection carousel. Let's you resume a paused movie."
       >Resume</string>
   <string
       name="MovieSelection_Next"
-      project="oculus-cinemasdk"
+      project="vrmatter-streamtheater"
       description="Text for next movie to be played icon for movie selection carousel."
       >Next</string>
   <string
       name="ResumeMenu_Title"
-      project="oculus-cinemasdk"
+      project="vrmatter-streamtheater"
       description="Title of menu for when app asks user if they want to resume watching the movie where they left off."
       >What would you like to do?</string>
   <string
       name="ResumeMenu_Resume"
-      project="oculus-cinemasdk"
+      project="vrmatter-streamtheater"
       description="Button for resume menu to resume the movie where they left off."
       >Resume</string>
   <string
       name="ResumeMenu_Restart"
-      project="oculus-cinemasdk"
+      project="vrmatter-streamtheater"
       description="Button for resume menu to restart the movie from the beginning."
       >Restart</string>
   <string
       name="TheaterSelection_Title"
-      project="oculus-cinemasdk"
+      project="vrmatter-streamtheater"
       description="Title of theater selection menu."
       >SELECT THEATER</string>
   <string
       name="Error_NoVideosOnPhone"
-      project="oculus-cinemasdk"
+      project="vrmatter-streamtheater"
       description="Error menu for when there are no videos found."
       >There are no videos on your phone. Please insert the SD card included with your Gear VR.</string>
   <string
       name="Error_NoVideosInMyVideos"
-      project="oculus-cinemasdk"
+      project="vrmatter-streamtheater"
       description="Error menu for when there are no movies in the My Videos category."
       >To watch your videos in Cinema, record with your camera or copy videos to your phone\'s internal memory or SD card.</string>
   <string
       name="Error_UnableToPlayMovie"
-      project="oculus-cinemasdk"
+      project="vrmatter-streamtheater"
       description="Error message for when a movie could not be played by the movie player."
       >We couldn\'t play this video.</string>
   <string
       name="MoviePlayer_Reorient"
-      project="oculus-cinemasdk"
+      project="vrmatter-streamtheater"
       description="Text displayed when user looks away from the screen in the Void theater to indicate that they can reorient the screen by tapping the touchpad."
       >Tap the touchpad to reorient screen</string>
 </resources>

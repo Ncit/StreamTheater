@@ -18,7 +18,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "VRMenu/VRMenuMgr.h"
 #include "CinemaApp.h"
 
-namespace OculusCinema {
+namespace VRMatterStreamTheater {
 
 UILabel::UILabel( CinemaApp &cinema ) :
 	UIWidget( cinema )
@@ -126,4 +126,4 @@ Bounds3f UILabel::GetTextLocalBounds( BitmapFont const & font ) const
 	return object->GetTextLocalBounds( font );
 }
 
-} // namespace OculusCinema
+} // namespace VRMatterStreamTheater
