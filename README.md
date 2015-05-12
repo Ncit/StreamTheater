@@ -10,7 +10,7 @@ Stream Theater is a combination of [Moonlight](http://moonlight-stream.com) and 
 
 ##Requirements
 
-* [GameStream compatible](http://shield.nvidia.com/play-pc-games/) computer with GTX 600/700 series GPU
+* [GameStream compatible](http://shield.nvidia.com/play-pc-games/) computer with GTX 600+ series GPU
 * Samsung Note 4 or S6 with GearVR headset
 * High-end wireless router (802.11n dual-band recommended)
 
