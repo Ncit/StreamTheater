@@ -24,6 +24,9 @@ String CinemaStrings::LoadingMenu_Title;
 
 String CinemaStrings::Category_Trailers;
 String CinemaStrings::Category_MyVideos;
+String CinemaStrings::Category_LimeLight;
+String CinemaStrings::Category_RemoteDesktop;
+String CinemaStrings::Category_VNC;
 
 String CinemaStrings::MovieSelection_Resume;
 String CinemaStrings::MovieSelection_Next;
@@ -35,7 +38,7 @@ String CinemaStrings::ResumeMenu_Restart;
 String CinemaStrings::TheaterSelection_Title;
 
 String CinemaStrings::Error_NoVideosOnPhone;
-String CinemaStrings::Error_NoVideosInMyVideos;
+String CinemaStrings::Error_NoVideosInLimeLight;
 String CinemaStrings::Error_UnableToPlayMovie;
 
 String CinemaStrings::MoviePlayer_Reorient;
@@ -49,6 +52,9 @@ void CinemaStrings::OneTimeInit( CinemaApp &cinema )
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/LoadingMenu_Title", 		"@string/LoadingMenu_Title", 		LoadingMenu_Title );
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/Category_Trailers", 		"@string/Category_Trailers", 		Category_Trailers );
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/Category_MyVideos", 		"@string/Category_MyVideos", 		Category_MyVideos );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/Category_LimeLight", 		"@string/Category_LimeLight", 		Category_LimeLight );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/Category_RemoteDesktop", 	"@string/Category_RemoteDesktop", 	Category_RemoteDesktop );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/Category_VNC", 			"@string/Category_VNC", 			Category_VNC );
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/MovieSelection_Resume",	"@string/MovieSelection_Resume",	MovieSelection_Resume );
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/MovieSelection_Next", 		"@string/MovieSelection_Next", 		MovieSelection_Next );
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ResumeMenu_Title", 		"@string/ResumeMenu_Title", 		ResumeMenu_Title );
@@ -58,7 +64,7 @@ void CinemaStrings::OneTimeInit( CinemaApp &cinema )
 
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/Error_NoVideosOnPhone", 	"@string/Error_NoVideosOnPhone", 	Error_NoVideosOnPhone );
 
-	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/Error_NoVideosInMyVideos", "@string/Error_NoVideosInMyVideos", Error_NoVideosInMyVideos );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/Error_NoVideosInLimeLight", "@string/Error_NoVideosInLimeLight", Error_NoVideosInLimeLight );
 
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/Error_UnableToPlayMovie", 	"@string/Error_UnableToPlayMovie",	Error_UnableToPlayMovie );
 

@@ -51,6 +51,8 @@ public:
 
 	virtual Matrix4f 	DrawEyeView( const int eye, const float fovDegrees ) = 0;
 	virtual Matrix4f 	Frame( const VrFrame & vrFrame ) = 0;
+	virtual void		SetError( const char *text, bool showSDCard, bool showErrorIcon ) { }
+	virtual void		ClearError() { }
 
 	bool				IsOpen() const { return CurViewState == VIEWSTATE_OPEN; }
 	bool				IsClosed() const { return CurViewState == VIEWSTATE_CLOSED; }

@@ -16,7 +16,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #if !defined( SceneManager_h )
 #define SceneManager_h
 
-#include "MovieManager.h"
+#include "PcManager.h"
 #include "ModelView.h"
 #include "Lerp.h"
 
@@ -98,7 +98,6 @@ public:
 	int					CurrentMovieHeight;
 	int					MovieTextureWidth;
 	int					MovieTextureHeight;
-	MovieFormat			CurrentMovieFormat;
 	int					MovieRotation;
 	int					MovieDuration;
 

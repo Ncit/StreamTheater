@@ -1,11 +1,12 @@
 package com.limelight.utils;
 
+import com.vrmatter.streamtheater.R;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.widget.Toast;
 
-import com.limelight.Game;
-import com.limelight.R;
+import com.limelight.StreamInterface;
 import com.limelight.binding.PlatformBinding;
 import com.limelight.computers.ComputerManagerService;
 import com.limelight.nvstream.http.ComputerDetails;
@@ -25,14 +26,14 @@ public class ServerHelper {
 
     public static void doStart(Activity parent, NvApp app, ComputerDetails computer,
                                ComputerManagerService.ComputerManagerBinder managerBinder) {
-        Intent intent = new Intent(parent, Game.class);
-        intent.putExtra(Game.EXTRA_HOST,
+        Intent intent = new Intent(parent, StreamInterface.class);
+        intent.putExtra(StreamInterface.EXTRA_HOST,
                 computer.reachability == ComputerDetails.Reachability.LOCAL ?
                         computer.localIp.getHostAddress() : computer.remoteIp.getHostAddress());
-        intent.putExtra(Game.EXTRA_APP_NAME, app.getAppName());
-        intent.putExtra(Game.EXTRA_APP_ID, app.getAppId());
-        intent.putExtra(Game.EXTRA_UNIQUEID, managerBinder.getUniqueId());
-        intent.putExtra(Game.EXTRA_STREAMING_REMOTE,
+        intent.putExtra(StreamInterface.EXTRA_APP_NAME, app.getAppName());
+        intent.putExtra(StreamInterface.EXTRA_APP_ID, app.getAppId());
+        intent.putExtra(StreamInterface.EXTRA_UNIQUEID, managerBinder.getUniqueId());
+        intent.putExtra(StreamInterface.EXTRA_STREAMING_REMOTE,
                 computer.reachability != ComputerDetails.Reachability.LOCAL);
         parent.startActivity(intent);
     }

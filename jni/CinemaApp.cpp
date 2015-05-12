@@ -28,12 +28,14 @@ CinemaApp::CinemaApp() :
 	SceneMgr( *this ),
 	ShaderMgr( *this ),
 	ModelMgr( *this ),
-	MovieMgr( *this ),
+	PcMgr( *this ),
+	AppMgr( *this ),
 	InLobby( true ),
 	AllowDebugControls( false ),
 	ViewMgr(),
 	MoviePlayer( *this ),
-	MovieSelectionMenu( *this ),
+	PcSelectionMenu( *this ),
+	AppSelectionMenu( *this ),
 	TheaterSelectionMenu( *this ),
 	ResumeMovieMenu( *this ),
 	vrFrame(),
@@ -64,17 +66,19 @@ void CinemaApp::OneTimeInit( const char * fromPackage, const char * launchIntent
 	ShaderMgr.OneTimeInit( launchIntentURI );
 	ModelMgr.OneTimeInit( launchIntentURI );
 	SceneMgr.OneTimeInit( launchIntentURI );
-	MovieMgr.OneTimeInit( launchIntentURI );
+	PcMgr.OneTimeInit( launchIntentURI );
+	AppMgr.OneTimeInit( launchIntentURI );
 	MoviePlayer.OneTimeInit( launchIntentURI );
-	MovieSelectionMenu.OneTimeInit( launchIntentURI );
+	ViewMgr.AddView( &MoviePlayer );
+	PcSelectionMenu.OneTimeInit( launchIntentURI );
+	ViewMgr.AddView( &PcSelectionMenu );
+	AppSelectionMenu.OneTimeInit( launchIntentURI );
+	ViewMgr.AddView( &AppSelectionMenu );
 	TheaterSelectionMenu.OneTimeInit( launchIntentURI );
+	ViewMgr.AddView( &TheaterSelectionMenu );
 	ResumeMovieMenu.OneTimeInit( launchIntentURI );
 
-	ViewMgr.AddView( &MoviePlayer );
-	ViewMgr.AddView( &MovieSelectionMenu );
-	ViewMgr.AddView( &TheaterSelectionMenu );
-
-	MovieSelection( true );
+	PcSelection( true );
 
 	LOG( "CinemaApp::OneTimeInit: %3.1f seconds", ovr_GetTimeInSeconds() - StartTime );
 }
@@ -87,9 +91,11 @@ void CinemaApp::OneTimeShutdown()
 	ShaderMgr.OneTimeShutdown();
 	ModelMgr.OneTimeShutdown();
 	SceneMgr.OneTimeShutdown();
-	MovieMgr.OneTimeShutdown();
+	PcMgr.OneTimeShutdown();
+	AppMgr.OneTimeShutdown();
 	MoviePlayer.OneTimeShutdown();
-	MovieSelectionMenu.OneTimeShutdown();
+	PcSelectionMenu.OneTimeShutdown();
+	AppSelectionMenu.OneTimeShutdown();
 	TheaterSelectionMenu.OneTimeShutdown();
 	ResumeMovieMenu.OneTimeShutdown();
 }
@@ -150,7 +156,7 @@ bool CinemaApp::FileExists( const char *filename ) const
 	}
 }
 
-void CinemaApp::SetPlaylist( const Array<const MovieDef *> &playList, const int nextMovie )
+void CinemaApp::SetPlaylist( const Array<const PcDef *> &playList, const int nextMovie )
 {
 	PlayList = playList;
 
@@ -158,11 +164,17 @@ void CinemaApp::SetPlaylist( const Array<const MovieDef *> &playList, const int 
 	SetMovie( PlayList[ nextMovie ] );
 }
 
-void CinemaApp::SetMovie( const MovieDef *movie )
+void CinemaApp::SetMovie( const PcDef *movie )
 {
-	LOG( "SetMovie( %s )", movie->Filename.ToCStr() );
+	LOG( "SetMovie( %s )", movie->Name.ToCStr() );
 	CurrentMovie = movie;
 	MovieFinishedPlaying = false;
+}
+
+void CinemaApp::SetPc( const PcDef *pc )
+{
+	LOG( "SetPc( %s )", pc->Name.ToCStr() );
+	CurrentPc = pc;
 }
 
 void CinemaApp::MovieLoaded( const int width, const int height, const int duration )
@@ -170,9 +182,9 @@ void CinemaApp::MovieLoaded( const int width, const int height, const int durati
 	MoviePlayer.MovieLoaded( width, height, duration );
 }
 
-const MovieDef *CinemaApp::GetNextMovie() const
+const PcDef *CinemaApp::GetNextMovie() const
 {
-	const MovieDef *next = NULL;
+	const PcDef *next = NULL;
 	if ( PlayList.GetSizeI() != 0 )
 	{
 		for( int i = 0; i < PlayList.GetSizeI() - 1; i++ )
@@ -193,9 +205,9 @@ const MovieDef *CinemaApp::GetNextMovie() const
 	return next;
 }
 
-const MovieDef *CinemaApp::GetPreviousMovie() const
+const PcDef *CinemaApp::GetPreviousMovie() const
 {
-	const MovieDef *previous = NULL;
+	const PcDef *previous = NULL;
 	if ( PlayList.GetSizeI() != 0 )
 	{
 		for( int i = 0; i < PlayList.GetSizeI(); i++ )
@@ -221,7 +233,7 @@ void CinemaApp::StartMoviePlayback()
 	if ( CurrentMovie != NULL )
 	{
 		MovieFinishedPlaying = false;
-		Native::StartMovie( app, CurrentMovie->Filename.ToCStr(), ShouldResumeMovie, CurrentMovie->IsEncrypted, false );
+		Native::StartMovie( app, CurrentPc->UUID.ToCStr(), CurrentMovie->Name.ToCStr(), CurrentMovie->Id, CurrentPc->Binding.ToCStr() );
 		ShouldResumeMovie = false;
 	}
 }
@@ -245,30 +257,22 @@ void CinemaApp::PlayMovieFromBeginning()
 void CinemaApp::ResumeOrRestartMovie()
 {
 	LOG( "StartMovie");
-	if ( Native::CheckForMovieResume( app, CurrentMovie->Filename.ToCStr() ) )
-	{
-		LOG( "Open ResumeMovieMenu");
-		ViewMgr.OpenView( ResumeMovieMenu );
-	}
-	else
-	{
-		PlayMovieFromBeginning();
-	}
+	PlayMovieFromBeginning();
 }
 
 void CinemaApp::MovieFinished()
 {
 	InLobby = false;
 	MovieFinishedPlaying = true;
-	MovieSelectionMenu.SetMovieList( PlayList, GetNextMovie() );
-	ViewMgr.OpenView( MovieSelectionMenu );
+	AppSelectionMenu.SetAppList( PlayList, GetNextMovie() );
+	ViewMgr.OpenView( AppSelectionMenu );
 }
 
 void CinemaApp::UnableToPlayMovie()
 {
 	InLobby = false;
-	MovieSelectionMenu.SetError( CinemaStrings::Error_UnableToPlayMovie.ToCStr(), false, true );
-	ViewMgr.OpenView( MovieSelectionMenu );
+	AppSelectionMenu.SetError( CinemaStrings::Error_UnableToPlayMovie.ToCStr(), false, true );
+	ViewMgr.OpenView( AppSelectionMenu );
 }
 
 void CinemaApp::TheaterSelection()
@@ -276,19 +280,20 @@ void CinemaApp::TheaterSelection()
 	ViewMgr.OpenView( TheaterSelectionMenu );
 }
 
-void CinemaApp::MovieSelection( bool inLobby )
+void CinemaApp::PcSelection( bool inLobby )
 {
 	InLobby = inLobby;
-	ViewMgr.OpenView( MovieSelectionMenu );
+	ViewMgr.OpenView( PcSelectionMenu );
+}
+
+void CinemaApp::AppSelection( bool inLobby )
+{
+	InLobby = inLobby;
+	ViewMgr.OpenView( AppSelectionMenu );
 }
 
 bool CinemaApp::AllowTheaterSelection() const
 {
-	if ( CurrentMovie != NULL )
-	{
-		return CurrentMovie->AllowTheaterSelection;
-	}
-
 	return true;
 }
 
@@ -366,5 +371,30 @@ bool CinemaApp::OnKeyEvent( const int keyCode, const KeyState::eKeyEventType eve
 {
 	return ViewMgr.OnKeyEvent( keyCode, eventType );
 }
+
+
+void CinemaApp::ShowPair( const String& msg )
+{
+	AppSelectionMenu.SetError(msg.ToCStr(),false,false);
+}
+
+void CinemaApp::PairSuccess()
+{
+	AppSelectionMenu.ClearError();
+	AppSelectionMenu.PairSuccess();
+}
+
+void CinemaApp::ShowError( const String& msg )
+{
+	View *view = ViewMgr.GetCurrentView();
+	if(view) view->SetError(msg.ToCStr(), false, true);
+}
+
+void CinemaApp::ClearError()
+{
+	View *view = ViewMgr.GetCurrentView();
+	if(view) view->ClearError();
+}
+
 
 } // namespace VRMatterStreamTheater

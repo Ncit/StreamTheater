@@ -383,13 +383,13 @@ Matrix4f TheaterSelectionView::Frame( const VrFrame & vrFrame )
 
 	if ( Menu->IsClosedOrClosing() && !Menu->IsOpenOrOpening() )
 	{
-		Cinema.MovieSelection( true );
+		Cinema.AppSelection( true );
 	}
 
 	if ( vrFrame.Input.buttonPressed & BUTTON_B )
 	{
 		Cinema.app->PlaySound( "touch_up" );
-		Cinema.MovieSelection( true );
+		Cinema.AppSelection( true );
 	}
 
 	return Cinema.SceneMgr.Frame( vrFrame );

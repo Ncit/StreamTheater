@@ -8,3 +8,4 @@
 	)
 )
 @call ..\build.cmd com.vrmatter.streamtheater bin/StreamTheater-debug.apk com.vrmatter.streamtheater.MainActivity %1 %2
+

@@ -14,6 +14,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 *************************************************************************************/
 
 #include "VRMenu/VRMenuComponent.h"
+#include "SelectionView.h"
 
 #if !defined( MovieSelectionComponent_h )
 #define MovieSelectionComponent_h
@@ -29,11 +30,11 @@ class MovieSelectionView;
 class MovieSelectionComponent : public VRMenuComponent
 {
 public:
-							MovieSelectionComponent( MovieSelectionView *view );
+							MovieSelectionComponent( SelectionView *view );
 
 private:
     SoundLimiter			Sound;
-    MovieSelectionView *	CallbackView;
+    SelectionView *	CallbackView;
 
 private:
     virtual eMsgStatus      OnEvent_Impl( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,

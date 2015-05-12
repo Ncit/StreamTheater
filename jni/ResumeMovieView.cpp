@@ -256,7 +256,7 @@ Matrix4f ResumeMovieView::Frame( const VrFrame & vrFrame )
 		}
 		else
 		{
-			Cinema.MovieSelection( false );
+			Cinema.AppSelection( false );
 		}
 	}
 

@@ -1,14 +1,14 @@
 /************************************************************************************
 
 Filename    :   CinemaApp.h
-Content     :   
+Content     :
 Created     :	6/17/2014
 Authors     :   Jim Dosé
 
 Copyright   :   Copyright 2014 Oculus VR, LLC. All Rights reserved.
 
 This source code is licensed under the BSD-style license found in the
-LICENSE file in the Cinema/ directory. An additional grant 
+LICENSE file in the Cinema/ directory. An additional grant
 of patent rights can be found in the PATENTS file in the same directory.
 
 *************************************************************************************/
@@ -18,9 +18,12 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "ModelManager.h"
 #include "SceneManager.h"
 #include "ViewManager.h"
-#include "MovieManager.h"
+#include "PcManager.h"
+#include "AppManager.h"
 #include "MoviePlayerView.h"
-#include "MovieSelectionView.h"
+#include "SelectionView.h"
+#include "PcSelectionView.h"
+#include "AppSelectionView.h"
 #include "TheaterSelectionView.h"
 #include "ResumeMovieView.h"
 
@@ -46,13 +49,15 @@ public:
 	// Called by App loop
 	virtual Matrix4f 		Frame( const VrFrame vrFrame );
 
-	void			    	SetPlaylist( const Array<const MovieDef *> &playList, const int nextMovie );
-	void			    	SetMovie( const MovieDef * nextMovie );
+	void			    	SetPlaylist( const Array<const PcDef *> &playList, const int nextMovie );
+	void			    	SetMovie( const PcDef * nextMovie );
+	void					SetPc( const PcDef * pc);
 	void 					MovieLoaded( const int width, const int height, const int duration );
 
-	const MovieDef *		GetCurrentMovie() const { return CurrentMovie; }
-	const MovieDef *		GetNextMovie() const;
-	const MovieDef *		GetPreviousMovie() const;
+	const PcDef *			GetCurrentMovie() const { return CurrentMovie; }
+	const PcDef *			GetCurrentPc() const { return CurrentPc; }
+	const PcDef *			GetNextMovie() const;
+	const PcDef *			GetPreviousMovie() const;
 
 	const SceneDef & 		GetCurrentTheater() const;
 
@@ -61,7 +66,8 @@ public:
 	void					PlayMovieFromBeginning();
 	void 					ResumeOrRestartMovie();
 	void 					TheaterSelection();
-	void 					MovieSelection( bool inLobby );
+	void					PcSelection( bool inLobby );
+	void 					AppSelection( bool inLobby );
 	void					MovieFinished();
 	void					UnableToPlayMovie();
 
@@ -76,6 +82,11 @@ public:
 	bool 					IsExternalSDCardDir( const char *dir ) const;
 	bool 					FileExists( const char *filename ) const;
 
+	void					ShowPair( const String& msg );
+	void					PairSuccess();
+	void					ShowError( const String& msg );
+	void					ClearError();
+
 public:
 	double					StartTime;
 
@@ -84,7 +95,8 @@ public:
 	SceneManager			SceneMgr;
 	ShaderManager 			ShaderMgr;
 	ModelManager 			ModelMgr;
-	MovieManager 			MovieMgr;
+	PcManager 				PcMgr;
+	AppManager				AppMgr;
 
 	bool					InLobby;
 	bool					AllowDebugControls;
@@ -92,15 +104,17 @@ public:
 private:
 	ViewManager				ViewMgr;
 	MoviePlayerView			MoviePlayer;
-	MovieSelectionView		MovieSelectionMenu;
+	PcSelectionView			PcSelectionMenu;
+	AppSelectionView		AppSelectionMenu;
 	TheaterSelectionView	TheaterSelectionMenu;
 	ResumeMovieView			ResumeMovieMenu;
 
 	VrFrame					vrFrame;
 	int						FrameCount;
 
-    const MovieDef *		CurrentMovie;
-	Array<const MovieDef *> PlayList;
+    const PcDef *			CurrentMovie;
+    const PcDef *			CurrentPc;
+	Array<const PcDef *>	PlayList;
 
 	bool					ShouldResumeMovie;
 	bool					MovieFinishedPlaying;

@@ -41,7 +41,6 @@ SceneManager::SceneManager( CinemaApp &cinema ) :
 	CurrentMovieHeight( 480 ),
 	MovieTextureWidth( 0 ),
 	MovieTextureHeight( 0 ),
-	CurrentMovieFormat( VT_2D ),
 	MovieRotation( 0 ),
 	MovieDuration( 0 ),
 	FrameUpdateNeeded( false ),
@@ -534,7 +533,7 @@ void SceneManager::LightsOff( const float duration )
 GLuint SceneManager::BuildScreenVignetteTexture( const int horizontalTile ) const
 {
 	// make it an even border at 16:9 aspect ratio, let it get a little squished at other aspects
-	static const int scale = 6;
+	static const int scale = 24;
 	static const int width = 16 * scale * horizontalTile;
 	static const int height = 9 * scale;
 	unsigned char buffer[width * height];
@@ -673,38 +672,8 @@ bool SceneManager::Command( const char * msg )
 		int width, height;
 		sscanf( msg, "video %i %i %i %i", &width, &height, &MovieRotation, &MovieDuration );
 
-		const MovieDef *movie = Cinema.GetCurrentMovie();
-		assert( movie );
-
-		// always use 2d form lobby movies
-		if ( ( movie == NULL ) || SceneInfo.LobbyScreen )
-		{
-			CurrentMovieFormat = VT_2D;
-		}
-		else
-		{
-			CurrentMovieFormat = movie->Format;
-
-			// if movie format is not set, make some assumptions based on the width and if it's 3D
-			if ( movie->Format == VT_UNKNOWN )
-			{
-				if ( movie->Is3D )
-				{
-					if ( width > height * 3 )
-					{
-						CurrentMovieFormat = VT_LEFT_RIGHT_3D_FULL;
-					}
-					else
-					{
-						CurrentMovieFormat = VT_LEFT_RIGHT_3D;
-					}
-				}
-				else
-				{
-					CurrentMovieFormat = VT_2D;
-				}
-			}
-		}
+		//const AppDef *movie = Cinema.GetCurrentMovie();
+		//assert( movie );
 
 		MovieTextureWidth = width;
 		MovieTextureHeight = height;
@@ -735,23 +704,8 @@ bool SceneManager::Command( const char * msg )
 			}
 		}
 
-		switch( CurrentMovieFormat )
-		{
-			case VT_LEFT_RIGHT_3D_FULL:
-				CurrentMovieWidth = width / 2;
-				CurrentMovieHeight = height;
-				break;
-
-			case VT_TOP_BOTTOM_3D_FULL:
-				CurrentMovieWidth = width;
-				CurrentMovieHeight = height / 2;
-				break;
-
-			default:
-				CurrentMovieWidth = width;
-				CurrentMovieHeight = height;
-				break;
-		}
+		CurrentMovieWidth = width;
+		CurrentMovieHeight = height;
 
 		Cinema.MovieLoaded( CurrentMovieWidth, CurrentMovieHeight, MovieDuration );
 
@@ -797,7 +751,7 @@ bool SceneManager::Command( const char * msg )
 Matrix4f SceneManager::DrawEyeView( const int eye, const float fovDegrees )
 {
 	// allow stereo movies to also be played in mono
-	const int stereoEye = ForceMono ? 0 : eye;
+	//const int stereoEye = ForceMono ? 0 : eye;
 
 	if ( SceneInfo.UseDynamicProgram )
 	{
@@ -920,32 +874,19 @@ Matrix4f SceneManager::DrawEyeView( const int eye, const float fovDegrees )
 
 	Matrix4f texMatrix;
 
-	switch ( CurrentMovieFormat )
+	switch( MovieRotation )
 	{
-		case VT_LEFT_RIGHT_3D:
-		case VT_LEFT_RIGHT_3D_FULL:
-			texMatrix = ( stereoEye ? stretchRight : stretchLeft );
+		case 0 :
+			texMatrix = Matrix4f::Identity();
 			break;
-		case VT_TOP_BOTTOM_3D:
-		case VT_TOP_BOTTOM_3D_FULL:
-			texMatrix = ( stereoEye ? stretchBottom : stretchTop );
+		case 90 :
+			texMatrix = rotate90;
 			break;
-		default:
-			switch( MovieRotation )
-			{
-				case 0 :
-					texMatrix = Matrix4f::Identity();
-					break;
-				case 90 :
-					texMatrix = rotate90;
-					break;
-				case 180 :
-					texMatrix = rotate180;
-					break;
-				case 270 :
-					texMatrix = rotate270;
-					break;
-			}
+		case 180 :
+			texMatrix = rotate180;
+			break;
+		case 270 :
+			texMatrix = rotate270;
 			break;
 	}
 
@@ -1034,6 +975,7 @@ Matrix4f SceneManager::Frame( const VrFrame & vrFrame )
 		glActiveTexture( GL_TEXTURE0 );
 		MovieTexture->Update();
 		glBindTexture( GL_TEXTURE_EXTERNAL_OES, 0 );
+
 		if ( MovieTexture->nanoTimeStamp != MovieTextureTimestamp )
 		{
 			MovieTextureTimestamp = MovieTexture->nanoTimeStamp;
@@ -1047,14 +989,7 @@ Matrix4f SceneManager::Frame( const VrFrame & vrFrame )
 		FrameUpdateNeeded = false;
 		CurrentMipMappedMovieTexture = (CurrentMipMappedMovieTexture+1)%3;
 		glActiveTexture( GL_TEXTURE1 );
-		if ( CurrentMovieFormat == VT_LEFT_RIGHT_3D || CurrentMovieFormat == VT_LEFT_RIGHT_3D_FULL )
-		{
-			glBindTexture( GL_TEXTURE_2D, ScreenVignetteSbsTexture );
-		}
-		else
-		{
-			glBindTexture( GL_TEXTURE_2D, ScreenVignetteTexture );
-		}
+		glBindTexture( GL_TEXTURE_2D, ScreenVignetteTexture );
 		glActiveTexture( GL_TEXTURE0 );
 		glBindFramebuffer( GL_FRAMEBUFFER, MipMappedMovieFBOs[CurrentMipMappedMovieTexture] );
 		glDisable( GL_DEPTH_TEST );

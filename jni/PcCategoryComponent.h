@@ -12,12 +12,12 @@ LICENSE file in the Cinema/ directory. An additional grant
 of patent rights can be found in the PATENTS file in the same directory.
 
 *************************************************************************************/
-
-#include "VRMenu/VRMenuComponent.h"
-#include "MovieManager.h"
-
 #if !defined( MovieCategoryComponent_h )
 #define MovieCategoryComponent_h
+
+#include "VRMenu/VRMenuComponent.h"
+#include "PcManager.h"
+#include "SelectionView.h"
 
 using namespace OVR;
 
@@ -27,10 +27,10 @@ class MovieSelectionView;
 
 //==============================================================
 // MovieCategoryComponent
-class MovieCategoryComponent : public VRMenuComponent
+class PcCategoryComponent : public VRMenuComponent
 {
 public:
-							MovieCategoryComponent( MovieSelectionView *view, MovieCategory category );
+							PcCategoryComponent( SelectionView *view, PcCategory category );
 
 	static const Vector4f	HighlightColor;
 	static const Vector4f	FocusColor;
@@ -41,9 +41,9 @@ private:
 
 	bool					HasFocus;
 
-	MovieCategory			Category;
+	PcCategory				Category;
 
-    MovieSelectionView *	CallbackView;
+    SelectionView 		*	CallbackView;
 
 private:
     virtual eMsgStatus      OnEvent_Impl( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,

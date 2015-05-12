@@ -16,6 +16,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "CinemaApp.h"
 #include "Native.h"
 
+#include "Android/JniUtils.h"
 
 namespace VRMatterStreamTheater
 {
@@ -30,7 +31,7 @@ long Java_com_vrmatter_streamtheater_MainActivity_nativeSetAppInterface( JNIEnv 
 }
 
 void Java_com_vrmatter_streamtheater_MainActivity_nativeSetVideoSize( JNIEnv *jni, jclass clazz, jlong interfacePtr, int width, int height, int rotation, int duration ) {
-	LOG( "nativeSetVideoSizes: width=%i height=%i rotation=%i duration=%i", width, height, rotation, duration );
+	LOG( "nativeSetVideoSize: width=%i height=%i rotation=%i duration=%i", width, height, rotation, duration );
 
 	CinemaApp *cinema = ( CinemaApp * )( ( (App *)interfacePtr )->GetAppInterface() );
 	cinema->app->GetMessageQueue().PostPrintf( "video %i %i %i %i", width, height, rotation, duration );
@@ -53,6 +54,60 @@ jobject Java_com_vrmatter_streamtheater_MainActivity_nativePrepareNewVideo( JNIE
 	return texobj;
 }
 
+void Java_com_vrmatter_streamtheater_MainActivity_nativeDisplayMessage( JNIEnv *jni, jclass clazz, jlong interfacePtr, jstring text, int time, bool isError ) {}
+void Java_com_vrmatter_streamtheater_MainActivity_nativeAddPc( JNIEnv *jni, jclass clazz, jlong interfacePtr, jstring name, jstring uuid, int psi, jstring binding)
+{
+	CinemaApp *cinema = ( CinemaApp * )( ( (App *)interfacePtr )->GetAppInterface() );
+	JavaUTFChars utfName( jni, name );
+	JavaUTFChars utfUUID( jni, uuid );
+	JavaUTFChars utfBind( jni, binding );
+
+	Native::PairState ps = (Native::PairState) psi;
+	cinema->PcMgr.AddPc(utfName.ToStr(), utfUUID.ToStr(), ps, utfBind.ToStr());
+}
+void Java_com_vrmatter_streamtheater_MainActivity_nativeRemovePc( JNIEnv *jni, jclass clazz, jlong interfacePtr, jstring name)
+{
+	CinemaApp *cinema = ( CinemaApp * )( ( (App *)interfacePtr )->GetAppInterface() );
+	JavaUTFChars utfName( jni, name );
+	cinema->PcMgr.RemovePc(utfName.ToStr());
+}
+void Java_com_vrmatter_streamtheater_MainActivity_nativeAddApp( JNIEnv *jni, jclass clazz, jlong interfacePtr, jstring name, jstring posterfilename, int id)
+{
+	CinemaApp *cinema = ( CinemaApp * )( ( (App *)interfacePtr )->GetAppInterface() );
+	JavaUTFChars utfName( jni, name );
+	JavaUTFChars utfPosterFileName( jni, posterfilename );
+	cinema->AppMgr.AddApp(utfName.ToStr(), utfPosterFileName.ToStr(), id);
+}
+void Java_com_vrmatter_streamtheater_MainActivity_nativeRemoveApp( JNIEnv *jni, jclass clazz, jlong interfacePtr, int id)
+{
+	CinemaApp *cinema = ( CinemaApp * )( ( (App *)interfacePtr )->GetAppInterface() );
+	cinema->AppMgr.RemoveApp( id);
+}
+
+
+void Java_com_vrmatter_streamtheater_MainActivity_nativeShowPair( JNIEnv *jni, jclass clazz, jlong interfacePtr, jstring message )
+{
+	CinemaApp *cinema = ( CinemaApp * )( ( (App *)interfacePtr )->GetAppInterface() );
+	JavaUTFChars utfMessage( jni, message );
+	cinema->ShowPair(utfMessage.ToStr());
+}
+void Java_com_vrmatter_streamtheater_MainActivity_nativePairSuccess( JNIEnv *jni, jclass clazz, jlong interfacePtr )
+{
+	CinemaApp *cinema = ( CinemaApp * )( ( (App *)interfacePtr )->GetAppInterface() );
+	cinema->PairSuccess();
+}
+void Java_com_vrmatter_streamtheater_MainActivity_nativeShowError( JNIEnv *jni, jclass clazz, jlong interfacePtr, jstring message )
+{
+	CinemaApp *cinema = ( CinemaApp * )( ( (App *)interfacePtr )->GetAppInterface() );
+	JavaUTFChars utfMessage( jni, message );
+	cinema->ShowError(utfMessage.ToStr());
+}
+void Java_com_vrmatter_streamtheater_MainActivity_nativeClearError( JNIEnv *jni, jclass clazz, jlong interfacePtr )
+{
+	CinemaApp *cinema = ( CinemaApp * )( ( (App *)interfacePtr )->GetAppInterface() );
+	cinema->ClearError();
+}
+
 }	// extern "C"
 
 //==============================================================
@@ -60,19 +115,17 @@ jobject Java_com_vrmatter_streamtheater_MainActivity_nativePrepareNewVideo( JNIE
 // Java method ids
 static jmethodID 	getExternalCacheDirectoryMethodId = NULL;
 static jmethodID	createVideoThumbnailMethodId = NULL;
-static jmethodID	checkForMovieResumeId = NULL;
 static jmethodID 	isPlayingMethodId = NULL;
 static jmethodID 	isPlaybackFinishedMethodId = NULL;
 static jmethodID 	hadPlaybackErrorMethodId = NULL;
-static jmethodID	getPositionMethodId = NULL;
-static jmethodID	getDurationMethodId = NULL;
-static jmethodID	setPositionMethodId = NULL;
-static jmethodID 	seekDeltaMethodId = NULL;
 static jmethodID 	startMovieMethodId = NULL;
-static jmethodID 	pauseMovieMethodId = NULL;
-static jmethodID 	resumeMovieMethodId = NULL;
 static jmethodID 	stopMovieMethodId = NULL;
-static jmethodID 	togglePlayingMethodId = NULL;
+static jmethodID 	initPcSelectorMethodId = NULL;
+static jmethodID 	pairPcMethodId = NULL;
+static jmethodID 	getPcPairStateMethodId = NULL;
+static jmethodID 	getPcStateMethodId = NULL;
+static jmethodID 	getPcReachabilityMethodId = NULL;
+static jmethodID 	initAppSelectorMethodId = NULL;
 
 // Error checks and exits on failure
 static jmethodID GetMethodID( App *app, jclass cls, const char * name, const char * signature )
@@ -93,20 +146,18 @@ void Native::OneTimeInit( App *app, jclass mainActivityClass )
 	const double start = ovr_GetTimeInSeconds();
 
 	getExternalCacheDirectoryMethodId 	= GetMethodID( app, mainActivityClass, "getExternalCacheDirectory", "()Ljava/lang/String;" );
-	createVideoThumbnailMethodId 		= GetMethodID( app, mainActivityClass, "createVideoThumbnail", "(Ljava/lang/String;Ljava/lang/String;II)Z" );
-	checkForMovieResumeId 				= GetMethodID( app, mainActivityClass, "checkForMovieResume", "(Ljava/lang/String;)Z" );
+	createVideoThumbnailMethodId 		= GetMethodID( app, mainActivityClass, "createVideoThumbnail", "(Ljava/lang/String;ILjava/lang/String;II)Z" );
 	isPlayingMethodId 					= GetMethodID( app, mainActivityClass, "isPlaying", "()Z" );
 	isPlaybackFinishedMethodId			= GetMethodID( app, mainActivityClass, "isPlaybackFinished", "()Z" );
 	hadPlaybackErrorMethodId			= GetMethodID( app, mainActivityClass, "hadPlaybackError", "()Z" );
-	getPositionMethodId 				= GetMethodID( app, mainActivityClass, "getPosition", "()I" );
-	getDurationMethodId 				= GetMethodID( app, mainActivityClass, "getDuration", "()I" );
-	setPositionMethodId 				= GetMethodID( app, mainActivityClass, "setPosition", "(I)V" );
-	seekDeltaMethodId					= GetMethodID( app, mainActivityClass, "seekDelta", "(I)V" );
-	startMovieMethodId 					= GetMethodID( app, mainActivityClass, "startMovie", "(Ljava/lang/String;ZZZ)V" );
-	pauseMovieMethodId 					= GetMethodID( app, mainActivityClass, "pauseMovie", "()V" );
-	resumeMovieMethodId 				= GetMethodID( app, mainActivityClass, "resumeMovie", "()V" );
+	startMovieMethodId 					= GetMethodID( app, mainActivityClass, "startMovie", "(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)V" );
 	stopMovieMethodId 					= GetMethodID( app, mainActivityClass, "stopMovie", "()V" );
-	togglePlayingMethodId 				= GetMethodID( app, mainActivityClass, "togglePlaying", "()Z" );
+	initPcSelectorMethodId 				= GetMethodID( app, mainActivityClass, "initPcSelector", "()V" );
+	pairPcMethodId 						= GetMethodID( app, mainActivityClass, "pairPc", "(Ljava/lang/String;)V" );
+	getPcPairStateMethodId 				= GetMethodID( app, mainActivityClass, "getPcPairState", "(Ljava/lang/String;)I" );
+	getPcStateMethodId 					= GetMethodID( app, mainActivityClass, "getPcState", "(Ljava/lang/String;)I" );
+	getPcReachabilityMethodId 			= GetMethodID( app, mainActivityClass, "getPcReachability", "(Ljava/lang/String;)I" );
+	initAppSelectorMethodId 			= GetMethodID( app, mainActivityClass, "initAppSelector", "(Ljava/lang/String;)V" );
 
 	LOG( "Native::OneTimeInit: %3.1f seconds", ovr_GetTimeInSeconds() - start );
 }
@@ -129,32 +180,17 @@ String Native::GetExternalCacheDirectory( App *app )
 	return externalCacheDirectory;
 }
 
-bool Native::CreateVideoThumbnail( App *app, const char *videoFilePath, const char *outputFilePath, const int width, const int height )
+bool Native::CreateVideoThumbnail( App *app, const char *uuid, int appId, const char *outputFilePath, const int width, const int height )
 {
-	LOG( "CreateVideoThumbnail( %s, %s )", videoFilePath, outputFilePath );
+	LOG( "CreateVideoThumbnail( %s, %i, %s )", uuid, appId, outputFilePath );
 
-	jstring jstrVideoFilePath = app->GetVrJni()->NewStringUTF( videoFilePath );
+	jstring jstrUUID = app->GetVrJni()->NewStringUTF( uuid );
 	jstring jstrOutputFilePath = app->GetVrJni()->NewStringUTF( outputFilePath );
 
-	jboolean result = app->GetVrJni()->CallBooleanMethod( app->GetJavaObject(), createVideoThumbnailMethodId, jstrVideoFilePath, jstrOutputFilePath, width, height );
-
-	app->GetVrJni()->DeleteLocalRef( jstrVideoFilePath );
+	jboolean result = app->GetVrJni()->CallBooleanMethod( app->GetJavaObject(), createVideoThumbnailMethodId, jstrUUID, appId, jstrOutputFilePath, width, height );
+	LOG( "Done creating thumbnail!");
+	app->GetVrJni()->DeleteLocalRef( jstrUUID );
 	app->GetVrJni()->DeleteLocalRef( jstrOutputFilePath );
-
-	LOG( "CreateVideoThumbnail( %s, %s )", videoFilePath, outputFilePath );
-
-	return result;
-}
-
-bool Native::CheckForMovieResume( App *app, const char * movieName )
-{
-	LOG( "CheckForMovieResume( %s )", movieName );
-
-	jstring jstrMovieName = app->GetVrJni()->NewStringUTF( movieName );
-
-	jboolean result = app->GetVrJni()->CallBooleanMethod( app->GetJavaObject(), checkForMovieResumeId, jstrMovieName );
-
-	app->GetVrJni()->DeleteLocalRef( jstrMovieName );
 
 	return result;
 }
@@ -177,51 +213,19 @@ bool Native::HadPlaybackError( App *app )
 	return ( result != 0 );
 }
 
-int Native::GetPosition( App *app )
+void Native::StartMovie( App *app, const char * uuid, const char * appName, int id, const char * binder )
 {
-	LOG( "GetPosition()" );
-	return app->GetVrJni()->CallIntMethod( app->GetJavaObject(), getPositionMethodId );
-}
+	LOG( "StartMovie( %s )", appName );
 
-int Native::GetDuration( App *app )
-{
-	LOG( "GetDuration()" );
-	return app->GetVrJni()->CallIntMethod( app->GetJavaObject(), getDurationMethodId );
-}
+	jstring jstrUUID = app->GetVrJni()->NewStringUTF( uuid );
+	jstring jstrAppName = app->GetVrJni()->NewStringUTF( appName );
+	jstring jstrBinder = app->GetVrJni()->NewStringUTF( binder );
 
-void Native::SetPosition( App *app, int positionMS )
-{
-	LOG( "SetPosition()" );
-	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), setPositionMethodId, positionMS );
-}
+	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), startMovieMethodId, jstrUUID, jstrAppName, id, jstrBinder );
 
-void Native::SeekDelta( App *app, int deltaMS )
-{
-	LOG( "SeekDelta()" );
-	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), seekDeltaMethodId, deltaMS );
-}
-
-void Native::StartMovie( App *app, const char * movieName, bool resumePlayback, bool isEncrypted, bool loop )
-{
-	LOG( "StartMovie( %s )", movieName );
-
-	jstring jstrMovieName = app->GetVrJni()->NewStringUTF( movieName );
-
-	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), startMovieMethodId, jstrMovieName, resumePlayback, isEncrypted, loop );
-
-	app->GetVrJni()->DeleteLocalRef( jstrMovieName );
-}
-
-void Native::PauseMovie( App *app )
-{
-	LOG( "PauseMovie()" );
-	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), pauseMovieMethodId );
-}
-
-void Native::ResumeMovie( App *app )
-{
-	LOG( "ResumeMovie()" );
-	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), resumeMovieMethodId );
+	app->GetVrJni()->DeleteLocalRef( jstrUUID );
+	app->GetVrJni()->DeleteLocalRef( jstrAppName );
+	app->GetVrJni()->DeleteLocalRef( jstrBinder );
 }
 
 void Native::StopMovie( App *app )
@@ -230,10 +234,34 @@ void Native::StopMovie( App *app )
 	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), stopMovieMethodId );
 }
 
-bool Native::TogglePlaying( App *app )
+void Native::InitPcSelector( App *app )
 {
-	LOG( "TogglePlaying()" );
-	return app->GetVrJni()->CallBooleanMethod( app->GetJavaObject(), togglePlayingMethodId );
+	LOG( "InitPcSelector()" );
+	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), initPcSelectorMethodId );
+}
+
+void Native::InitAppSelector( App *app, const char* uuid)
+{
+	LOG( "InitAppSelector()" );
+
+	jstring jstrUUID = app->GetVrJni()->NewStringUTF( uuid );
+	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), initAppSelectorMethodId, jstrUUID );
+}
+
+Native::PairState Native::GetPairState( App *app, const char* uuid)
+{
+	LOG( "GetPairState()" );
+
+	jstring jstrUUID = app->GetVrJni()->NewStringUTF( uuid );
+	return (PairState)app->GetVrJni()->CallIntMethod( app->GetJavaObject(), getPcPairStateMethodId, jstrUUID );
+}
+
+void Native::Pair( App *app, const char* uuid)
+{
+	LOG( "Pair()" );
+
+	jstring jstrUUID = app->GetVrJni()->NewStringUTF( uuid );
+	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), pairPcMethodId, jstrUUID );
 }
 
 } // namespace VRMatterStreamTheater

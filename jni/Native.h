@@ -15,6 +15,9 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 #if !defined( Native_h )
 #define Native_h
+#include "App.h"
+
+using namespace OVR;
 
 namespace VRMatterStreamTheater {
 
@@ -24,23 +27,40 @@ public:
 	static void			OneTimeShutdown();
 
 	static String		GetExternalCacheDirectory( App *app );  	// returns path to app specific writable directory
-	static bool 		CreateVideoThumbnail( App *app, const char *videoFilePath, const char *outputFilePath, const int width, const int height );
-	static bool			CheckForMovieResume( App *app, const char * movieName );
+	static bool 		CreateVideoThumbnail( App *app, const char *uuid, int appId, const char *outputFilePath, const int width, const int height );
 
 	static bool			IsPlaying( App *app );
 	static bool 		IsPlaybackFinished( App *app );
 	static bool 		HadPlaybackError( App *app );
 
-	static int 			GetPosition( App *app );
-	static int 			GetDuration( App *app );
-	static void 		SetPosition( App *app, int positionMS );
-	static void 		SeekDelta( App *app, int deltaMS );
 
-	static void 		StartMovie( App *app, const char * movieName, bool resumePlayback, bool isEncrypted, bool loop );
-	static void 		PauseMovie( App *app );
-	static void 		ResumeMovie( App *app );
+	static void 		StartMovie( App *app, const char * uuid, const char * appName, int id, const char * binder );
 	static void 		StopMovie( App *app );
-	static bool			TogglePlaying( App *app );
+
+	enum PairState {
+		NOT_PAIRED = 0,
+		PAIRED,
+		PIN_WRONG,
+		FAILED
+	};
+
+    enum CompState {
+		ONLINE = 0,
+		OFFLINE,
+		UNKNOWN_STATE
+    };
+
+    enum Reachability {
+    	LOCAL = 0,
+    	REMOTE,
+    	RS_OFFLINE,
+    	UNKNOWN_REACH
+    };
+
+    static void			InitPcSelector( App *app );
+    static void			InitAppSelector( App *app, const char* uuid);
+    static PairState	GetPairState( App *app, const char* uuid);
+    static void			Pair( App *app, const char* uuid);
 };
 
 } // namespace VRMatterStreamTheater

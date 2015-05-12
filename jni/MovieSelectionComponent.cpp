@@ -15,13 +15,13 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 #include "MovieSelectionComponent.h"
 #include "Input.h"
-#include "MovieSelectionView.h"
+#include "SelectionView.h"
 
 namespace VRMatterStreamTheater {
 
 //==============================
 //  MovieSelectionComponent::
-MovieSelectionComponent::MovieSelectionComponent( MovieSelectionView *view ) :
+MovieSelectionComponent::MovieSelectionComponent( SelectionView *view ) :
 	VRMenuComponent( VRMenuEventFlags_t( VRMENU_EVENT_FRAME_UPDATE ) |
 		VRMENU_EVENT_TOUCH_DOWN |
 		VRMENU_EVENT_TOUCH_UP |
@@ -52,7 +52,7 @@ eMsgStatus MovieSelectionComponent::OnEvent_Impl( App * app, VrFrame const & vrF
         	if ( !( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) )
 			{
         		Sound.PlaySound( app, "touch_up", 0.1 );
-        		CallbackView->SelectMovie();
+        		CallbackView->Select();
         		return MSG_STATUS_CONSUMED;
         	}
             return MSG_STATUS_ALIVE;

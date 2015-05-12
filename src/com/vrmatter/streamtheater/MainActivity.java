@@ -17,8 +17,6 @@ package com.vrmatter.streamtheater;
 import java.io.File;
 import java.io.IOException;
 import java.io.FileOutputStream;
-import java.lang.IllegalStateException;
-import java.lang.IllegalArgumentException;
 import java.lang.System;
 
 import android.content.SharedPreferences.Editor;
@@ -26,23 +24,25 @@ import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
 import android.graphics.Matrix;
 import android.media.MediaMetadataRetriever;
-import android.media.MediaPlayer;
-import android.media.MediaPlayer.OnCompletionListener;
-import android.media.MediaPlayer.OnSeekCompleteListener;
-import android.media.ThumbnailUtils;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.content.Context;
 import android.media.AudioManager;
+
+import com.limelight.StreamInterface;
 import com.oculusvr.vrlib.VrActivity;
 import com.oculusvr.vrlib.VrLib;
 import android.content.Intent;
 
+import com.limelight.PcSelector;
+import com.limelight.AppSelector;
+import com.limelight.nvstream.http.ComputerDetails;
+import com.vrmatter.streamtheater.ModifiableSurfaceHolder;
+
+
 public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
-		MediaPlayer.OnVideoSizeChangedListener, 
 		AudioManager.OnAudioFocusChangeListener		
 {
 	public static final String TAG = "Cinema";
@@ -54,14 +54,25 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		System.loadLibrary( "cinema" );
 	}
 	
-	public static native void 			nativeSetVideoSize( long appPtr, int width, int height, int rotation, int duration );
+	public static native void               nativeSetVideoSize( long appPtr, int width, int height, int rotation, int duration );
 	public static native SurfaceTexture nativePrepareNewVideo( long appPtr );
 	public static native long nativeSetAppInterface( VrActivity act, String fromPackageNameString, String commandString, String uriString );
+	
+	public static native void nativeDisplayMessage(long appPtr, String text, int time, boolean isError );
+	public static native void nativeAddPc(long appPtr, String name, String uuid, int pairState, String binding );
+	public static native void nativeRemovePc(long appPtr, String name );
+	public static native void nativeAddApp(long appPtr, String name, String posterFileName, int id );
+	public static native void nativeRemoveApp(long appPtr, int id );
+	public static native void nativeShowPair(long appPtr, String message );
+	public static native void nativePairSuccess(long appPtr );
+	public static native void nativeShowError(long appPtr, String message );
+	public static native void nativeClearError(long appPtr );
+	
 
 	public static final int MinimumRemainingResumeTime = 60000;	// 1 minute
 	public static final int MinimumSeekTimeForResume = 60000;	// 1 minute
 
-	String 				currentMovieFilename;
+	public String 				currentAppName;
 	
 	boolean				playbackFinished = true;
 	boolean				playbackFailed = false;
@@ -74,8 +85,11 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 	SurfaceTexture 		movieTexture = null;
 	Surface 			movieSurface = null;
 
-	MediaPlayer 		mediaPlayer = null;
+	StreamInterface 	streamInterface = null;
 	AudioManager 		audioManager = null;
+	
+	public PcSelector	pcSelector = null;
+	public AppSelector	appSelector = null;
 
 	@Override
 	protected void onCreate( Bundle savedInstanceState ) 
@@ -106,7 +120,7 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 	{
 		Log.d( TAG, "onPause()" );
 		
-		pauseMovie();
+//		pauseMovie();
 
 		super.onPause();
 	}
@@ -174,12 +188,13 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		return 0;
 	}
 	
-	public void onVideoSizeChanged( MediaPlayer mp, int width, int height ) 
+	public void onVideoSizeChanged( int width, int height ) 
 	{
 		Log.v( TAG, String.format( "onVideoSizeChanged: %dx%d", width, height ) );
-		int rotation = getRotationFromMetadata( currentMovieFilename );
-		int duration = getDuration();
-		nativeSetVideoSize( appPtr, width, height, rotation, duration );
+		//int rotation = getRotationFromMetadata( currentAppName );
+
+		nativeSetVideoSize( appPtr, width, height, 0, 0 );
+
 	}
 
 	private void requestAudioFocus()
@@ -202,55 +217,8 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		audioManager.abandonAudioFocus( this );
 	}
 
-	/*
-	 * Whenever we pause or switch to another movie, save the current movie
-	 * position so we will return there when the same file is viewed again.
-	 */
-	private void saveCurrentMovieLocation() 
-	{
-		Log.d(TAG, "saveCurrentMovieLocation()" );
-		if ( mediaPlayer == null ) 
-		{
-			return;
-		}
-		if ( currentMovieFilename.length() < 1 ) 
-		{
-			return;
-		}
-
-		int duration = 0;
-		int currentPos = 0;
-		
-		try
-		{
-			duration = mediaPlayer.getDuration();
-			currentPos = mediaPlayer.getCurrentPosition();
-		}
-		
-		catch( IllegalStateException ise )
-    	{
-    		// Can be thrown by the media player if state changes while we're being
-    		// queued for execution on the main thread
-			Log.d( TAG, "saveCurrentMovieLocation(): Caught IllegalStateException" );
-    	}
-
-		if ( playbackFinished )
-		{
-			currentPos = 0;
-		}
-		
-		// Save the current movie now that it was successfully started
-		Editor edit = getPreferences( MODE_PRIVATE ).edit();
-		Log.d(TAG, "set resume point: " + currentMovieFilename );
-		Log.d(TAG, "pos: " + currentPos );
-		Log.d(TAG, "len: " + duration );
-		edit.putInt( currentMovieFilename + "_pos",	currentPos );
-		edit.putInt( currentMovieFilename + "_len",	duration );
-		edit.commit();
-	}
-
 	private String fileNameFromPathName( String pathname ) 
-	{
+	{ //TODO: No longer applicable since we have app names, not files
 		File f = new File( pathname );
 		return f.getName();
 	}
@@ -258,8 +226,8 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 	private void Fail( final String message )
 	{
 		Log.e(TAG, message );
-		mediaPlayer.release();
-		mediaPlayer = null;
+		streamInterface.connectionTerminated(new Exception(message));
+		streamInterface = null;
 		playbackFinished = true;
 		playbackFailed = true;
 		releaseAudioFocus();		
@@ -276,10 +244,13 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		return getExternalCacheDir().getAbsolutePath();
 	}
 	
-	public boolean createVideoThumbnail( final String videoFilePath, final String outputFilePath, final int width, final int height )
+	public boolean createVideoThumbnail( final String compUUID, final int appId, final String outputFilePath, final int width, final int height )
 	{
-		Log.e( TAG, "Create video thumbnail: " + videoFilePath + "\noutput path: " + outputFilePath );
-		Bitmap bmp = ThumbnailUtils.createVideoThumbnail( videoFilePath,  MediaStore.Images.Thumbnails.MINI_KIND );
+		Log.e( TAG, "Create thumbnail output path: " + outputFilePath );
+		
+		ComputerDetails comp = pcSelector.findByUUID(compUUID);
+		Bitmap bmp = appSelector.createAppPoster(comp, appId);
+		
 		if ( bmp == null )
 		{
 			return false;
@@ -333,10 +304,13 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		try 
 		{
 			int sep = outputFilePath.lastIndexOf( '/' );
-			File directory = new File( outputFilePath.substring( 0, sep ) );
-			if ( directory.mkdirs() )
+			if(sep>0)
 			{
-				Log.d(TAG, "Created directory: " + directory );
+				File directory = new File( outputFilePath.substring( 0, sep ) );
+				if ( directory.mkdirs() )
+				{
+					Log.d(TAG, "Created directory: " + directory );
+				}
 			}
 		    out = new FileOutputStream( outputFilePath );
 		    bmp.compress( Bitmap.CompressFormat.PNG, 100, out );
@@ -369,66 +343,17 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		{
 			Log.e( TAG, "Wrote " + outputFilePath );
 		}
+		Log.e( TAG, "Done!");
 		
 		return !failed;
 	}
 
-	public boolean checkForMovieResume( final String pathName ) 
-	{
-		Log.d( TAG, "checkForMovieResume: " + pathName );
-
-		try
-		{
-			final int seekPos = getPreferences( MODE_PRIVATE ).getInt( pathName + "_pos", 0 );
-			final int duration = getPreferences( MODE_PRIVATE ).getInt( pathName + "_len", -1 );
-		
-			Log.d(TAG, "Saved Location: " + seekPos );
-			Log.d(TAG, "Saved duration: " + duration );
-			
-			if ( seekPos < MinimumSeekTimeForResume )
-			{
-				Log.d(TAG, "below minimum.  Restart movie." );
-				return false;
-			}
-			
-			// early versions didn't save a duration, so if we don't have one, it's ok to resume
-			if ( duration == -1 )
-			{
-				Log.d(TAG, "No duration.  Resume movie." );
-				return true;
-			}
-			
-			if ( seekPos > ( duration - MinimumRemainingResumeTime ) )
-			{
-				Log.d(TAG, "Past maximum.  Restart movie." );
-				return false;
-			}
-			
-			Log.d(TAG, "Resume movie." );		
-			return true;
-		}
-		
-		catch ( IllegalStateException t )
-		{
-			Log.e( TAG, "checkForMovieResume caught exception: " + t.getMessage() );
-			return false;
-		}
-	}
-
 	public boolean isPlaying()
 	{
-		if ( mediaPlayer != null ) 
+		if ( streamInterface != null ) 
 		{
-			try
-			{
-				return mediaPlayer.isPlaying();
-			}
-			
-			catch ( IllegalStateException t )
-			{
-				Log.e(TAG, "isPlaying() caught illegalStateException" );
-				return false;
-			}
+			return streamInterface.isConnected();
+
 		}
 		return false;
 	}
@@ -443,151 +368,7 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		return playbackFailed;
 	}
 	
-	public int getPosition()
-	{
-		if ( mediaPlayer != null ) 
-		{
-			try
-			{
-				return mediaPlayer.getCurrentPosition();
-			}
-			catch( IllegalStateException ise )
-        	{
-        		// Can be thrown by the media player if state changes while we're being
-        		// queued for execution on the main thread
-				Log.d( TAG, "getPosition(): Caught illegalStateException" );
-				return 0;
-        	}
-		}
-		return 0;	
-	}
-	
-	public int getDuration()
-	{
-		if ( mediaPlayer != null ) 
-		{
-			try
-			{
-				return mediaPlayer.getDuration();
-			}
-			catch( IllegalStateException ise )
-        	{
-        		// Can be thrown by the media player if state changes while we're being
-        		// queued for execution on the main thread
-				Log.d( TAG, "getDuration(): Caught illegalStateException" );
-				return 0;
-        	}
-		}
-		return 0;	
-	}
-
-	public void setPosition( int positionMilliseconds )
-	{
-		try
-		{
-			if ( mediaPlayer != null ) 
-			{
-				boolean wasPlaying = isPlaying();
-				if ( wasPlaying ) 
-				{
-					mediaPlayer.pause();
-				}
-				int duration = mediaPlayer.getDuration();
-				int newPosition = positionMilliseconds;
-				if ( newPosition >= duration ) 
-				{
-					// pause if seeking past end
-					Log.d( TAG, "seek past end" );
-					mediaPlayer.seekTo( duration );
-					return;
-				}
-				if ( newPosition < 0 ) 
-				{
-					newPosition = 0;
-				}
-				
-				if ( waitingForSeek )
-				{
-					haveSeekWaiting = true;
-					nextSeekPosition = newPosition;
-				}
-				else
-				{
-					waitingForSeek = true;
-					Log.d(TAG, "seek started");
-					mediaPlayer.seekTo( newPosition );
-				}
-	
-				if ( wasPlaying ) 
-				{
-					mediaPlayer.start();
-				}
-			}
-		}
-
-		catch( IllegalStateException ise )
-		{
-			// Can be thrown by the media player if state changes while we're being
-			// queued for execution on the main thread
-			Log.d( TAG, "setPosition(): Caught illegalStateException" );
-		}
-	}
-	
-	public void seekDelta( int deltaMilliseconds ) 
-	{
-		try
-		{
-			if ( mediaPlayer != null ) 
-			{
-				boolean wasPlaying = isPlaying();
-				if ( wasPlaying ) 
-				{
-					mediaPlayer.pause();
-				}
-				
-				int position = mediaPlayer.getCurrentPosition();
-				int duration = mediaPlayer.getDuration();
-				int newPosition = position + deltaMilliseconds;
-				if ( newPosition >= duration ) 
-				{
-					// pause if seeking past end
-					Log.d( TAG, "seek past end" );
-					mediaPlayer.seekTo( duration );
-					return;
-				}
-				if ( newPosition < 0 ) 
-				{
-					newPosition = 0;
-				}
-				
-				if ( waitingForSeek )
-				{
-					haveSeekWaiting = true;
-					nextSeekPosition = newPosition;
-				}
-				else
-				{
-					waitingForSeek = true;
-					Log.d( TAG, "seek started" );
-					mediaPlayer.seekTo( newPosition );
-				}
-	
-				if ( wasPlaying ) 
-				{
-					mediaPlayer.start();
-				}
-			}
-		}
-		
-		catch( IllegalStateException ise )
-    	{
-    		// Can be thrown by the media player if state changes while we're being
-    		// queued for execution on the main thread
-			Log.d( TAG, "seekDelta(): Caught illegalStateException" );
-    	}
-	}
-
-	public void startMovie( final String pathName, final boolean resumePlayback, final boolean isEncrypted, final boolean loop ) 
+	public void startMovie( final String uuid, final String appName, final int appId, final String binder ) 
 	{
 		// set playbackFinished and playbackFailed to false immediately so it's set when we return to native
 		playbackFinished = false;
@@ -598,14 +379,14 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		 @Override
     		public void run()
     		{
-			 	startMovieLocal( pathName, resumePlayback, isEncrypted, loop );
+			 	startMovieLocal( uuid, appName, appId, binder );
     		}
     	} );
 	}
 	
-	private void startMovieLocal( final String pathName, final boolean resumePlayback, boolean isEncrypted, final boolean loop ) 
+	private void startMovieLocal( final String uuid, final String appName, int appId, final String binder ) 
 	{
-		Log.v(TAG, "startMovie " + pathName + " resume " + resumePlayback );
+		Log.v(TAG, "startMovie " + appName + " on " + uuid );
 		
 		synchronized( this ) 
 		{
@@ -618,7 +399,7 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 			haveSeekWaiting = false;
 			nextSeekPosition = 0;		
 	
-			currentMovieFilename = pathName;
+			currentAppName = appName;
 			
 			// Have native code pause any playing movie,
 			// allocate a new external texture,
@@ -626,176 +407,35 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 			movieTexture = nativePrepareNewVideo( appPtr );
 			movieSurface = new Surface( movieTexture );
 	
-			if (mediaPlayer != null) 
+			if (streamInterface != null) 
 			{
-				mediaPlayer.release();
+				streamInterface.stop();
+				streamInterface = null;
 			}
 	
-			Log.v( TAG, "MediaPlayer.create" );
+			Log.v( TAG, "StreamInterface creating!" );
 	
-			mediaPlayer = new MediaPlayer();
-			mediaPlayer.setOnVideoSizeChangedListener( this );
-			mediaPlayer.setSurface( movieSurface );
 	
-			try 
-			{
-				Log.v(TAG, "mediaPlayer.setDataSource()");
-				mediaPlayer.setDataSource(currentMovieFilename);
-			} 
+			ModifiableSurfaceHolder surfaceHolder = new ModifiableSurfaceHolder();
 			
-			catch ( IOException t ) 
-			{
-				Fail( "mediaPlayer.setDataSource threw IOException" );
-				return;
-			}
+			surfaceHolder.setSurface(movieSurface);
 			
-			catch ( IllegalStateException t )
-			{
-				Fail( "mediaPlayer.setDataSource threw illegalStateException" );
-				return;
-			}
-	
-			catch ( IllegalArgumentException t ) 
-			{
-				Fail( "mediaPlayer.setDataSource threw IllegalArgumentException" );
-				return;
-			}
-	
-			try 
-			{
-				Log.v(TAG, "mediaPlayer.prepare");
-				mediaPlayer.prepare();
-			} 
+			streamInterface = new StreamInterface(this, uuid, currentAppName, appId, binder, surfaceHolder );
 			
-			catch( IOException t ) 
-			{
-				Fail( "mediaPlayer.prepare threw IOException" );
-				return;
-			}
+			streamInterface.surfaceCreated(surfaceHolder);
 			
-			catch ( IllegalStateException t )
-			{
-				Fail( "mediaPlayer.prepare threw illegalStateException" );
-				return;
-			}
-		
-			// ensure we're at max volume
-			mediaPlayer.setVolume( 1.0f, 1.0f );
-			
-			Log.v( TAG, "mediaPlayer.start" );
-	
-			// If this movie has a saved position, seek there before starting
-			Log.d( TAG, "checkForMovieResume: " + currentMovieFilename );
-			final int seekPos = getPreferences( MODE_PRIVATE ).getInt( currentMovieFilename + "_pos", 0 );
-			Log.v( TAG, "seekPos = " + seekPos );
-			Log.v( TAG, "resumePlayback = " + resumePlayback );
-			
-			try
-			{
-				if ( resumePlayback && ( seekPos > 0 ) ) 
-				{
-					Log.v( TAG, "resuming at saved location" );
-					mediaPlayer.seekTo( seekPos );
-				}
-				else
-				{
-					// start at beginning
-					Log.v( TAG, "start at beginning" );
-					mediaPlayer.seekTo( 0 );
-				}
-			}
-			
-			catch ( IllegalStateException t )
-			{
-				Fail( "mediaPlayer.seekTo threw illegalStateException" );
-				return;
-			}
-	
-			mediaPlayer.setLooping( loop );
-			mediaPlayer.setOnCompletionListener( new OnCompletionListener() 
-			{
-	        	public void onCompletion( MediaPlayer mp )
-	        	{
-	        		Log.v(TAG, "mediaPlayer.onCompletion" );
-	        		playbackFinished = true;
-	        		saveCurrentMovieLocation();
-	        		releaseAudioFocus();
-	        	}        			
-	        });
-			
-			mediaPlayer.setOnSeekCompleteListener( new OnSeekCompleteListener() 
-			{
-	        	public void onSeekComplete( MediaPlayer mp )
-	        	{
-	        		if ( haveSeekWaiting )
-	        		{
-	        			mediaPlayer.seekTo( nextSeekPosition );
-	        			haveSeekWaiting = false;
-	        		}
-	        		else
-	        		{
-	        			waitingForSeek = false;
-	        		}
-	        	}        			
-	        });
-			
-			try
-			{
-				mediaPlayer.start();
-			}
-	
-			catch ( IllegalStateException t )
-			{
-				Fail( "mediaPlayer.start threw illegalStateException" );
-			}
-	
+			// Manually poke this - originally the movie player would call it
+			onVideoSizeChanged(1280,720);
+
 			// Save the current movie now that it was successfully started
 			Editor edit = getPreferences( MODE_PRIVATE ).edit();
-			edit.putString( "currentMovie", currentMovieFilename );
+			edit.putString( "currentMovie", currentAppName );
 			edit.commit();
 		}
 		
 		Log.v( TAG, "exiting startMovie" );
 	}
 
-	public void pauseMovie() 
-	{
-		Log.d( TAG, "pauseMovie()" );
-		if ( mediaPlayer != null ) 
-		{
-			if ( isPlaying() )
-			{
-				saveCurrentMovieLocation();
-			}
-			
-			try
-			{
-				mediaPlayer.pause();
-			}
-			
-			catch ( IllegalStateException t )
-			{
-				Log.e(TAG, "pauseMovie() caught illegalStateException" );
-			}			
-		}
-	}
-
-	public void resumeMovie() 
-	{
-		Log.d(TAG, "resumeMovie()" );
-		if ( mediaPlayer != null ) 
-		{
-			try
-			{
-				mediaPlayer.start();
-			}
-
-			catch ( IllegalStateException t )
-			{
-				Log.e( TAG, "resumeMovie() caught illegalStateException" );
-			}
-		}
-	}
 
 	public void stopMovie()
 	{
@@ -803,26 +443,10 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		
 		synchronized (this) 
 		{
-			if ( mediaPlayer != null ) 
+			if ( streamInterface != null ) 
 			{
-				// don't save location if not playing
-				if ( isPlaying() )
-				{
-					saveCurrentMovieLocation();
-				}
-				
-				try
-				{
-					mediaPlayer.stop();
-				}
-				
-				catch ( IllegalStateException t )
-				{
-					Log.e( TAG, "mediaPlayer.stop threw illegalStateException" );
-				}
-	
-				mediaPlayer.release();
-				mediaPlayer = null;
+				streamInterface.stop();
+				streamInterface = null;
 			}
 			releaseAudioFocus();
 			
@@ -831,29 +455,51 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		}
 	}
 
-	public boolean togglePlaying()
+/*
+ *	Functions for PC selection
+ */
+	public void initPcSelector()
 	{
-		boolean result = false;
-		
-		Log.d( TAG,  "MainActivity.togglePlaying()" );
-		if ( mediaPlayer != null ) 
-		{
-			if ( isPlaying() ) 
-			{
-				pauseMovie();
-				result = false;
-			}
-			else 
-			{
-				resumeMovie();
-				result = true;
-			}
-		}
-		else
-		{
-			Log.d( TAG, "mediaPlayer == null" );
-		}
-		
-		return result;
+		if(pcSelector != null) return;		
+		pcSelector = new PcSelector(this);
 	}
+	
+	public void pairPc(final String compUUID)
+	{
+		pcSelector.pairWithUUID(compUUID);
+	}
+	
+	public int getPcPairState(final String compUUID)
+	{
+		return pcSelector.pairStateFromUUID(compUUID);
+	}
+		
+	public int getPcState(final String compUUID)
+	{
+		return pcSelector.stateFromUUID(compUUID);
+	}
+	
+	public int getPcReachability(final String compUUID)
+	{
+		return pcSelector.reachabilityStateFromUUID(compUUID);
+	}
+
+	/*
+	 *	Functions for App selection
+	 */
+	public void initAppSelector(final String computerUUID)
+	{
+		appSelector = new AppSelector(this, computerUUID);
+	}
+	
 }
+
+
+
+
+
+
+
+
+
+

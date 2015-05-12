@@ -1,5 +1,7 @@
 package com.limelight.preferences;
 
+import com.vrmatter.streamtheater.R;
+
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
@@ -9,8 +11,7 @@ import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 
-import com.limelight.PcView;
-import com.limelight.R;
+import com.limelight.PcSelector;
 import com.limelight.utils.UiHelper;
 
 import java.util.Locale;
@@ -27,10 +28,10 @@ public class StreamSettings extends Activity {
             getResources().updateConfiguration(config, getResources().getDisplayMetrics());
         }
 
-        setContentView(R.layout.activity_stream_settings);
-        getFragmentManager().beginTransaction().replace(
-                R.id.stream_settings, new SettingsFragment()
-        ).commit();
+//        setContentView(R.layout.activity_stream_settings);
+//        getFragmentManager().beginTransaction().replace(
+//                R.id.stream_settings, new SettingsFragment()
+//        ).commit();
 
         UiHelper.notifyNewRootView(this);
     }
@@ -40,7 +41,7 @@ public class StreamSettings extends Activity {
         finish();
 
         // Restart the PC view to apply UI changes
-        Intent intent = new Intent(this, PcView.class);
+        Intent intent = new Intent(this, PcSelector.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent, null);
     }

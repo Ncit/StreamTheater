@@ -1,6 +1,6 @@
 /************************************************************************************
 
-Filename    :   MovieSelectionView.cpp
+Filename    :   PcSelectionView.cpp
 Content     :
 Created     :	6/19/2014
 Authors     :   Jim Dosé
@@ -16,10 +16,10 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include <android/keycodes.h>
 #include "LibOVR/Src/Kernel/OVR_String_Utils.h"
 #include "App.h"
-#include "MovieSelectionView.h"
+#include "PcSelectionView.h"
 #include "CinemaApp.h"
 #include "VRMenu/VRMenuMgr.h"
-#include "MovieCategoryComponent.h"
+#include "PcCategoryComponent.h"
 #include "MoviePosterComponent.h"
 #include "MovieSelectionComponent.h"
 #include "SwipeHintComponent.h"
@@ -42,8 +42,8 @@ static const int NumSwipeTrails = 3;
 
 //=======================================================================================
 
-MovieSelectionView::MovieSelectionView( CinemaApp &cinema ) :
-	View( "MovieSelectionView" ),
+PcSelectionView::PcSelectionView( CinemaApp &cinema ) :
+	SelectionView( "PcSelectionView" ),
 	Cinema( cinema ),
     SelectionTexture(),
     Is3DIconTexture(),
@@ -83,7 +83,7 @@ MovieSelectionView::MovieSelectionView( CinemaApp &cinema ) :
 	MoviePanelPositions(),
     MoviePosterComponents(),
     Categories(),
-    CurrentCategory( CATEGORY_TRAILERS ),
+    CurrentCategory( CATEGORY_LIMELIGHT ),
 	MovieList(),
 	MoviesIndex( 0 ),
 	LastMovieDisplayed( NULL ),
@@ -95,30 +95,32 @@ MovieSelectionView::MovieSelectionView( CinemaApp &cinema ) :
 	// properly yet.
 }
 
-MovieSelectionView::~MovieSelectionView()
+PcSelectionView::~PcSelectionView()
 {
 	DeletePointerArray( MovieBrowserItems );
 }
 
-void MovieSelectionView::OneTimeInit( const char * launchIntent )
+void PcSelectionView::OneTimeInit( const char * launchIntent )
 {
-	LOG( "MovieSelectionView::OneTimeInit" );
+	LOG( "PcSelectionView::OneTimeInit" );
 
 	const double start = ovr_GetTimeInSeconds();
 
 	CreateMenu( Cinema.app, Cinema.app->GetVRMenuMgr(), Cinema.app->GetDefaultFont() );
 
-	SetCategory( CATEGORY_TRAILERS );
+	SetCategory( CATEGORY_LIMELIGHT );
 
-	LOG( "MovieSelectionView::OneTimeInit %3.1f seconds", ovr_GetTimeInSeconds() - start );
+	Native::InitPcSelector( Cinema.app );
+
+	LOG( "PcSelectionView::OneTimeInit %3.1f seconds", ovr_GetTimeInSeconds() - start );
 }
 
-void MovieSelectionView::OneTimeShutdown()
+void PcSelectionView::OneTimeShutdown()
 {
-	LOG( "MovieSelectionView::OneTimeShutdown" );
+	LOG( "PcSelectionView::OneTimeShutdown" );
 }
 
-void MovieSelectionView::OnOpen()
+void PcSelectionView::OnOpen()
 {
 	LOG( "OnOpen" );
 	CurViewState = VIEWSTATE_OPEN;
@@ -142,7 +144,7 @@ void MovieSelectionView::OnOpen()
 	const double now = ovr_GetTimeInSeconds();
 	SelectionFader.Set( now, 0, now + 0.1, 1.0f );
 
-	if ( Cinema.InLobby )
+	if ( Cinema.InLobby ) //TODO: Have this do stuff conditionally for whether we're in app selection
 	{
 		CategoryRoot->SetVisible( true );
 		Menu->SetFlags( VRMENU_FLAG_BACK_KEY_EXITS_APP );
@@ -174,7 +176,7 @@ void MovieSelectionView::OnOpen()
 	Cinema.app->GetSwapParms().WarpProgram = WP_CHROMATIC;
 }
 
-void MovieSelectionView::OnClose()
+void PcSelectionView::OnClose()
 {
 	LOG( "OnClose" );
 	ShowTimer = false;
@@ -184,12 +186,12 @@ void MovieSelectionView::OnClose()
 	Cinema.SceneMgr.ClearMovie();
 }
 
-bool MovieSelectionView::Command( const char * msg )
+bool PcSelectionView::Command( const char * msg )
 {
 	return false;
 }
 
-bool MovieSelectionView::OnKeyEvent( const int keyCode, const KeyState::eKeyEventType eventType )
+bool PcSelectionView::OnKeyEvent( const int keyCode, const KeyState::eKeyEventType eventType )
 {
 	switch ( keyCode )
 	{
@@ -204,6 +206,7 @@ bool MovieSelectionView::OnKeyEvent( const int keyCode, const KeyState::eKeyEven
 				default:
 					break;
 			}
+			break;
 		}
 	}
 	return false;
@@ -211,7 +214,7 @@ bool MovieSelectionView::OnKeyEvent( const int keyCode, const KeyState::eKeyEven
 
 //=======================================================================================
 
-void MovieSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont const & font )
+void PcSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont const & font )
 {
 	const Quatf forward( Vector3f( 0.0f, 1.0f, 0.0f ), 0.0f );
 
@@ -234,7 +237,7 @@ void MovieSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFo
 	// create menu
 	//
 	Menu = new UIMenu( Cinema );
-	Menu->Create( "MovieBrowser" );
+	Menu->Create( "PcBrowser" );
 
 	CenterRoot = new UIContainer( Cinema );
 	CenterRoot->AddToMenu( Menu );
@@ -387,8 +390,7 @@ void MovieSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFo
     //
     // category browser
     //
-    Categories.PushBack( MovieCategoryButton( CATEGORY_TRAILERS, CinemaStrings::Category_Trailers ) );
-    Categories.PushBack( MovieCategoryButton( CATEGORY_MYVIDEOS, CinemaStrings::Category_MyVideos ) );
+    Categories.PushBack( PcCategoryButton( CATEGORY_LIMELIGHT, CinemaStrings::Category_LimeLight ) );
 
     // create the buttons and calculate their size
     const float itemWidth = 1.10f;
@@ -399,7 +401,7 @@ void MovieSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFo
 		Categories[ i ].Button->AddToMenu( Menu, CategoryRoot );
 		Categories[ i ].Button->SetFontScale( 2.2f );
 		Categories[ i ].Button->SetText( Categories[ i ].Text.ToCStr() );
-		Categories[ i ].Button->AddComponent( new MovieCategoryComponent( this, Categories[ i ].Category ) );
+		Categories[ i ].Button->AddComponent( new PcCategoryComponent( this, Categories[ i ].Category ) );
 
 		const Bounds3f & bounds = Categories[ i ].Button->GetTextLocalBounds( Cinema.app->GetDefaultFont() );
 		Categories[ i ].Width = OVR::Alg::Max( bounds.GetSize().x, itemWidth ) + 80.0f * VRMenuObject::DEFAULT_TEXEL_SCALE;
@@ -524,7 +526,7 @@ void MovieSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFo
     MoveScreenLabel->SetVisible( false );
 }
 
-Vector3f MovieSelectionView::ScalePosition( const Vector3f &startPos, const float scale, const float menuOffset ) const
+Vector3f PcSelectionView::ScalePosition( const Vector3f &startPos, const float scale, const float menuOffset ) const
 {
 	const float eyeHieght = Cinema.SceneMgr.Scene.ViewParms.EyeHeight;
 
@@ -540,7 +542,7 @@ Vector3f MovieSelectionView::ScalePosition( const Vector3f &startPos, const floa
 //
 // Repositions the menu for the lobby scene or the theater
 //
-void MovieSelectionView::UpdateMenuPosition()
+void PcSelectionView::UpdateMenuPosition()
 {
 	// scale down when in a theater
 	const float scale = Cinema.InLobby ? 1.0f : 0.55f;
@@ -562,9 +564,9 @@ void MovieSelectionView::UpdateMenuPosition()
 
 //============================================================================================
 
-void MovieSelectionView::SelectMovie()
+void PcSelectionView::Select()
 {
-	LOG( "SelectMovie");
+	LOG( "Select");
 
 	// ignore selection while repositioning screen
 	if ( RepositionScreen )
@@ -572,29 +574,21 @@ void MovieSelectionView::SelectMovie()
 		return;
 	}
 
-	int lastIndex = MoviesIndex;
 	MoviesIndex = MovieBrowser->GetSelection();
-	Cinema.SetPlaylist( MovieList, MoviesIndex );
+
+	Cinema.SetPc(MovieList[MoviesIndex]);
 
 	if ( !Cinema.InLobby )
 	{
-		if ( lastIndex == MoviesIndex )
-		{
-			// selected the poster we were just watching
-			Cinema.ResumeMovieFromSavedLocation();
-		}
-		else
-		{
-			Cinema.ResumeOrRestartMovie();
-		}
+		Cinema.AppSelection( false );
 	}
 	else
 	{
-		Cinema.TheaterSelection();
+		Cinema.AppSelection( true );
 	}
 }
 
-void MovieSelectionView::StartTimer()
+void PcSelectionView::StartTimer()
 {
 	const double now = ovr_GetTimeInSeconds();
 	TimerStartTime = now;
@@ -602,7 +596,7 @@ void MovieSelectionView::StartTimer()
 	ShowTimer = true;
 }
 
-const MovieDef *MovieSelectionView::GetSelectedMovie() const
+const PcDef *PcSelectionView::GetSelectedPc() const
 {
 	int selectedItem = MovieBrowser->GetSelection();
 	if ( ( selectedItem >= 0 ) && ( selectedItem < MovieList.GetSizeI() ) )
@@ -613,23 +607,23 @@ const MovieDef *MovieSelectionView::GetSelectedMovie() const
 	return NULL;
 }
 
-void MovieSelectionView::SetMovieList( const Array<const MovieDef *> &movies, const MovieDef *nextMovie )
+void PcSelectionView::SetPcList( const Array<const PcDef *> &movies, const PcDef *nextMovie )
 {
-	LOG( "SetMovieList: %d movies", movies.GetSize() );
+	LOG( "SetPcList: %d movies", movies.GetSize() );
 
 	MovieList = movies;
 	DeletePointerArray( MovieBrowserItems );
 	for( UPInt i = 0; i < MovieList.GetSize(); i++ )
 	{
-		const MovieDef *movie = MovieList[ i ];
+		const PcDef *movie = MovieList[ i ];
 
-		LOG( "AddMovie: %s", movie->Filename.ToCStr() );
+		LOG( "AddMovie: %s", movie->Name.ToCStr() );
 
 		CarouselItem *item = new CarouselItem();
 		item->texture 		= movie->Poster;
 		item->textureWidth 	= movie->PosterWidth;
 		item->textureHeight	= movie->PosterHeight;
-		item->userFlags 	= movie->Is3D ? 1 : 0;
+		item->userFlags 	= 0;
 		MovieBrowserItems.PushBack( item );
 	}
 	MovieBrowser->SetItems( MovieBrowserItems );
@@ -655,9 +649,9 @@ void MovieSelectionView::SetMovieList( const Array<const MovieDef *> &movies, co
 
 	if ( MovieList.GetSize() == 0 )
 	{
-		if ( CurrentCategory == CATEGORY_MYVIDEOS )
+		if ( CurrentCategory == CATEGORY_LIMELIGHT )
 		{
-			SetError( CinemaStrings::Error_NoVideosInMyVideos.ToCStr(), false, false );
+			SetError( CinemaStrings::Error_NoVideosInLimeLight.ToCStr(), false, false );
 		}
 		else
 		{
@@ -670,7 +664,7 @@ void MovieSelectionView::SetMovieList( const Array<const MovieDef *> &movies, co
 	}
 }
 
-void MovieSelectionView::SetCategory( const MovieCategory category )
+void PcSelectionView::SetCategory( const PcCategory category )
 {
 	// default to category in index 0
 	UPInt categoryIndex = 0;
@@ -699,19 +693,19 @@ void MovieSelectionView::SetCategory( const MovieCategory category )
 		compRight->Reset( RightSwipes[ i ]->GetMenuObject() );
 	}
 
-	SetMovieList( Cinema.MovieMgr.GetMovieList( CurrentCategory ), NULL );
+	SetPcList( Cinema.PcMgr.GetPcList( CurrentCategory ), NULL );
 
 	LOG( "%d movies added", MovieList.GetSize() );
 }
 
-void MovieSelectionView::UpdateMovieTitle()
+void PcSelectionView::UpdatePcTitle()
 {
-	const MovieDef * currentMovie = GetSelectedMovie();
+	const PcDef * currentMovie = GetSelectedPc();
 	if ( LastMovieDisplayed != currentMovie )
 	{
 		if ( currentMovie != NULL )
 		{
-			MovieTitle->SetText( currentMovie->Title.ToCStr() );
+			MovieTitle->SetText( currentMovie->Name.ToCStr() );
 		}
 		else
 		{
@@ -722,7 +716,7 @@ void MovieSelectionView::UpdateMovieTitle()
 	}
 }
 
-void MovieSelectionView::SelectionHighlighted( bool isHighlighted )
+void PcSelectionView::SelectionHighlighted( bool isHighlighted )
 {
 	if ( isHighlighted && !ShowTimer && !Cinema.InLobby && ( MoviesIndex == MovieBrowser->GetSelection() ) )
 	{
@@ -735,7 +729,7 @@ void MovieSelectionView::SelectionHighlighted( bool isHighlighted )
 	}
 }
 
-void MovieSelectionView::UpdateSelectionFrame( const VrFrame & vrFrame )
+void PcSelectionView::UpdateSelectionFrame( const VrFrame & vrFrame )
 {
 	const double now = ovr_GetTimeInSeconds();
 	if ( !MovieBrowser->HasSelection() )
@@ -772,7 +766,7 @@ void MovieSelectionView::UpdateSelectionFrame( const VrFrame & vrFrame )
 		if ( frac > 1.0f )
 		{
 			frac = 1.0f;
-			Cinema.SetPlaylist( MovieList, MovieBrowser->GetSelection() );
+//			Cinema.SetPlaylist( MovieList, MovieBrowser->GetSelection() );
 			Cinema.ResumeOrRestartMovie();
 		}
 		Vector2f offset( 0.0f, 1.0f - frac );
@@ -794,7 +788,7 @@ void MovieSelectionView::UpdateSelectionFrame( const VrFrame & vrFrame )
 	}
 }
 
-void MovieSelectionView::SetError( const char *text, bool showSDCard, bool showErrorIcon )
+void PcSelectionView::SetError( const char *text, bool showSDCard, bool showErrorIcon )
 {
 	ClearError();
 
@@ -820,7 +814,7 @@ void MovieSelectionView::SetError( const char *text, bool showSDCard, bool showE
     SwipeHintComponent::ShowSwipeHints = false;
 }
 
-void MovieSelectionView::ClearError()
+void PcSelectionView::ClearError()
 {
 	LOG( "ClearError" );
 	ErrorMessageClicked = false;
@@ -833,17 +827,17 @@ void MovieSelectionView::ClearError()
     SwipeHintComponent::ShowSwipeHints = true;
 }
 
-bool MovieSelectionView::ErrorShown() const
+bool PcSelectionView::ErrorShown() const
 {
 	return ErrorMessage->GetVisible() || SDCardMessage->GetVisible() || PlainErrorMessage->GetVisible();
 }
 
-Matrix4f MovieSelectionView::DrawEyeView( const int eye, const float fovDegrees )
+Matrix4f PcSelectionView::DrawEyeView( const int eye, const float fovDegrees )
 {
 	return Cinema.SceneMgr.DrawEyeView( eye, fovDegrees );
 }
 
-Matrix4f MovieSelectionView::Frame( const VrFrame & vrFrame )
+Matrix4f PcSelectionView::Frame( const VrFrame & vrFrame )
 {
 	// We want 4x MSAA in the lobby
 	EyeParms eyeParms = Cinema.app->GetEyeParms();
@@ -877,12 +871,12 @@ Matrix4f MovieSelectionView::Frame( const VrFrame & vrFrame )
 		{
 			LOG( "Error closed.  Return to lobby." );
 			ClearError();
-			Cinema.MovieSelection( true );
+			Cinema.PcSelection( true );
 		}
 		else if ( Cinema.IsMovieFinished() )
 		{
 			LOG( "Movie finished.  Return to lobby." );
-			Cinema.MovieSelection( true );
+			Cinema.PcSelection( true );
 		}
 		else
 		{
@@ -976,8 +970,14 @@ Matrix4f MovieSelectionView::Frame( const VrFrame & vrFrame )
 		SelectionFrame->GetMenuObject()->RemoveFlags( VRMENUOBJECT_DONT_HIT_ALL );
 	}
 
-	UpdateMovieTitle();
+	UpdatePcTitle();
 	UpdateSelectionFrame( vrFrame );
+
+	if (Cinema.PcMgr.updated)
+	{
+		Cinema.PcMgr.updated = false;
+		SetPcList( Cinema.PcMgr.GetPcList( CurrentCategory ), NULL );
+	}
 
 	return Cinema.SceneMgr.Frame( vrFrame );
 }

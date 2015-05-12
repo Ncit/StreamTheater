@@ -1,12 +1,13 @@
 package com.limelight.preferences;
 
+import com.vrmatter.streamtheater.R;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Locale;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.limelight.computers.ComputerManagerService;
-import com.limelight.R;
 import com.limelight.utils.Dialog;
 import com.limelight.utils.SpinnerDialog;
 import com.limelight.utils.UiHelper;
@@ -143,11 +144,11 @@ public class AddComputerManually extends Activity {
             getResources().updateConfiguration(config, getResources().getDisplayMetrics());
         }
 
-        setContentView(R.layout.activity_add_computer_manually);
+//        setContentView(R.layout.activity_add_computer_manually);
 
         UiHelper.notifyNewRootView(this);
 
-        this.hostText = (TextView) findViewById(R.id.hostTextView);
+/*        this.hostText = (TextView) findViewById(R.id.hostTextView);
         hostText.setImeOptions(EditorInfo.IME_ACTION_DONE);
         hostText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -173,7 +174,7 @@ public class AddComputerManually extends Activity {
                 return false;
             }
         });
-
+*/
         // Bind to the ComputerManager service
         bindService(new Intent(AddComputerManually.this,
                     ComputerManagerService.class), serviceConnection, Service.BIND_AUTO_CREATE);

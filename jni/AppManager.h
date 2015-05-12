@@ -1,6 +1,6 @@
 /************************************************************************************
 
-Filename    :   MovieManager.h
+Filename    :   AppManager.h
 Content     :
 Created     :	9/10/2014
 Authors     :   Jim Dosé
@@ -13,12 +13,13 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 *************************************************************************************/
 
-#if !defined( MovieManager_h )
-#define MovieManager_h
+#if !defined( AppManager_h )
+#define AppManager_h
 
 #include "LibOVR/Src/Kernel/OVR_String.h"
 #include "LibOVR/Src/Kernel/OVR_Array.h"
 #include "GlTexture.h"
+#include "PcManager.h"
 
 namespace VRMatterStreamTheater {
 
@@ -26,80 +27,54 @@ class CinemaApp;
 
 using namespace OVR;
 
-enum MovieFormat
-{
-	VT_UNKNOWN,
-	VT_2D,
-	VT_LEFT_RIGHT_3D,			// Left & right are scaled horizontally by 50%.
-	VT_LEFT_RIGHT_3D_FULL,		// Left & right are unscaled.
-	VT_TOP_BOTTOM_3D,			// Top & bottom are scaled vertically by 50%.
-	VT_TOP_BOTTOM_3D_FULL,		// Top & bottom are unscaled.
-};
-
-enum MovieCategory {
-	CATEGORY_MYVIDEOS,
-	CATEGORY_TRAILERS
-};
-
-class MovieDef
+class AppDef : public PcDef
 {
 public:
-	String			Filename;
-
-	String			Title;
-
-	bool			Is3D;
-	MovieFormat 	Format;
+/*	String			Name;
+	int				Id;
 
 	GLuint			Poster;
 	int				PosterWidth;
 	int				PosterHeight;
 
-	String			Theater;
-	MovieCategory	Category;
-
-	bool            IsEncrypted;
-	bool			AllowTheaterSelection;
-
-
-	MovieDef() : Filename(), Title(), Is3D( false ), Format( VT_2D ), Poster( 0 ), PosterWidth( 0 ), PosterHeight( 0 ),
-			Theater(), Category( CATEGORY_MYVIDEOS ), IsEncrypted( false ), AllowTheaterSelection( false ) {}
+	PcCategory		Category;
+*/
+	AppDef() : PcDef() {}
 };
 
-class MovieManager
+class AppManager : public PcManager
 {
 public:
-							MovieManager( CinemaApp &cinema );
-							~MovieManager();
+							AppManager( CinemaApp &cinema );
+	virtual					~AppManager();
 
-	void					OneTimeInit( const char * launchIntent );
-	void					OneTimeShutdown();
+	virtual void			OneTimeInit( const char * launchIntent );
+	virtual void			OneTimeShutdown();
+	void					LoadApps();
+	void					AddApp(const String &name, const String &posterFileName, int id);
+	void					RemoveApp( int id);
 
-	Array<const MovieDef *>	GetMovieList( MovieCategory category ) const;
-
-	static const String 	GetMovieTitleFromFilename( const char *filepath );
+	Array<const PcDef *>	GetAppList( PcCategory category ) const;
 
 public:
-    Array<MovieDef *> 		Movies;
+    Array<AppDef *> 		Apps;
 
     static const int 		PosterWidth;
     static const int 		PosterHeight;
 
-    static const char *		SupportedFormats[];
+    bool					updated;
+
 
 private:
 	CinemaApp &				Cinema;
 
-	void					LoadMovies();
-	MovieFormat				FormatFromString( const String &formatString ) const;
-	MovieCategory 			CategoryFromString( const String &categoryString ) const;
-	void 					ReadMetaData( MovieDef *movie );
-	void 					LoadPoster( MovieDef *movie );
-	void 					MoviesInDirectory( Array<String> &movies, const char * dirName ) const;
-	Array<String> 			ScanMovieDirectories() const;
-	bool					IsSupportedMovieFormat( const String &extension ) const;
+    GLuint					DefaultPoster;
+
+    virtual void 			ReadMetaData( PcDef *app );
+    virtual void 			LoadPoster( PcDef *app );
+
 };
 
 } // namespace VRMatterStreamTheater
 
-#endif // MovieManager_h
+#endif // AppManager_h

@@ -32,6 +32,9 @@ public:
 
 	static String	Category_Trailers;
 	static String	Category_MyVideos;
+	static String	Category_LimeLight;
+	static String	Category_RemoteDesktop;
+	static String	Category_VNC;
 
 	static String	MovieSelection_Resume;
 	static String	MovieSelection_Next;
@@ -43,7 +46,7 @@ public:
 	static String	TheaterSelection_Title;
 
 	static String	Error_NoVideosOnPhone;
-	static String	Error_NoVideosInMyVideos;
+	static String	Error_NoVideosInLimeLight;
 	static String	Error_UnableToPlayMovie;
 
 	static String	MoviePlayer_Reorient;

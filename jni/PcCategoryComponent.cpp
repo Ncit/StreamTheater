@@ -1,6 +1,6 @@
 /************************************************************************************
 
-Filename    :   MovieCategoryComponent.cpp
+Filename    :   PcCategoryComponent.cpp
 Content     :   Menu component for the movie category menu.
 Created     :   August 13, 2014
 Authors     :   Jim Dosé
@@ -13,19 +13,19 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 *************************************************************************************/
 
-#include "MovieCategoryComponent.h"
+#include "PcCategoryComponent.h"
 #include "CinemaApp.h"
 
 
 namespace VRMatterStreamTheater {
 
-const Vector4f MovieCategoryComponent::FocusColor( 1.0f, 1.0f, 1.0f, 1.0f );
-const Vector4f MovieCategoryComponent::HighlightColor( 1.0f, 1.0f, 1.0f, 1.0f );
-const Vector4f MovieCategoryComponent::NormalColor( 82.0f / 255.0f, 101.0f / 255.0f, 120.0f / 255.06, 255.0f / 255.0f );
+const Vector4f PcCategoryComponent::FocusColor( 1.0f, 1.0f, 1.0f, 1.0f );
+const Vector4f PcCategoryComponent::HighlightColor( 1.0f, 1.0f, 1.0f, 1.0f );
+const Vector4f PcCategoryComponent::NormalColor( 82.0f / 255.0f, 101.0f / 255.0f, 120.0f / 255.06, 255.0f / 255.0f );
 
 //==============================
-//  MovieCategoryComponent::
-MovieCategoryComponent::MovieCategoryComponent( MovieSelectionView * view, MovieCategory category ) :
+//  PcCategoryComponent::
+PcCategoryComponent::PcCategoryComponent( SelectionView * view, PcCategory category ) :
     VRMenuComponent( VRMenuEventFlags_t( VRMENU_EVENT_TOUCH_DOWN ) | 
             VRMENU_EVENT_TOUCH_UP | 
             VRMENU_EVENT_FOCUS_GAINED | 
@@ -39,16 +39,16 @@ MovieCategoryComponent::MovieCategoryComponent( MovieSelectionView * view, Movie
 }
 
 //==============================
-//  MovieCategoryComponent::UpdateColor
-void MovieCategoryComponent::UpdateColor( VRMenuObject * self )
+//  PcCategoryComponent::UpdateColor
+void PcCategoryComponent::UpdateColor( VRMenuObject * self )
 {
 	self->SetTextColor( HasFocus ? FocusColor : ( self->IsHilighted() ? HighlightColor : NormalColor ) );
 	self->SetColor( self->IsHilighted() ? Vector4f( 1.0f ) : Vector4f( 0.0f ) );
 }
 
 //==============================
-//  MovieCategoryComponent::OnEvent_Impl
-eMsgStatus MovieCategoryComponent::OnEvent_Impl( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+//  PcCategoryComponent::OnEvent_Impl
+eMsgStatus PcCategoryComponent::OnEvent_Impl( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
         VRMenuObject * self, VRMenuEvent const & event )
 {
     switch( event.EventType )
@@ -81,8 +81,8 @@ eMsgStatus MovieCategoryComponent::OnEvent_Impl( App * app, VrFrame const & vrFr
 }
 
 //==============================
-//  MovieCategoryComponent::Frame
-eMsgStatus MovieCategoryComponent::Frame( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+//  PcCategoryComponent::Frame
+eMsgStatus PcCategoryComponent::Frame( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
         VRMenuObject * self, VRMenuEvent const & event )
 {
 	UpdateColor( self );
@@ -91,8 +91,8 @@ eMsgStatus MovieCategoryComponent::Frame( App * app, VrFrame const & vrFrame, Ov
 }
 
 //==============================
-//  MovieCategoryComponent::FocusGained
-eMsgStatus MovieCategoryComponent::FocusGained( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+//  PcCategoryComponent::FocusGained
+eMsgStatus PcCategoryComponent::FocusGained( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
         VRMenuObject * self, VRMenuEvent const & event )
 {
 	//LOG( "FocusGained" );
@@ -105,8 +105,8 @@ eMsgStatus MovieCategoryComponent::FocusGained( App * app, VrFrame const & vrFra
 }
 
 //==============================
-//  MovieCategoryComponent::FocusLost
-eMsgStatus MovieCategoryComponent::FocusLost( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+//  PcCategoryComponent::FocusLost
+eMsgStatus PcCategoryComponent::FocusLost( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
         VRMenuObject * self, VRMenuEvent const & event )
 {
 	//LOG( "FocusLost" );

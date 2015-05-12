@@ -1,6 +1,6 @@
 /************************************************************************************
 
-Filename    :   MovieManager.cpp
+Filename    :   AppManager.cpp
 Content     :
 Created     :	9/10/2014
 Authors     :   Jim Dosé
@@ -20,7 +20,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "Kernel/OVR_String_Utils.h"
 #include "Kernel/OVR_JSON.h"
 
-#include "MovieManager.h"
+#include "AppManager.h"
 #include "CinemaApp.h"
 #include "PackageFiles.h"
 #include "Native.h"
@@ -28,153 +28,117 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 namespace VRMatterStreamTheater {
 
-const int MovieManager::PosterWidth = 228;
-const int MovieManager::PosterHeight = 344;
-
-static const char * searchDirs[] =
-{
-	"DCIM",
-	"Movies",
-	"Oculus/Movies",
-	NULL
-};
-
-const char *MovieManager::SupportedFormats[] =
-{
-	".mp4",
-	".m4v",
-	".3gp",
-	".3g2",
-	".ts",
-	".webm",
-	".mkv",
-	".wmv",
-	".asf",
-	".avi",
-	".flv",
-	NULL
-};
+const int AppManager::PosterWidth = 228;
+const int AppManager::PosterHeight = 344;
 
 //=======================================================================================
 
-MovieManager::MovieManager( CinemaApp &cinema ) :
-    Movies(),
-	Cinema( cinema )
+AppManager::AppManager( CinemaApp &cinema ) :
+	PcManager( cinema ),
+    Apps(),
+    updated( false ),
+    Cinema( cinema ),
+    DefaultPoster(0)
 {
 }
 
-MovieManager::~MovieManager()
+AppManager::~AppManager()
 {
 }
 
-void MovieManager::OneTimeInit( const char * launchIntent )
+void AppManager::OneTimeInit( const char * launchIntent )
 {
-	LOG( "MovieManager::OneTimeInit" );
+	LOG( "AppManager::OneTimeInit" );
 	const double start = ovr_GetTimeInSeconds();
 
-	LoadMovies();
+	int width, height;
+	DefaultPoster = LoadTextureFromApplicationPackage(
+			"assets/default_poster.png",
+			TextureFlags_t(TEXTUREFLAG_NO_DEFAULT), width, height);
+	LOG(" Default gluint: %i", DefaultPoster);
 
-	LOG( "MovieManager::OneTimeInit: %i movies loaded, %3.1f seconds", Movies.GetSizeI(), ovr_GetTimeInSeconds() - start );
+	BuildTextureMipmaps( DefaultPoster );
+	MakeTextureTrilinear( DefaultPoster );
+	MakeTextureClamped( DefaultPoster );
+
+	LoadApps();
+
+	LOG( "AppManager::OneTimeInit: %i movies loaded, %3.1f seconds", Apps.GetSizeI(), ovr_GetTimeInSeconds() - start );
 }
 
-void MovieManager::OneTimeShutdown()
+void AppManager::OneTimeShutdown()
 {
-	LOG( "MovieManager::OneTimeShutdown" );
+	LOG( "AppManager::OneTimeShutdown" );
 }
 
-void MovieManager::LoadMovies()
+void AppManager::LoadApps()
 {
-	LOG( "LoadMovies" );
+	LOG( "LoadApps" );
 
 	const double start = ovr_GetTimeInSeconds();
 
-	Array<String> movieFiles = ScanMovieDirectories();
-	LOG( "%i movies scanned, %3.1f seconds", movieFiles.GetSizeI(), ovr_GetTimeInSeconds() - start );
+	Array<String> appNames; // TODO: Get app list from JNI AppSelector
+	LOG( "%i movies scanned, %3.1f seconds", appNames.GetSizeI(), ovr_GetTimeInSeconds() - start );
 
-	for( UPInt i = 0; i < movieFiles.GetSize(); i++ )
+	for( UPInt i = 0; i < appNames.GetSize(); i++ )
 	{
-		MovieDef *movie = new MovieDef();
-		Movies.PushBack( movie );
+		AppDef *app = new AppDef();
+		Apps.PushBack( app );
 
-		movie->Filename = movieFiles[ i ];
+		app->Name = appNames[ i ];
 
-		// set reasonable defaults for when there's no metadata
-		movie->Title = GetMovieTitleFromFilename( movie->Filename.ToCStr() );
-		movie->Is3D = ( NULL != strstr( movie->Filename.ToCStr(), "/3D/" ) );
-		movie->Format = VT_UNKNOWN;
-		movie->Theater = "";
-
-		if ( NULL != strstr( movie->Filename.ToCStr(), "/DCIM/" ) )
-		{
-			// Everything in the DCIM folder goes to my videos
-			movie->Category = CATEGORY_MYVIDEOS;
-			movie->AllowTheaterSelection = true;
-		}
-		else if ( NULL != strstr( movie->Filename.ToCStr(), "/Trailers/" ) )
-		{
-			movie->Category = CATEGORY_TRAILERS;
-			movie->AllowTheaterSelection = true;
-		}
-		else
-		{
-			movie->Category = CATEGORY_MYVIDEOS;
-			movie->AllowTheaterSelection = true;
-		}
-
-		ReadMetaData( movie );
-		LoadPoster( movie );
+		ReadMetaData( app );
+		LoadPoster( app );
 	}
 
-	LOG( "%i movies panels loaded, %3.1f seconds", Movies.GetSizeI(), ovr_GetTimeInSeconds() - start );
+	LOG( "%i movies panels loaded, %3.1f seconds", Apps.GetSizeI(), ovr_GetTimeInSeconds() - start );
 }
 
-MovieFormat MovieManager::FormatFromString( const String &formatString ) const
+void AppManager::AddApp(const String &name, const String &posterFileName, int id)
 {
-	String format = formatString.ToUpper();
-	if ( format == "2D" )
+	LOG( "App %s with id %i added!", name.ToCStr(), id);
+	AppDef *anApp = NULL;
+	bool isNew = false;
+
+	for(UPInt i=0; i < Apps.GetSize(); i++)
 	{
-		return VT_2D;
+		if(Apps[i]->Name.CompareNoCase(name) == 0)
+			anApp = Apps[i];
+	}
+	if(anApp == NULL)
+	{
+		anApp = new AppDef();
+		Apps.PushBack( anApp );
+		isNew = true;
 	}
 
-	if ( ( format == "3D" ) || ( format == "3DLR" ) )
-	{
-		return VT_LEFT_RIGHT_3D;
-	}
+	anApp->Name = name;
+	anApp->Id = id;
+	anApp->PosterFileName = posterFileName;
 
-	if ( format == "3DLRF" )
-	{
-		return VT_LEFT_RIGHT_3D_FULL;
-	}
+	if( isNew ) ReadMetaData( anApp );
+	if( anApp->Poster == 0) LoadPoster(anApp);
 
-	if ( format == "3DTB" )
-	{
-		return VT_TOP_BOTTOM_3D;
-	}
-
-	if ( format == "3DTBF" )
-	{
-		return VT_TOP_BOTTOM_3D_FULL;
-	}
-
-	return VT_UNKNOWN;
+	updated = true;
 }
 
-MovieCategory MovieManager::CategoryFromString( const String &categoryString ) const
+void AppManager::RemoveApp( int id)
 {
-	String category = categoryString.ToUpper();
-	if ( category == "TRAILERS" )
+	for(UPInt i=0; i < Apps.GetSize(); i++)
 	{
-		return CATEGORY_TRAILERS;
+		if(Apps[i]->Id == id )
+		{
+			Apps.RemoveAt(i);
+			i--;
+		}
 	}
-
-	return CATEGORY_MYVIDEOS;
 }
 
-void MovieManager::ReadMetaData( MovieDef *movie )
+void AppManager::ReadMetaData( PcDef *anApp )
 {
-	String filename = movie->Filename;
+	String filename = anApp->Name;
 	filename.StripExtension();
-	filename.AppendString( ".txt" );
+	filename.AppendString(".app.txt" );
 
 	const char* error = NULL;
 
@@ -185,31 +149,7 @@ void MovieManager::ReadMetaData( MovieDef *movie )
 
 	if ( JSON* metadata = JSON::Load( filename.ToCStr(), &error ) )
 	{
-		if ( JSON* title = metadata->GetItemByName( "title" ) )
-		{
-			movie->Title = title->GetStringValue();
-		}
 
-		if ( JSON* format = metadata->GetItemByName( "format" ) )
-		{
-			movie->Format = FormatFromString( format->GetStringValue() );
-			movie->Is3D = ( ( movie->Format != VT_UNKNOWN ) && ( movie->Format != VT_2D ) );
-		}
-
-		if ( JSON* theater = metadata->GetItemByName( "theater" ) )
-		{
-			movie->Theater = theater->GetStringValue();
-		}
-
-		if ( JSON* category = metadata->GetItemByName( "category" ) )
-		{
-			movie->Category = CategoryFromString( category->GetStringValue() );
-		}
-
-		if ( JSON* encrypted = metadata->GetItemByName("encrypted"))
-		{
-			movie->IsEncrypted = encrypted->GetBoolValue();
-		}
 		metadata->Release();
 
 		LOG( "Loaded metadata: %s", filename.ToCStr() );
@@ -220,153 +160,52 @@ void MovieManager::ReadMetaData( MovieDef *movie )
 	}
 }
 
-void MovieManager::LoadPoster( MovieDef *movie )
+void AppManager::LoadPoster( PcDef *anApp )
 {
-	String posterFilename = movie->Filename;
+	String posterFilename = anApp->PosterFileName;
 	posterFilename.StripExtension();
 	posterFilename.AppendString( ".png" );
 
-	movie->Poster = LoadTextureFromBuffer( posterFilename.ToCStr(), MemBufferFile( posterFilename.ToCStr() ),
-			TextureFlags_t( TEXTUREFLAG_NO_DEFAULT ), movie->PosterWidth, movie->PosterHeight );
-
-	if ( movie->Poster == 0 )
+	anApp->Poster = LoadTextureFromBuffer( posterFilename.ToCStr(), MemBufferFile( posterFilename.ToCStr() ),
+			TextureFlags_t( TEXTUREFLAG_NO_DEFAULT ), anApp->PosterWidth, anApp->PosterHeight );
+	LOG( "Poster loaded: %s %i %i %i", posterFilename.ToCStr(), anApp->Poster, anApp->PosterWidth, anApp->PosterHeight);
+	if ( anApp->Poster == 0 )
 	{
-		if ( Cinema.IsExternalSDCardDir( posterFilename.ToCStr() ) )
+		// no thumbnail found, so create it.  if it's on an external sdcard, posterFilename will contain the new filename at this point and will load it from the cache
+		if ( ( anApp->Poster == 0 )
+///* JNI wonkyness made this unhappy */					&& Native::CreateVideoThumbnail( Cinema.app, Cinema.GetCurrentPc()->UUID.ToCStr(), anApp->Id, posterFilename.ToCStr(), PosterWidth, PosterHeight )
+			)
 		{
-			// Since we're unable to write to the external sd card and writing to the
-			// cache directory doesn't seem to work, just disable generation of
-			// thumbnails for the external sd card.
-#if 0
-			// we can't write to external sd cards, so change the filename to be in the cache
-			posterFilename = Native::GetExternalCacheDirectory( Cinema.app ) + posterFilename;
-
-			// check if we have the thumbnail in the cache
-			movie->Poster = LoadTextureFromBuffer( posterFilename.ToCStr(), MemBufferFile( posterFilename.ToCStr() ),
-				TextureFlags_t( TEXTUREFLAG_NO_DEFAULT ), movie->PosterWidth, movie->PosterHeight );
-
-			if ( movie->Poster == 0 )
-			{
-				LOG( "No thumbnail found at %s", posterFilename.ToCStr() );
-			}
-#endif
+			anApp->Poster = LoadTextureFromBuffer( posterFilename.ToCStr(), MemBufferFile( posterFilename.ToCStr() ),
+				TextureFlags_t( TEXTUREFLAG_NO_DEFAULT ), anApp->PosterWidth, anApp->PosterHeight );
 		}
-		else
-		{
-			// no thumbnail found, so create it.  if it's on an external sdcard, posterFilename will contain the new filename at this point and will load it from the cache
-			if ( ( movie->Poster == 0 ) && Native::CreateVideoThumbnail( Cinema.app, movie->Filename.ToCStr(), posterFilename.ToCStr(), PosterWidth, PosterHeight ) )
-			{
-				movie->Poster = LoadTextureFromBuffer( posterFilename.ToCStr(), MemBufferFile( posterFilename.ToCStr() ),
-					TextureFlags_t( TEXTUREFLAG_NO_DEFAULT ), movie->PosterWidth, movie->PosterHeight );
-			}
-		}
+	
 	}
 
 	// if all else failed, then just use the default poster
-	if ( movie->Poster == 0 )
+	if ( anApp->Poster == 0 )
 	{
-		movie->Poster = LoadTextureFromApplicationPackage( "assets/default_poster.png",
-				TextureFlags_t( TEXTUREFLAG_NO_DEFAULT ), movie->PosterWidth, movie->PosterHeight );
+		anApp->Poster = DefaultPoster;
 	}
-
-	BuildTextureMipmaps( movie->Poster );
-	MakeTextureTrilinear( movie->Poster );
-	MakeTextureClamped( movie->Poster );
+	else
+	{
+		BuildTextureMipmaps( anApp->Poster );
+		MakeTextureTrilinear( anApp->Poster );
+		MakeTextureClamped( anApp->Poster );
+	}
 }
 
-bool MovieManager::IsSupportedMovieFormat( const String &extension ) const
+
+Array<const PcDef *> AppManager::GetAppList( PcCategory category ) const
 {
-	for( int i = 0; SupportedFormats[ i ] != NULL; i++ )
+	Array<const PcDef *> result;
+
+	for( UPInt i = 0; i < Apps.GetSize(); i++ )
 	{
-		if ( extension == SupportedFormats[ i ] )
+		LOG("App: %s Poster %i", Apps[i]->Name.ToCStr(), Apps[i]->Poster);
+		if ( Apps[ i ]->Category == category && Apps[i]->Poster != 0)
 		{
-			return true;
-		}
-	}
-	return false;
-}
-
-void MovieManager::MoviesInDirectory( Array<String> &movies, const char * dirName ) const {
-	LOG( "scanning directory: %s", dirName );
-	DIR * dir = opendir( dirName );
-	if ( dir != NULL )
-	{
-		struct dirent * entry;
-        struct stat st;
-		while( ( entry = readdir( dir ) ) != NULL ) {
-	        if ( ( strcmp( entry->d_name, "." ) == 0 ) || ( strcmp( entry->d_name, ".." ) == 0 ) )
-	        {
-	            continue;
-	        }
-
-	        if ( fstatat( dirfd( dir ), entry->d_name, &st, 0 ) < 0 )
-	        {
-	        	LOG( "fstatat error on %s: %s", entry->d_name, strerror( errno ) );
-	            continue;
-	        }
-
-	        if ( S_ISDIR( st.st_mode ) )
-	        {
-	        	char subDir[ 1000 ];
-	        	StringUtils::SPrintf( subDir, "%s/%s", dirName, entry->d_name );
-	        	MoviesInDirectory( movies, subDir );
-	        	continue;
-	        }
-
-	        // skip files that begin with "._" since they get created
-	        // when you copy movies onto the phones using Macs.
-	        if ( strncmp( entry->d_name, "._", 2 ) == 0 )
-	        {
-	        	continue;
-	        }
-
-			String filename = entry->d_name;
-			String ext = filename.GetExtension().ToLower();
-			if ( IsSupportedMovieFormat( ext ) )
-			{
-				String fullpath = dirName;
-				fullpath.AppendString( "/" );
-				fullpath.AppendString( filename );
-				LOG( "Adding movie: %s", fullpath.ToCStr() );
-				movies.PushBack( fullpath );
-			}
-		}
-
-		closedir( dir );
-	}
-}
-
-Array<String> MovieManager::ScanMovieDirectories() const {
-	Array<String> movies;
-
-	for( int i = 0; searchDirs[ i ] != NULL; i++ )
-	{
-		MoviesInDirectory( movies, Cinema.ExternalRetailDir( searchDirs[ i ] ) );
-		MoviesInDirectory( movies, Cinema.RetailDir( searchDirs[ i ] ) );
-		MoviesInDirectory( movies, Cinema.SDCardDir( searchDirs[ i ] ) );
-		MoviesInDirectory( movies, Cinema.ExternalSDCardDir( searchDirs[ i ] ) );
-	}
-
-	return movies;
-}
-
-const String MovieManager::GetMovieTitleFromFilename( const char *filepath )
-{
-	String filename = StringUtils::GetFileBaseString( filepath );
-
-	// change _ to space
-	String displayName = StringUtils::ReplaceChar( filename.ToCStr(), '_', ' ' );
-	return displayName;
-}
-
-Array<const MovieDef *> MovieManager::GetMovieList( MovieCategory category ) const
-{
-	Array<const MovieDef *> result;
-
-	for( UPInt i = 0; i < Movies.GetSize(); i++ )
-	{
-		if ( Movies[ i ]->Category == category )
-		{
-			result.PushBack( Movies[ i ] );
+			result.PushBack( Apps[ i ] );
 		}
 	}
 

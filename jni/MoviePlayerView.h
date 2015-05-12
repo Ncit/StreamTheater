@@ -145,10 +145,6 @@ private:
 
 	static const double 	GazeTimeTimeout;
 
-	int						SeekSpeed;
-	int						PlaybackPos;
-	double					NextSeekTime;
-
 	UITexture				BackgroundTintTexture;
 
 	UITexture				RWTexture;
@@ -223,10 +219,6 @@ private:
 	void					SetSeekIcon( const int seekSpeed );
 
 	void					BackPressed();
-
-	void					TogglePlayback();
-	void 					PauseMovie();
-	void 					PlayMovie();
 
 	friend void 			PlayPressedCallback( UIButton *button, void *object );
 	void					RewindPressed();

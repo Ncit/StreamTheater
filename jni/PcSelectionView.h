@@ -1,6 +1,6 @@
 /************************************************************************************
 
-Filename    :   MovieSelectionView.h
+Filename    :   PcSelectionView.h
 Content     :
 Created     :	6/19/2014
 Authors     :   Jim Dosé
@@ -13,14 +13,14 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 *************************************************************************************/
 
-#if !defined( MovieSelectionView_h )
-#define MovieSelectionView_h
+#if !defined( PcSelectionView_h )
+#define PcSelectionView_h
 
 #include "LibOVR/Src/Kernel/OVR_Array.h"
 #include "Lerp.h"
-#include "View.h"
+#include "SelectionView.h"
 #include "CarouselBrowserComponent.h"
-#include "MovieManager.h"
+#include "PcManager.h"
 #include "UI/UITexture.h"
 #include "UI/UIMenu.h"
 #include "UI/UIContainer.h"
@@ -35,11 +35,11 @@ class CinemaApp;
 class CarouselBrowserComponent;
 class MovieSelectionComponent;
 
-class MovieSelectionView : public View
+class PcSelectionView : public SelectionView
 {
 public:
-										MovieSelectionView( CinemaApp &cinema );
-	virtual 							~MovieSelectionView();
+										PcSelectionView( CinemaApp &cinema );
+	virtual 							~PcSelectionView();
 
 	virtual void 						OneTimeInit( const char * launchIntent );
 	virtual void						OneTimeShutdown();
@@ -52,25 +52,25 @@ public:
 	virtual bool						Command( const char * msg );
 	virtual bool 						OnKeyEvent( const int keyCode, const KeyState::eKeyEventType eventType );
 
-    void 								SetMovieList( const Array<const MovieDef *> &movies, const MovieDef *nextMovie );
+    void 								SetPcList( const Array<const PcDef *> &movies, const PcDef *nextMovie );
 
-	void 								SelectMovie( void );
-	void 								SelectionHighlighted( bool isHighlighted );
-    void 								SetCategory( const MovieCategory category );
-	void								SetError( const char *text, bool showSDCard, bool showErrorIcon );
-	void								ClearError();
+	virtual void 						Select( void );
+	virtual void 						SelectionHighlighted( bool isHighlighted );
+    virtual void 						SetCategory( const PcCategory category );
+	virtual void						SetError( const char *text, bool showSDCard, bool showErrorIcon );
+	virtual void						ClearError();
 
 private:
-    class MovieCategoryButton
+    class PcCategoryButton
     {
     public:
-    	MovieCategory 	Category;
+    	PcCategory 	Category;
     	String			Text;
     	UILabel *		Button;
     	float			Width;
     	float			Height;
 
-    					MovieCategoryButton( const MovieCategory category, const String &text ) :
+    					PcCategoryButton( const PcCategory category, const String &text ) :
     						Category( category ), Text( text ), Button( NULL ), Width( 0.0f ), Height( 0.0f ) {}
     };
 
@@ -131,19 +131,19 @@ private:
 
     Array<CarouselItemComponent *>	 	MoviePosterComponents;
 
-	Array<MovieCategoryButton>			Categories;
-    MovieCategory			 			CurrentCategory;
+	Array<PcCategoryButton>				Categories;
+    PcCategory			 				CurrentCategory;
 	
-	Array<const MovieDef *> 			MovieList;
+	Array<const PcDef *> 				MovieList;
 	int									MoviesIndex;
 
-	const MovieDef *					LastMovieDisplayed;
+	const PcDef *						LastMovieDisplayed;
 
 	bool								RepositionScreen;
 	bool								HadSelection;
 
 private:
-	const MovieDef *					GetSelectedMovie() const;
+	const PcDef *						GetSelectedPc() const;
 
 	void 								CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont const & font );
 	Vector3f 							ScalePosition( const Vector3f &startPos, const float scale, const float menuOffset ) const;
@@ -151,7 +151,7 @@ private:
 
 	void								StartTimer();
 
-	void								UpdateMovieTitle();
+	void								UpdatePcTitle();
 	void								UpdateSelectionFrame( const VrFrame & vrFrame );
 
 	bool								ErrorShown() const;
@@ -159,4 +159,4 @@ private:
 
 } // namespace VRMatterStreamTheater
 
-#endif // MovieSelectionView_h
+#endif // PcSelectionView_h

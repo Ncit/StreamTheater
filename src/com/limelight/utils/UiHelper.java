@@ -1,5 +1,7 @@
 package com.limelight.utils;
 
+import com.vrmatter.streamtheater.R;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.UiModeManager;
@@ -7,8 +9,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.Configuration;
 import android.view.View;
-
-import com.limelight.R;
 
 public class UiHelper {
 
