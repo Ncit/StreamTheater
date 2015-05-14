@@ -1,0 +1,48 @@
+---MainActivity.java:407
+movieTexture = nativePrepareNewVideo( appPtr );
+	---Native.cpp:46
+	cinema->app->GetMessageQueue().PostPrintf( "newVideo %p", &result);
+		---SceneManager:657
+		MovieTexture = new SurfaceTexture( Cinema.app->GetVrJni() );
+			---SurfaceTexture:27
+			glGenTextures( 1, &textureId );
+			glBindTexture(GL_TEXTURE_EXTERNAL_OES, textureId);
+			static const char * className = "android/graphics/SurfaceTexture";
+			jobject obj = jni->NewObject( surfaceTextureClass, constructor, textureId );
+		    updateTexImageMethodId = jni->GetMethodID( surfaceTextureClass, "updateTexImage", "()V" );
+			getTimestampMethodId = jni->GetMethodID( surfaceTextureClass, "getTimestamp", "()J" );
+			setDefaultBufferSizeMethodId = jni->GetMethodID( surfaceTextureClass, "setDefaultBufferSize", "(II)V" );
+		receiver->PostPrintf( "surfaceTexture %p", MovieTexture->javaObject );
+	sscanf( msg, "surfaceTexture %p", &texobj );
+movieSurface = new Surface( movieTexture );
+ModifiableSurfaceHolder surfaceHolder = new ModifiableSurfaceHolder();
+surfaceHolder.setSurface(movieSurface);
+streamInterface = new StreamInterface(this, uuid, currentAppName, appId, binder, surfaceHolder );
+	---StreamInterface.java:135
+	StreamConfiguration config = new StreamConfiguration.Builder()
+	.setResolution(prefConfig.width, prefConfig.height)
+	decoderRenderer = new ConfigurableDecoderRenderer();
+	if (prefConfig.stretchVideo || !decoderRenderer.isHardwareAccelerated())
+	sh.setFixedSize(prefConfig.width, prefConfig.height);
+streamInterface.surfaceCreated(surfaceHolder);
+	---StreamInterface.java:730
+	conn.start(PlatformBinding.getDeviceName(), holder, drFlags, PlatformBinding.getAudioRenderer(), decoderRenderer);
+onVideoSizeChanged(1280,720);
+	---MainActivity.java:196
+	nativeSetVideoSize( appPtr, width, height, 0, 0 );
+		---Native.cpp:37
+		cinema->app->GetMessageQueue().PostPrintf( "video %i %i %i %i", width, height, rotation, duration );
+			---SceneManager.cpp:687
+			if ( numberOfPixels > 1920 * 1080 ) // (resizes down to 960*540)
+			Cinema.MovieLoaded( CurrentMovieWidth, CurrentMovieHeight, MovieDuration );
+			glGenTextures( 1, &MipMappedMovieTextures[i] );
+			glTexImage2D( GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
+...
+---SceneManager.cpp
+SceneManager::DrawEyeView
+	if(...)	glBindTexture( GL_TEXTURE_EXTERNAL_OES, MovieTexture->textureId );
+	else... Cinema.app->GetSwapParms().Images[eye][1].TexId = MipMappedMovieTextures[CurrentMipMappedMovieTexture];
+SceneManager::Frame			
+	glBindTexture( GL_TEXTURE_EXTERNAL_OES, MovieTexture->textureId );
+	glBindTexture( GL_TEXTURE_2D, MipMappedMovieTextures[CurrentMipMappedMovieTexture] );
+
