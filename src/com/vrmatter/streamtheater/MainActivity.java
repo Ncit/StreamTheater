@@ -25,7 +25,10 @@ import android.graphics.SurfaceTexture;
 import android.graphics.Matrix;
 import android.media.MediaMetadataRetriever;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.Log;
+import android.view.InputDevice;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.content.Context;
@@ -85,11 +88,11 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 	SurfaceTexture 		movieTexture = null;
 	Surface 			movieSurface = null;
 
-	StreamInterface 	streamInterface = null;
 	AudioManager 		audioManager = null;
 	
-	public PcSelector	pcSelector = null;
-	public AppSelector	appSelector = null;
+	public PcSelector		pcSelector = null;
+	public AppSelector		appSelector = null;
+	public StreamInterface 	streamInterface = null;
 
 	@Override
 	protected void onCreate( Bundle savedInstanceState ) 
@@ -492,6 +495,28 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		appSelector = new AppSelector(this, computerUUID);
 	}
 	
+	public void MouseMove( int deltaX, int deltaY)
+	{
+		streamInterface.mouseMove(deltaX, deltaY);
+	}
+	
+	public void MouseClick(int buttonId, boolean down)
+	{
+		streamInterface.mouseButtonEvent(buttonId, down);
+	}
+	
+	public void MouseScroll( byte amount)
+	{
+		streamInterface.mouseScroll(amount);
+	}
+	
+	private long lastTime = 0;
+	public void ControllerState(float stick1x, float stick1y, float stick2x, float stick2y, float leftTrigger, float rightTrigger, int buttonState)
+	{
+		// Oculus's int button states have touchpad events and stuff in them, only use the first 14 bits (0x3FFF)
+		streamInterface.controllerUpdate(stick1x, stick1y, stick2x, stick2y, leftTrigger, rightTrigger, (short) (buttonState & 0x3FFF));
+	}
+
 }
 
 

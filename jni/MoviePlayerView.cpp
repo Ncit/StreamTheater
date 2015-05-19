@@ -83,8 +83,12 @@ MoviePlayerView::MoviePlayerView( CinemaApp &cinema ) :
 	CurrentTime( Cinema ),
 	SeekTime( Cinema ),
 	BackgroundClicked( false ),
-	UIOpened( false )
-
+	UIOpened( false ),
+	s00(0.0f),s01(0.0f),s10(0.0f),s11(0.0f),
+	allowDrag(false),
+	clickStartTime(0.0),
+	lastScroll(0),
+	lastMouse()
 {
 }
 
@@ -609,58 +613,100 @@ Vector2f MoviePlayerView::GazeCoordinatesOnScreen( const Matrix4f & viewMatrix, 
 
 void MoviePlayerView::CheckInput( const VrFrame & vrFrame )
 {
-	if ( !uiActive && !RepositionScreen )
+	const Vector2f screenCursor = GazeCoordinatesOnScreen( Cinema.SceneMgr.Scene.CenterViewMatrix(), Cinema.SceneMgr.ScreenMatrix() );
+	bool onscreen = false;
+	if ( InsideUnit( screenCursor ) )
 	{
-		if ( ( vrFrame.Input.buttonPressed & BUTTON_A ) || ( ( vrFrame.Input.buttonReleased & BUTTON_TOUCH ) && !( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) ) )
-		{
-			// open ui if it's not visible
-			Cinema.app->PlaySound( "touch_up" );
-			ShowUI();
-
-			// ignore button A or touchpad until release so we don't close the UI immediately after opening it
-			UIOpened = true;
-		}
+		onscreen = true;
+	}
+	else if ( uiActive )
+	{
+		onscreen = GazeTimer.IsFocused();
 	}
 
-	if ( vrFrame.Input.buttonPressed & ( BUTTON_DPAD_LEFT | BUTTON_SWIPE_BACK ) )
-	{
-		if ( ( vrFrame.Input.buttonPressed & BUTTON_DPAD_LEFT ) || !GazeTimer.IsFocused() )
-		{
-			ShowUI();
-
-			//TODO: Do something with trackpad inputs
-			SetSeekIcon( 1 );
-
-			Cinema.app->PlaySound( "touch_up" );
-		}
+	if(onscreen) {
+		Vector2f travel = lastMouse - screenCursor;
+		lastMouse = screenCursor;
+		Native::MouseMove(Cinema.app, 1280 / 2 * travel.x, 720 / 2 * travel.y );
 	}
 
-	if ( vrFrame.Input.buttonPressed & ( BUTTON_DPAD_RIGHT | BUTTON_SWIPE_FORWARD ) )
+	if(vrFrame.Input.buttonPressed || vrFrame.Input.buttonReleased || s00 != vrFrame.Input.sticks[0][0] ||
+			 s01 != vrFrame.Input.sticks[0][1] || s10 != vrFrame.Input.sticks[1][0] || s11 != vrFrame.Input.sticks[1][1] )
 	{
-		if ( ( vrFrame.Input.buttonPressed & BUTTON_DPAD_RIGHT ) || !GazeTimer.IsFocused() )
-		{
+		s00 = vrFrame.Input.sticks[0][0];
+		s01 = vrFrame.Input.sticks[0][1];
+		s10 = vrFrame.Input.sticks[1][0];
+		s11 = vrFrame.Input.sticks[1][1];
+		Native::ControllerState(Cinema.app, s00, s01, s10, s11,
+										0.0, 0.0, // What?  No trigger axis?  Oculus!
+										vrFrame.Input.buttonState);
+	}
+
+	if ( ( vrFrame.Input.buttonReleased & BUTTON_TOUCH ) && !( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) )
+	{
+		// open ui if it's not visible
+		Cinema.app->PlaySound( "touch_up" );
+		if(onscreen) {
+			if(allowDrag) Native::MouseClick(Cinema.app,1,true); // fast click!
+			Native::MouseClick(Cinema.app,1,false);
+		} else
 			ShowUI();
 
-			//TODO: Do something with trackpad inputs
-			SetSeekIcon( 1 );
-
-			Cinema.app->PlaySound( "touch_up" );
-		}
+		// ignore button A or touchpad until release so we don't close the UI immediately after opening it
+		UIOpened = true;
 	}
+
+	if ( onscreen && ( vrFrame.Input.buttonPressed & BUTTON_TOUCH ) ) {
+		clickStartTime = ovr_GetTimeInSeconds();
+		allowDrag = true;
+	}
+
+	if( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) {
+		allowDrag = false;
+		if(!onscreen)
+			ShowUI();
+	}
+
+	if ( onscreen && allowDrag && (clickStartTime + 0.25 < ovr_GetTimeInSeconds()) &&
+			( vrFrame.Input.buttonState & BUTTON_TOUCH ) && !( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) )
+	{
+		Native::MouseClick(Cinema.app,1,true);
+		allowDrag = false; // already dragging
+	}
+
+
+	if ( onscreen && ( vrFrame.Input.buttonPressed & BUTTON_SWIPE_BACK ) )
+	{
+		Native::MouseClick(Cinema.app,3,true);
+		Cinema.app->PlaySound( "touch_up" );
+	}
+
+	if ( onscreen && ( vrFrame.Input.buttonPressed & BUTTON_SWIPE_FORWARD ) )
+	{
+		Native::MouseClick(Cinema.app,2,true);
+		Cinema.app->PlaySound( "touch_up" );
+	}
+
+	if ( onscreen && ( vrFrame.Input.buttonPressed & BUTTON_SWIPE_UP ) )
+	{
+		char diff = lastScroll - (char)(127 * vrFrame.Input.swipeFraction);
+		lastScroll = (char)(127 * vrFrame.Input.swipeFraction);
+		Native::MouseScroll(Cinema.app, diff );
+	}
+	if ( onscreen && ( vrFrame.Input.buttonPressed & BUTTON_SWIPE_DOWN ) )
+	{
+		char diff = lastScroll - (char)(-127 * vrFrame.Input.swipeFraction);
+		lastScroll = (char)(-127 * vrFrame.Input.swipeFraction);
+		Native::MouseScroll(Cinema.app, diff );
+	}
+	if ( vrFrame.Input.buttonReleased & ( BUTTON_SWIPE_DOWN | BUTTON_SWIPE_UP ))
+	{
+		lastScroll = 0;
+	}
+
 
 	if ( Cinema.SceneMgr.FreeScreenActive )
 	{
-		const Vector2f screenCursor = GazeCoordinatesOnScreen( Cinema.SceneMgr.Scene.CenterViewMatrix(), Cinema.SceneMgr.ScreenMatrix() );
-		bool onscreen = false;
-		if ( InsideUnit( screenCursor ) )
-		{
-			onscreen = true;
-		}
-		else if ( uiActive )
-		{
-			onscreen = GazeTimer.IsFocused();
-		}
-
 		if ( !onscreen )
 		{
 			// outside of screen, so show reposition message
@@ -672,7 +718,7 @@ void MoviePlayerView::CheckInput( const VrFrame & vrFrame )
 				MoveScreenLabel.SetTextColor( Vector4f( alpha ) );
 			}
 
-			if ( vrFrame.Input.buttonPressed & ( BUTTON_A | BUTTON_TOUCH ) )
+			if ( vrFrame.Input.buttonPressed & BUTTON_TOUCH )
 			{
 				RepositionScreen = true;
 			}
@@ -689,40 +735,13 @@ void MoviePlayerView::CheckInput( const VrFrame & vrFrame )
 	// while we're holding down the button or touchpad, reposition screen
 	if ( RepositionScreen )
 	{
-		if ( vrFrame.Input.buttonState & ( BUTTON_A | BUTTON_TOUCH ) )
+		if ( vrFrame.Input.buttonState & BUTTON_TOUCH )
 		{
 			Cinema.SceneMgr.PutScreenInFront();
 		}
 		else
 		{
 			RepositionScreen = false;
-		}
-	}
-
-	if ( vrFrame.Input.buttonPressed & BUTTON_START )
-	{
-
-		//TODO: Do something with inputs
-	}
-
-	if ( vrFrame.Input.buttonPressed & BUTTON_SELECT )
-	{
-		// movie select
-		Cinema.app->PlaySound( "touch_up" );
-		Cinema.AppSelection( false );
-	}
-
-	if ( vrFrame.Input.buttonPressed & BUTTON_B )
-	{
-		if ( !uiActive )
-		{
-			BackPressed();
-		}
-		else
-		{
-			LOG( "User pressed button 2" );
-			Cinema.app->PlaySound( "touch_up" );
-			HideUI();
 		}
 	}
 }
@@ -759,14 +778,13 @@ void MoviePlayerView::UpdateUI( const VrFrame & vrFrame )
 		}
 
 		// if we press the touchpad or a button outside of the playback controls, then close the UI
-		if ( ( ( vrFrame.Input.buttonPressed & BUTTON_A ) != 0 ) || ( ( vrFrame.Input.buttonPressed & BUTTON_TOUCH ) != 0 ) )
+		if ( ( vrFrame.Input.buttonPressed & BUTTON_TOUCH ) != 0 )
 		{
-			// ignore button A or touchpad until release so we don't close the UI immediately after opening it
+			// ignore touchpad until release so we don't close the UI immediately after opening it
 			BackgroundClicked = !GazeTimer.IsFocused() && !UIOpened;
 		}
 
-		if ( ( ( vrFrame.Input.buttonReleased & BUTTON_A ) != 0 ) ||
-			( ( ( vrFrame.Input.buttonReleased & BUTTON_TOUCH ) != 0 ) && ( ( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) == 0 ) )	)
+		if ( ( ( ( vrFrame.Input.buttonReleased & BUTTON_TOUCH ) != 0 ) && ( ( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) == 0 ) )	)
 		{
 			if ( !GazeTimer.IsFocused() && BackgroundClicked )
 			{

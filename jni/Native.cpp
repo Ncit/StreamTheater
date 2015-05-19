@@ -126,6 +126,10 @@ static jmethodID 	getPcPairStateMethodId = NULL;
 static jmethodID 	getPcStateMethodId = NULL;
 static jmethodID 	getPcReachabilityMethodId = NULL;
 static jmethodID 	initAppSelectorMethodId = NULL;
+static jmethodID	mouseMoveMethodId = NULL;
+static jmethodID	mouseClickMethodId = NULL;
+static jmethodID	mouseScrollMethodId = NULL;
+static jmethodID	controllerStateMethodId = NULL;
 
 // Error checks and exits on failure
 static jmethodID GetMethodID( App *app, jclass cls, const char * name, const char * signature )
@@ -158,7 +162,10 @@ void Native::OneTimeInit( App *app, jclass mainActivityClass )
 	getPcStateMethodId 					= GetMethodID( app, mainActivityClass, "getPcState", "(Ljava/lang/String;)I" );
 	getPcReachabilityMethodId 			= GetMethodID( app, mainActivityClass, "getPcReachability", "(Ljava/lang/String;)I" );
 	initAppSelectorMethodId 			= GetMethodID( app, mainActivityClass, "initAppSelector", "(Ljava/lang/String;)V" );
-
+	mouseMoveMethodId 					= GetMethodID( app, mainActivityClass, "mouseMove", "(II)V" );
+	mouseClickMethodId 					= GetMethodID( app, mainActivityClass, "mouseClick", "(IZ)V" );
+	mouseScrollMethodId 				= GetMethodID( app, mainActivityClass, "mouseScroll", "(B)V" );
+	controllerStateMethodId				= GetMethodID( app, mainActivityClass, "controllerState", "(FFFFFFI)V" );
 	LOG( "Native::OneTimeInit: %3.1f seconds", ovr_GetTimeInSeconds() - start );
 }
 
@@ -263,5 +270,26 @@ void Native::Pair( App *app, const char* uuid)
 	jstring jstrUUID = app->GetVrJni()->NewStringUTF( uuid );
 	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), pairPcMethodId, jstrUUID );
 }
+
+void Native::MouseMove(App *app, int deltaX, int deltaY)
+{
+	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), mouseMoveMethodId, deltaX, deltaY );
+}
+
+void Native::MouseClick(App *app, int buttonId, bool down)
+{
+	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), mouseClickMethodId, buttonId, down );
+}
+
+void Native::MouseScroll(App *app, char amount)
+{
+	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), mouseScrollMethodId, amount );
+}
+
+void Native::ControllerState(App *app, float stick1x, float stick1y, float stick2x, float stick2y, float leftTrigger, float rightTrigger, int buttons )
+{
+	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), controllerStateMethodId, stick1x, stick1y, stick2x, stick2y, leftTrigger, rightTrigger, buttons );
+}
+
 
 } // namespace VRMatterStreamTheater
