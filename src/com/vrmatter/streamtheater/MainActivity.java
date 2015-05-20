@@ -495,26 +495,26 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		appSelector = new AppSelector(this, computerUUID);
 	}
 	
-	public void MouseMove( int deltaX, int deltaY)
+	public void mouseMove( int deltaX, int deltaY)
 	{
 		streamInterface.mouseMove(deltaX, deltaY);
 	}
 	
-	public void MouseClick(int buttonId, boolean down)
+	public void mouseClick(int buttonId, boolean down)
 	{
 		streamInterface.mouseButtonEvent(buttonId, down);
 	}
 	
-	public void MouseScroll( byte amount)
+	public void mouseScroll( byte amount)
 	{
 		streamInterface.mouseScroll(amount);
 	}
 	
 	private long lastTime = 0;
-	public void ControllerState(float stick1x, float stick1y, float stick2x, float stick2y, float leftTrigger, float rightTrigger, int buttonState)
+	public void controllerState(float stick1x, float stick1y, float stick2x, float stick2y, float leftTrigger, float rightTrigger, int buttonState)
 	{
 		// Oculus's int button states have touchpad events and stuff in them, only use the first 14 bits (0x3FFF)
-		streamInterface.controllerUpdate(stick1x, stick1y, stick2x, stick2y, leftTrigger, rightTrigger, (short) (buttonState & 0x3FFF));
+		streamInterface.controllerUpdate(stick1x, stick1y, stick2x, stick2y, leftTrigger, rightTrigger, (short) (buttonState & 0x00003FFF));
 	}
 
 }

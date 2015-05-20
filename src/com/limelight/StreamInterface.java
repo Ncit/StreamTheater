@@ -34,6 +34,7 @@ import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.SystemClock;
+import android.util.Log;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -814,14 +815,14 @@ public class StreamInterface implements SurfaceHolder.Callback,
 	
     public void controllerUpdate(float stick1x, float stick1y, float stick2x, float stick2y, float leftTriggerF, float rightTriggerF, short buttons)
     {
-    	short controllerNumber = 1;
+    	short controllerNumber = 0;
     	short inputMap = 0;
-    	byte leftTrigger = (byte) ((float)Byte.MAX_VALUE / leftTriggerF);
-    	byte rightTrigger = (byte) ((float)Byte.MAX_VALUE / rightTriggerF);
-    	short leftStickX = (short) ((float)Short.MAX_VALUE / stick1x);
-    	short leftStickY = (short) ((float)Short.MAX_VALUE / stick1y);
-    	short rightStickX = (short) ((float)Short.MAX_VALUE / stick2x);
-    	short rightStickY = (short) ((float)Short.MAX_VALUE / stick2y);
+    	byte leftTrigger = (byte) (((float)Byte.MAX_VALUE-1) * leftTriggerF);
+    	byte rightTrigger = (byte) (((float)Byte.MAX_VALUE-1) * rightTriggerF);
+    	short leftStickX = (short) (((float)Short.MAX_VALUE-1) * stick1x);
+    	short leftStickY = (short) (((float)Short.MAX_VALUE-1) * (0-stick1y));
+    	short rightStickX = (short) (((float)Short.MAX_VALUE-1) * stick2x);
+    	short rightStickY = (short) (((float)Short.MAX_VALUE-1) * (0-stick2y));
     	
     	/* No stick clicks from Oculus's library.  :/
             inputMap |= ControllerPacket.LS_CLK_FLAG;
@@ -845,7 +846,7 @@ public class StreamInterface implements SurfaceHolder.Callback,
     	// Moonlight does Start & select or select & RB = SPECIAL_BUTTON_FLAG, so let's do that also
     	if((buttons & ( BUTTON_START 		 | BUTTON_SELECT)) != 0) inputMap |= ControllerPacket.SPECIAL_BUTTON_FLAG;
     	if((buttons & ( BUTTON_RIGHT_TRIGGER | BUTTON_SELECT)) != 0) inputMap |= ControllerPacket.SPECIAL_BUTTON_FLAG;
-    	
+    	//Log.i("INPUT", "" + controllerNumber+" "+leftTrigger+" "+rightTrigger+" "+leftStickX+" "+leftStickY+" "+rightStickX+" "+rightStickY+" "+inputMap);
         conn.sendControllerInput(controllerNumber, inputMap, leftTrigger, rightTrigger, leftStickX, leftStickY, rightStickX, rightStickY);
     }
 
