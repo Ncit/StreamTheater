@@ -630,16 +630,19 @@ void MoviePlayerView::CheckInput( const VrFrame & vrFrame )
 		Native::MouseMove(Cinema.app, 1280 / 2 * travel.x, 720 / -2 * travel.y );
 	}
 
-	if( (vrFrame.Input.buttonPressed & 0x3FFF) || (vrFrame.Input.buttonReleased & 0x3FFF) || s00 != vrFrame.Input.sticks[0][0] ||
-			 s01 != vrFrame.Input.sticks[0][1] || s10 != vrFrame.Input.sticks[1][0] || s11 != vrFrame.Input.sticks[1][1] )
+	if( (vrFrame.Input.buttonPressed & 0x0FFFF) || (vrFrame.Input.buttonReleased & 0x0FFFF) ||
+			s00 != vrFrame.Input.sticks[0][0] || s01 != vrFrame.Input.sticks[0][1] ||
+			s10 != vrFrame.Input.sticks[1][0] || s11 != vrFrame.Input.sticks[1][1] ||
+			s20 != vrFrame.Input.sticks[2][0] || s21 != vrFrame.Input.sticks[2][1] )
 	{
 		s00 = vrFrame.Input.sticks[0][0];
 		s01 = vrFrame.Input.sticks[0][1];
 		s10 = vrFrame.Input.sticks[1][0];
 		s11 = vrFrame.Input.sticks[1][1];
-		//LOG("Input! %f %f %f %f %i", s00, s01, s10, s11, vrFrame.Input.buttonState );
-		Native::ControllerState(Cinema.app, s00, s01, s10, s11,
-										0.0, 0.0, // What?  No trigger axis?  Oculus!
+		s20 = vrFrame.Input.sticks[2][0];
+		s21 = vrFrame.Input.sticks[2][1];
+//		LOG("Input! %f %f %f %f %f %f %i", s00, s01, s10, s11, s20, s21, vrFrame.Input.buttonState );
+		Native::ControllerState(Cinema.app, s00, s01, s10, s11, s20, s21,
 										vrFrame.Input.buttonState);
 	}
 

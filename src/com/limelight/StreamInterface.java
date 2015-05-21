@@ -812,6 +812,9 @@ public class StreamInterface implements SurfaceHolder.Callback,
 	private static final short BUTTON_DPAD_DOWN		= 1<<11;
 	private static final short BUTTON_DPAD_LEFT		= 1<<12;
 	private static final short BUTTON_DPAD_RIGHT		= 1<<13;
+	private static final short BUTTON_THUMBL		= 1<<14;
+	private static final short BUTTON_THUMBR		= -0x8000; // Signed short, MSB means negative.
+
 	
     public void controllerUpdate(float stick1x, float stick1y, float stick2x, float stick2y, float leftTriggerF, float rightTriggerF, short buttons)
     {
@@ -842,11 +845,13 @@ public class StreamInterface implements SurfaceHolder.Callback,
     	if((buttons & BUTTON_DPAD_DOWN) != 0)		inputMap |= ControllerPacket.DOWN_FLAG;
     	if((buttons & BUTTON_DPAD_LEFT) != 0)		inputMap |= ControllerPacket.LEFT_FLAG;
     	if((buttons & BUTTON_DPAD_RIGHT) != 0)		inputMap |= ControllerPacket.RIGHT_FLAG;
+    	if((buttons & BUTTON_THUMBL) != 0)			inputMap |= ControllerPacket.LS_CLK_FLAG;
+    	if((buttons & BUTTON_THUMBR) != 0)			inputMap |= ControllerPacket.RS_CLK_FLAG;
     	
     	// Moonlight does Start & select or select & RB = SPECIAL_BUTTON_FLAG, so let's do that also
     	if((buttons & ( BUTTON_START 		 | BUTTON_SELECT)) != 0) inputMap |= ControllerPacket.SPECIAL_BUTTON_FLAG;
     	if((buttons & ( BUTTON_RIGHT_TRIGGER | BUTTON_SELECT)) != 0) inputMap |= ControllerPacket.SPECIAL_BUTTON_FLAG;
-    	//Log.i("INPUT", "" + controllerNumber+" "+leftTrigger+" "+rightTrigger+" "+leftStickX+" "+leftStickY+" "+rightStickX+" "+rightStickY+" "+inputMap);
+//    	Log.i("INPUT", "" + controllerNumber+" "+leftStickX+" "+leftStickY+" "+rightStickX+" "+rightStickY+" "+leftTrigger+" "+rightTrigger+" "+inputMap);
         conn.sendControllerInput(controllerNumber, inputMap, leftTrigger, rightTrigger, leftStickX, leftStickY, rightStickX, rightStickY);
     }
 
