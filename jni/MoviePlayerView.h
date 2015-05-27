@@ -213,6 +213,13 @@ private:
 	bool					BackgroundClicked;
 	bool					UIOpened;							// Used to ignore button A or touchpad until release so we don't close the UI immediately after opening it
 
+	float 					s00,s01,s10,s11,s20,s21;		// Last stick positions so we don't have to make network traffic when not changing
+	bool					allowDrag;
+	double					clickStartTime;
+	char					lastScroll;
+	Vector2f 				lastMouse;
+
+
 
 private:
 	void 					CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont const & font );
