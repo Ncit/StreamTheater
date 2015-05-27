@@ -678,6 +678,8 @@ bool SceneManager::Command( const char * msg )
 		MovieTextureWidth = width;
 		MovieTextureHeight = height;
 
+		MovieTexture->SetDefaultBufferSize(width, height);
+
 		// Disable overlay on larger movies to reduce judder
 		long numberOfPixels = MovieTextureWidth * MovieTextureHeight;
 		LOG( "Movie size: %dx%d = %d pixels", MovieTextureWidth, MovieTextureHeight, numberOfPixels );

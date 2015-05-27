@@ -17,7 +17,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "CinemaApp.h"
 #include "Native.h"
 #include "CinemaStrings.h"
-
+#include <sys/system_properties.h>
 
 //=======================================================================================
 
@@ -320,8 +320,20 @@ void CinemaApp::ConfigureVrMode( ovrModeParms & modeParms ) {
 	// The CPU clock should ramp up above the minimum when necessary.
 	LOG( "ConfigureClocks: Cinema only needs minimal clocks" );
 
-	modeParms.CpuLevel = 1;
-	modeParms.GpuLevel = 2;
+	char model_id[PROP_VALUE_MAX]; // PROP_VALUE_MAX from <sys/system_properties.h>.
+	int len;
+	len = __system_property_get("ro.build.version.sdk", model_id);
+	if (len >= 2 && model_id[0] == '2' && model_id[1] == '1') {
+		LOG("Adjusting CPU level for Lollipop");
+		modeParms.CpuLevel = 2;
+		modeParms.GpuLevel = 1;
+	}
+	else
+	{
+		LOG("Adjusting CPU level for KitKat: %s", model_id);
+		modeParms.CpuLevel = 1;
+		modeParms.GpuLevel = 2;
+	}
 
 	// when the app is throttled, go to the platform UI and display a
 	// dismissable warning. On return to the app, force 30hz timewarp.

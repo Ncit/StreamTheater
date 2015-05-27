@@ -52,6 +52,13 @@ public class MediaCodecHelper {
 		// Software decoders that don't support H264 high profile
 		blacklistedDecoderPrefixes.add("omx.google");
 		blacklistedDecoderPrefixes.add("AVCDecoder");
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+			// Lollipop has issues with either these or any hardware decoders in StreamTheater
+			// This may be fixable, but until then, black list them so we default to software
+			blacklistedDecoderPrefixes.add("OMX.qcom");
+			blacklistedDecoderPrefixes.add("OMX.SEC");
+		}
+
 	}
 	
 	static {
