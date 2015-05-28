@@ -131,6 +131,8 @@ public:
 	virtual Matrix4f 		DrawEyeView( const int eye, const float fovDegrees );
 	virtual Matrix4f 		Frame( const VrFrame & vrFrame );
 
+	virtual void			SetError( const char *text, bool showSDCard, bool showErrorIcon );
+
 private:
 	CinemaApp &				Cinema;
 

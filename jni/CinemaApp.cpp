@@ -43,7 +43,8 @@ CinemaApp::CinemaApp() :
 	CurrentMovie( NULL ),
 	PlayList(),
 	ShouldResumeMovie( false ),
-	MovieFinishedPlaying( false )
+	MovieFinishedPlaying( false ),
+	DelayedError( NULL )
 
 {
 }
@@ -376,6 +377,13 @@ Matrix4f CinemaApp::Frame( const VrFrame vrFrame )
 	FrameCount++;
 	this->vrFrame = vrFrame;
 
+	if(DelayedError != NULL && !ViewMgr.ChangingViews())
+	{
+		ShowError(*DelayedError);
+		delete DelayedError;
+		DelayedError = NULL;
+	}
+
 	return ViewMgr.Frame( vrFrame );
 }
 
@@ -398,8 +406,18 @@ void CinemaApp::PairSuccess()
 
 void CinemaApp::ShowError( const String& msg )
 {
-	View *view = ViewMgr.GetCurrentView();
-	if(view) view->SetError(msg.ToCStr(), false, true);
+	if(ViewMgr.ChangingViews())
+	{
+		if( DelayedError == NULL)
+		{
+			DelayedError = new OVR::String(msg);
+		}
+	}
+	else
+	{
+		View *view = ViewMgr.GetCurrentView();
+		if(view) view->SetError(msg.ToCStr(), false, true);
+	}
 }
 
 void CinemaApp::ClearError()

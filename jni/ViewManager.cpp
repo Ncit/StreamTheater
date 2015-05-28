@@ -30,6 +30,11 @@ ViewManager::ViewManager() :
 	LastEyeMatrix[ 1 ].SetIdentity();
 }
 
+bool ViewManager::ChangingViews()
+{
+	return NextView != NULL;
+}
+
 void ViewManager::AddView( View * view )
 {
 	LOG( "AddView: %s", view->name );

@@ -429,6 +429,13 @@ void MoviePlayerView::MovieLoaded( const int width, const int height, const int 
 	ScrubBar.SetDuration( duration );
 }
 
+void MoviePlayerView::SetError( const char *text, bool showSDCard, bool showErrorIcon )
+{
+	LOG( "Opening MovieSelection" );
+	Cinema.AppSelection( true );
+	Cinema.ShowError( text );
+}
+
 void MoviePlayerView::BackPressed()
 {
 	LOG( "BackPressed" );

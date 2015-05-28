@@ -42,6 +42,8 @@ public:
 	Matrix4f 		DrawEyeView( const int eye, const float fovDegrees );
 	Matrix4f 		Frame( const VrFrame & vrFrame );
 
+	bool			ChangingViews();
+
 private:
 	Matrix4f		LastViewMatrix;
 	Matrix4f		LastEyeMatrix[ 2 ];

@@ -118,6 +118,8 @@ private:
 
 	bool					ShouldResumeMovie;
 	bool					MovieFinishedPlaying;
+
+	OVR::String*			DelayedError;
 };
 
 } // namespace VRMatterStreamTheater
