@@ -216,8 +216,11 @@ private:
 	float 					s00,s01,s10,s11,s20,s21;		// Last stick positions so we don't have to make network traffic when not changing
 	bool					allowDrag;
 	double					clickStartTime;
-	char					lastScroll;
+	signed char				lastScroll;
 	Vector2f 				lastMouse;
+	bool					mouseDownLeft;
+	bool					mouseDownRight;
+	bool					mouseDownMiddle;
 
 
 

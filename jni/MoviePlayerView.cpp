@@ -84,11 +84,15 @@ MoviePlayerView::MoviePlayerView( CinemaApp &cinema ) :
 	SeekTime( Cinema ),
 	BackgroundClicked( false ),
 	UIOpened( false ),
-	s00(0.0f),s01(0.0f),s10(0.0f),s11(0.0f),
+	s00(0.0f),s01(0.0f),s10(0.0f),s11(0.0f),s20(0.0f),s21(0.0f),
 	allowDrag(false),
 	clickStartTime(0.0),
 	lastScroll(0),
-	lastMouse()
+	lastMouse(0.0,0.0),
+	mouseDownLeft(false),
+	mouseDownRight(false),
+	mouseDownMiddle(false)
+
 {
 }
 
@@ -611,8 +615,19 @@ Vector2f MoviePlayerView::GazeCoordinatesOnScreen( const Matrix4f & viewMatrix, 
 	return Vector2f( localCoordinate.x, localCoordinate.y );
 }
 
+#define SCROLL_CLICKS 8
 void MoviePlayerView::CheckInput( const VrFrame & vrFrame )
 {
+	// while we're holding down the button or touchpad, reposition screen
+	if ( RepositionScreen ) {
+		if ( vrFrame.Input.buttonState & BUTTON_TOUCH ) {
+			Cinema.SceneMgr.PutScreenInFront();
+		} else {
+			RepositionScreen = false;
+		}
+		return;
+	}
+
 	const Vector2f screenCursor = GazeCoordinatesOnScreen( Cinema.SceneMgr.Scene.CenterViewMatrix(), Cinema.SceneMgr.ScreenMatrix() );
 	bool onscreen = false;
 	if ( InsideUnit( screenCursor ) )
@@ -625,9 +640,12 @@ void MoviePlayerView::CheckInput( const VrFrame & vrFrame )
 	}
 
 	if(onscreen) {
-		Vector2f travel = screenCursor - lastMouse;
+		if(lastMouse.x >= -1 && lastMouse.x <= 1 && lastMouse.y >= -1 && lastMouse.y <= 1)
+		{
+			Vector2f travel = screenCursor - lastMouse;
+			Native::MouseMove(Cinema.app, 1280 / 2 * 1.2 * travel.x, 720 / -2 * 1.2 * travel.y );
+		}
 		lastMouse = screenCursor;
-		Native::MouseMove(Cinema.app, 1280 / 2 * travel.x, 720 / -2 * travel.y );
 	}
 
 	if( (vrFrame.Input.buttonPressed & 0x0FFFF) || (vrFrame.Input.buttonReleased & 0x0FFFF) ||
@@ -641,19 +659,23 @@ void MoviePlayerView::CheckInput( const VrFrame & vrFrame )
 		s11 = vrFrame.Input.sticks[1][1];
 		s20 = vrFrame.Input.sticks[2][0];
 		s21 = vrFrame.Input.sticks[2][1];
-//		LOG("Input! %f %f %f %f %f %f %i", s00, s01, s10, s11, s20, s21, vrFrame.Input.buttonState );
+		//LOG("Input! %f %f %f %f %f %f %i", s00, s01, s10, s11, s20, s21, vrFrame.Input.buttonState );
 		Native::ControllerState(Cinema.app, s00, s01, s10, s11, s20, s21,
 										vrFrame.Input.buttonState);
 	}
 
+	// Left click
 	if ( ( vrFrame.Input.buttonReleased & BUTTON_TOUCH ) && !( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) )
 	{
-		// open ui if it's not visible
-		Cinema.app->PlaySound( "touch_up" );
 		if(onscreen) {
-			if(allowDrag) Native::MouseClick(Cinema.app,1,true); // fast click!
+			if(allowDrag && !mouseDownLeft)
+			{
+				Native::MouseClick(Cinema.app,1,true); // fast click!
+			}
 			Native::MouseClick(Cinema.app,1,false);
-		} else
+			Cinema.app->PlaySound( "touch_up" );
+			mouseDownLeft = false;
+		} else		// open ui if it's not visible
 			ShowUI();
 
 		// ignore button A or touchpad until release so we don't close the UI immediately after opening it
@@ -667,44 +689,80 @@ void MoviePlayerView::CheckInput( const VrFrame & vrFrame )
 
 	if( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) {
 		allowDrag = false;
-		if(!onscreen)
-			ShowUI();
 	}
 
-	if ( onscreen && allowDrag && (clickStartTime + 0.25 < ovr_GetTimeInSeconds()) &&
+	if ( onscreen && allowDrag && !mouseDownLeft && (clickStartTime + 0.5 < ovr_GetTimeInSeconds()) &&
 			( vrFrame.Input.buttonState & BUTTON_TOUCH ) && !( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) )
 	{
 		Native::MouseClick(Cinema.app,1,true);
+		Cinema.app->PlaySound( "touch_down" );
+		mouseDownLeft = true;
 		allowDrag = false; // already dragging
 	}
 
-
-	if ( onscreen && ( vrFrame.Input.buttonPressed & BUTTON_SWIPE_BACK ) )
+	// Right click
+	if ( onscreen && !mouseDownRight && ( vrFrame.Input.buttonPressed & BUTTON_SWIPE_BACK ) )
 	{
 		Native::MouseClick(Cinema.app,3,true);
-		Cinema.app->PlaySound( "touch_up" );
+		Cinema.app->PlaySound( "touch_down" );
+		mouseDownRight = true;
 	}
 
-	if ( onscreen && ( vrFrame.Input.buttonPressed & BUTTON_SWIPE_FORWARD ) )
+	// Middle click
+	if ( onscreen && !mouseDownMiddle && ( vrFrame.Input.buttonPressed & BUTTON_SWIPE_FORWARD ) )
 	{
 		Native::MouseClick(Cinema.app,2,true);
-		Cinema.app->PlaySound( "touch_up" );
+		Cinema.app->PlaySound( "touch_down" );
+		mouseDownMiddle = true;
 	}
 
-	if ( onscreen && ( vrFrame.Input.buttonPressed & BUTTON_SWIPE_UP ) )
+	// Mouse Scroll
+	// It says it's 0.0-1.0, but it's calculated as if(d>100) swf = d/100, so it can't be less than 1.0.
+	float actualSwipeFraction = vrFrame.Input.swipeFraction - 1.0;
+	if ( onscreen && ( vrFrame.Input.buttonState & BUTTON_SWIPE_UP ) )
 	{
-		char diff = lastScroll - (char)(127 * vrFrame.Input.swipeFraction);
-		lastScroll = (char)(127 * vrFrame.Input.swipeFraction);
-		Native::MouseScroll(Cinema.app, diff );
+		signed char diff = (signed char)(SCROLL_CLICKS * actualSwipeFraction) - lastScroll;
+		//LOG("Scroll up %i %f", diff, vrFrame.Input.swipeFraction);
+		lastScroll = (signed char)(SCROLL_CLICKS * actualSwipeFraction);
+		if(diff)
+		{
+			Native::MouseScroll(Cinema.app, diff );
+			Cinema.app->PlaySound( "touch_up" );
+		}
 	}
-	if ( onscreen && ( vrFrame.Input.buttonPressed & BUTTON_SWIPE_DOWN ) )
+	if ( onscreen && ( vrFrame.Input.buttonState & BUTTON_SWIPE_DOWN ) )
 	{
-		char diff = lastScroll - (char)(-127 * vrFrame.Input.swipeFraction);
-		lastScroll = (char)(-127 * vrFrame.Input.swipeFraction);
-		Native::MouseScroll(Cinema.app, diff );
+		signed char diff = lastScroll - (signed char)(SCROLL_CLICKS * actualSwipeFraction);
+		//LOG("Scroll down %i %f", diff, vrFrame.Input.swipeFraction);
+		lastScroll = (signed char)(SCROLL_CLICKS * actualSwipeFraction);
+		if(diff)
+		{
+			Native::MouseScroll(Cinema.app, diff );
+			Cinema.app->PlaySound( "touch_down" );
+		}
 	}
-	if ( vrFrame.Input.buttonReleased & ( BUTTON_SWIPE_DOWN | BUTTON_SWIPE_UP ))
+
+	if ( vrFrame.Input.buttonReleased & BUTTON_TOUCH )
 	{
+		if(mouseDownRight)
+		{
+			Native::MouseClick(Cinema.app,3,false);
+			mouseDownRight = false;
+			Cinema.app->PlaySound( "touch_up" );
+		}
+		if(mouseDownMiddle)
+		{
+			Native::MouseClick(Cinema.app,2,false);
+			mouseDownMiddle = false;
+			Cinema.app->PlaySound( "touch_up" );
+		}
+		if(mouseDownLeft)
+		{
+			Native::MouseClick(Cinema.app,1,false);
+			mouseDownLeft = false;
+			Cinema.app->PlaySound( "touch_up" );
+		}
+
 		lastScroll = 0;
 	}
 
@@ -733,19 +791,6 @@ void MoviePlayerView::CheckInput( const VrFrame & vrFrame )
 			const double now = ovr_GetTimeInSeconds();
 			MoveScreenAlpha.Set( now, -1.0f, now + 1.0f, 1.0f );
 			MoveScreenLabel.SetVisible( false );
-		}
-	}
-
-	// while we're holding down the button or touchpad, reposition screen
-	if ( RepositionScreen )
-	{
-		if ( vrFrame.Input.buttonState & BUTTON_TOUCH )
-		{
-			Cinema.SceneMgr.PutScreenInFront();
-		}
-		else
-		{
-			RepositionScreen = false;
 		}
 	}
 }

@@ -64,7 +64,7 @@ public:
 
     static void			MouseMove(App *app, int deltaX, int deltaY);
     static void			MouseClick(App *app, int buttonId, bool down);
-    static void			MouseScroll(App *app, char amount);
+    static void			MouseScroll(App *app, signed char amount);
 
     static void			ControllerState(App *app, float stick1x, float stick1y, float stick2x, float stick2y, float leftTrigger, float rightTrigger, int buttons);
 };

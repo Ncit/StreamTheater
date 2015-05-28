@@ -662,8 +662,8 @@ public class StreamInterface implements SurfaceHolder.Callback,
         if (!displayedFailureDialog) {
             displayedFailureDialog = true;
             stopConnection();
-            Dialog.displayDialog(activity, activity.getResources().getString(R.string.conn_error_title),
-            		activity.getResources().getString(R.string.conn_error_msg)+" "+stage.getName(), true);
+            MainActivity.nativeShowError(activity.appPtr, activity.getResources().getString(R.string.conn_error_title)
+            		+ " - " + activity.getResources().getString(R.string.conn_error_msg)+" "+stage.getName());
         }
     }
 
@@ -674,8 +674,8 @@ public class StreamInterface implements SurfaceHolder.Callback,
             e.printStackTrace();
 
             stopConnection();
-            Dialog.displayDialog(activity, activity.getResources().getString(R.string.conn_terminated_title),
-            		activity.getResources().getString(R.string.conn_terminated_msg), true);
+            MainActivity.nativeShowError(activity.appPtr, activity.getResources().getString(R.string.conn_terminated_title)
+            		+ " - " + activity.getResources().getString(R.string.conn_terminated_msg));
         }
     }
 

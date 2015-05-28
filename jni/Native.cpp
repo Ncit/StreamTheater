@@ -281,7 +281,7 @@ void Native::MouseClick(App *app, int buttonId, bool down)
 	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), mouseClickMethodId, buttonId, down );
 }
 
-void Native::MouseScroll(App *app, char amount)
+void Native::MouseScroll(App *app, signed char amount)
 {
 	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), mouseScrollMethodId, amount );
 }
