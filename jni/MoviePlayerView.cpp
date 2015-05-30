@@ -431,7 +431,7 @@ void MoviePlayerView::MovieLoaded( const int width, const int height, const int 
 
 void MoviePlayerView::SetError( const char *text, bool showSDCard, bool showErrorIcon )
 {
-	LOG( "Opening MovieSelection" );
+	LOG( "Error: %s", text );
 	Cinema.AppSelection( true );
 	Cinema.ShowError( text );
 }

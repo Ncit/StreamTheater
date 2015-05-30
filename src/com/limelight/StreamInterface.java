@@ -32,6 +32,7 @@ import android.graphics.Point;
 import android.hardware.input.InputManager;
 import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.util.Log;
@@ -103,6 +104,11 @@ public class StreamInterface implements SurfaceHolder.Callback,
 
         // Read the stream preferences
         prefConfig = PreferenceConfiguration.readPreferences(activity);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        	prefConfig.decoder = PreferenceConfiguration.FORCE_SOFTWARE_DECODER;
+        }
+        
         switch (prefConfig.decoder) {
         case PreferenceConfiguration.FORCE_SOFTWARE_DECODER:
             drFlags |= VideoDecoderRenderer.FLAG_FORCE_SOFTWARE_DECODING;
@@ -704,7 +710,7 @@ public class StreamInterface implements SurfaceHolder.Callback,
 
     @Override
     public void displayTransientMessage(final String message) {
-        if (!prefConfig.disableWarnings) {
+ /*       if (!prefConfig.disableWarnings) {
         	activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -712,7 +718,7 @@ public class StreamInterface implements SurfaceHolder.Callback,
                 }
             });
         }
-    }
+ */   }
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {

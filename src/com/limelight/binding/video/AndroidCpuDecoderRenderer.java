@@ -94,7 +94,7 @@ public class AndroidCpuDecoderRenderer extends EnhancedDecoderRenderer {
     public boolean setup(int width, int height, int redrawRate, Object renderTarget, int drFlags) {
         this.targetFps = redrawRate;
 
-        int perfLevel = HIGH_PERF; //findOptimalPerformanceLevel();
+        int perfLevel = MED_PERF; //findOptimalPerformanceLevel();
         int threadCount;
 
         int avcFlags = 0;
@@ -103,13 +103,13 @@ public class AndroidCpuDecoderRenderer extends EnhancedDecoderRenderer {
             // Single threaded low latency decode is ideal but hard to acheive
             avcFlags = AvcDecoder.LOW_LATENCY_DECODE;
             avcFlags = AvcDecoder.SLICE_THREADING;
-            threadCount = 1;
+            threadCount = 4;
             break;
 
         case LOW_PERF:
             // Disable the loop filter for performance reasons
             avcFlags = AvcDecoder.FAST_BILINEAR_FILTERING;
-            avcFlags = AvcDecoder.SLICE_THREADING;
+            //avcFlags = AvcDecoder.SLICE_THREADING;
 
             // Use plenty of threads to try to utilize the CPU as best we can
             threadCount = cpuCount - 1;
@@ -119,9 +119,9 @@ public class AndroidCpuDecoderRenderer extends EnhancedDecoderRenderer {
         case MED_PERF:
             avcFlags = AvcDecoder.BILINEAR_FILTERING;
             avcFlags = AvcDecoder.SLICE_THREADING;
-
-            // Only use 2 threads to minimize frame processing latency
-            threadCount = 2;
+            
+            // Use 4 threads for SLICE_THREADING, and hope they're running GFE 2.4
+            threadCount = 4;
             break;
         }
 
