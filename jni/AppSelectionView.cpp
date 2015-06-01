@@ -662,6 +662,8 @@ void AppSelectionView::Select() {
 	MoviesIndex = MovieBrowser->GetSelection();
 	Cinema.SetPlaylist(AppList, MoviesIndex);
 
+	Native::stopAppUpdates(Cinema.app);
+
 	if (!Cinema.InLobby) {
 		if (lastIndex == MoviesIndex) {
 			// selected the poster we were just watching

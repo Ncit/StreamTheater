@@ -94,7 +94,7 @@ public class AndroidCpuDecoderRenderer extends EnhancedDecoderRenderer {
     public boolean setup(int width, int height, int redrawRate, Object renderTarget, int drFlags) {
         this.targetFps = redrawRate;
 
-        int perfLevel = MED_PERF; //findOptimalPerformanceLevel();
+        int perfLevel = LOW_PERF; //findOptimalPerformanceLevel();
         int threadCount;
 
         int avcFlags = 0;
@@ -102,8 +102,7 @@ public class AndroidCpuDecoderRenderer extends EnhancedDecoderRenderer {
         case HIGH_PERF:
             // Single threaded low latency decode is ideal but hard to acheive
             avcFlags = AvcDecoder.LOW_LATENCY_DECODE;
-            avcFlags = AvcDecoder.SLICE_THREADING;
-            threadCount = 4;
+            threadCount = 1;
             break;
 
         case LOW_PERF:
@@ -181,6 +180,8 @@ public class AndroidCpuDecoderRenderer extends EnhancedDecoderRenderer {
             @Override
             public void run() {
                 long nextFrameTime = System.currentTimeMillis();
+                long lastCheck = System.currentTimeMillis();
+                int counter = 0;
                 while (!isInterrupted())
                 {
                     long diff = nextFrameTime - System.currentTimeMillis();
@@ -194,8 +195,19 @@ public class AndroidCpuDecoderRenderer extends EnhancedDecoderRenderer {
                         continue;
                     }
 
-                    nextFrameTime = computePresentationTimeMs(targetFps);
+                    nextFrameTime += 1000/targetFps;
+                    if (nextFrameTime < System.currentTimeMillis()) // falling behind?
+                    {
+                    	nextFrameTime = computePresentationTimeMs(targetFps);
+                    }
+                    if(lastCheck < System.currentTimeMillis() - 1000)
+                    {
+                    	lastCheck += 1000;
+                    	LimeLog.info("CPU Framerate: " + counter + " should be: " + targetFps);
+                    	counter = 0;
+                    }
                     AvcDecoder.redraw();
+                    counter++;
                 }
             }
         };

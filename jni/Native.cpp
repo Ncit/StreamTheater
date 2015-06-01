@@ -130,6 +130,10 @@ static jmethodID	mouseMoveMethodId = NULL;
 static jmethodID	mouseClickMethodId = NULL;
 static jmethodID	mouseScrollMethodId = NULL;
 static jmethodID	controllerStateMethodId = NULL;
+static jmethodID	stopPcUpdatesMethodId = NULL;
+static jmethodID	startPcUpdatesMethodId = NULL;
+static jmethodID	stopAppUpdatesMethodId = NULL;
+static jmethodID	startAppUpdatesMethodId = NULL;
 
 // Error checks and exits on failure
 static jmethodID GetMethodID( App *app, jclass cls, const char * name, const char * signature )
@@ -166,6 +170,10 @@ void Native::OneTimeInit( App *app, jclass mainActivityClass )
 	mouseClickMethodId 					= GetMethodID( app, mainActivityClass, "mouseClick", "(IZ)V" );
 	mouseScrollMethodId 				= GetMethodID( app, mainActivityClass, "mouseScroll", "(B)V" );
 	controllerStateMethodId				= GetMethodID( app, mainActivityClass, "controllerState", "(FFFFFFI)V" );
+	stopPcUpdatesMethodId				= GetMethodID( app, mainActivityClass, "stopPcUpdates", "()V" );
+	startPcUpdatesMethodId				= GetMethodID( app, mainActivityClass, "startPcUpdates", "()V" );
+	stopAppUpdatesMethodId				= GetMethodID( app, mainActivityClass, "stopAppUpdates", "()V" );
+	startAppUpdatesMethodId				= GetMethodID( app, mainActivityClass, "startAppUpdates", "()V" );
 	LOG( "Native::OneTimeInit: %3.1f seconds", ovr_GetTimeInSeconds() - start );
 }
 
@@ -291,5 +299,22 @@ void Native::ControllerState(App *app, float stick1x, float stick1y, float stick
 	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), controllerStateMethodId, stick1x, stick1y, stick2x, stick2y, leftTrigger, rightTrigger, buttons );
 }
 
+
+void Native::stopPcUpdates(App *app)
+{
+	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), stopPcUpdatesMethodId );
+}
+void Native::startPcUpdates(App *app)
+{
+	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), startPcUpdatesMethodId );
+}
+void Native::stopAppUpdates(App *app)
+{
+	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), stopAppUpdatesMethodId );
+}
+void Native::startAppUpdates(App *app)
+{
+	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), startAppUpdatesMethodId );
+}
 
 } // namespace VRMatterStreamTheater

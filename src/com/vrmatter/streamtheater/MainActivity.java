@@ -426,9 +426,6 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 			streamInterface = new StreamInterface(this, uuid, currentAppName, appId, binder, surfaceHolder );
 			
 			streamInterface.surfaceCreated(surfaceHolder);
-			
-			// Manually poke this - originally the movie player would call it
-			onVideoSizeChanged(1280,720);
 
 			// Save the current movie now that it was successfully started
 			Editor edit = getPreferences( MODE_PRIVATE ).edit();
@@ -486,7 +483,17 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 	{
 		return pcSelector.reachabilityStateFromUUID(compUUID);
 	}
-
+	
+	public void startPcUpdates()
+	{
+		pcSelector.startComputerUpdates();
+	}
+	
+	public void stopPcUpdates()
+	{
+		pcSelector.stopComputerUpdates(false);
+	}
+	
 	/*
 	 *	Functions for App selection
 	 */
@@ -495,6 +502,16 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		appSelector = new AppSelector(this, computerUUID);
 	}
 	
+	public void startAppUpdates()
+	{
+		appSelector.startComputerUpdates();
+	}
+	
+	public void stopAppUpdates()
+	{
+		appSelector.stopComputerUpdates();
+	}
+
 	public void mouseMove( int deltaX, int deltaY)
 	{
 		streamInterface.mouseMove(deltaX, deltaY);

@@ -326,7 +326,7 @@ void CinemaApp::ConfigureVrMode( ovrModeParms & modeParms ) {
 	len = __system_property_get("ro.build.version.sdk", model_id);
 	if (len >= 2 && model_id[0] == '2' && model_id[1] == '1') {
 		LOG("Adjusting CPU level for Lollipop");
-		modeParms.CpuLevel = 2;
+		modeParms.CpuLevel = 3;
 		modeParms.GpuLevel = 1;
 	}
 	else

@@ -67,6 +67,11 @@ public:
     static void			MouseScroll(App *app, signed char amount);
 
     static void			ControllerState(App *app, float stick1x, float stick1y, float stick2x, float stick2y, float leftTrigger, float rightTrigger, int buttons);
+
+    static void			stopPcUpdates(App *app);
+    static void			startPcUpdates(App *app);
+    static void			stopAppUpdates(App *app);
+    static void			startAppUpdates(App *app);
 };
 
 } // namespace VRMatterStreamTheater

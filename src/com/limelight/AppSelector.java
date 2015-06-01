@@ -78,7 +78,7 @@ public class AppSelector {
         }
     };
 
-    private void startComputerUpdates() {
+    public void startComputerUpdates() {
         if (managerBinder == null) {
             return;
         }
@@ -142,7 +142,7 @@ public class AppSelector {
     }
 
     //TODO: We should be closing down this properly
-    private void stopComputerUpdates() {
+    public void stopComputerUpdates() {
         if (poller != null) {
             poller.stop();
         }

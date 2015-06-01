@@ -578,6 +578,7 @@ void PcSelectionView::Select()
 
 	Cinema.SetPc(MovieList[MoviesIndex]);
 
+	Native::stopPcUpdates(Cinema.app);
 	if ( !Cinema.InLobby )
 	{
 		Cinema.AppSelection( false );

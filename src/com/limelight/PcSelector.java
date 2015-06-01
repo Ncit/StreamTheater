@@ -72,7 +72,7 @@ public class PcSelector {
         PreferenceManager.setDefaultValues(activity, R.xml.preferences, false);
     }
 
-    private void startComputerUpdates() {
+    public void startComputerUpdates() {
         if (managerBinder != null) {
             if (runningPolling) {
                 return;
@@ -96,7 +96,7 @@ public class PcSelector {
         }
     }
 
-    private void stopComputerUpdates(boolean wait) {
+    public void stopComputerUpdates(boolean wait) {
         if (managerBinder != null) {
             if (!runningPolling) {
                 return;

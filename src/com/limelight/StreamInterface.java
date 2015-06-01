@@ -107,6 +107,7 @@ public class StreamInterface implements SurfaceHolder.Callback,
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
         	prefConfig.decoder = PreferenceConfiguration.FORCE_SOFTWARE_DECODER;
+        	prefConfig.fps = 30;
         }
         
         switch (prefConfig.decoder) {
@@ -736,6 +737,7 @@ public class StreamInterface implements SurfaceHolder.Callback,
                         prefConfig.width, prefConfig.height);
             }
 */
+            activity.onVideoSizeChanged(prefConfig.width, prefConfig.height);
             conn.start(PlatformBinding.getDeviceName(), holder, drFlags,
                     PlatformBinding.getAudioRenderer(), decoderRenderer);
         }
