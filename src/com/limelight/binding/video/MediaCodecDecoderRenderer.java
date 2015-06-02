@@ -26,6 +26,7 @@ import android.view.SurfaceHolder;
 public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
 
     private ByteBuffer[] videoDecoderInputBuffers;
+    private ByteBuffer videoDecoderInputBuffer;
     private MediaCodec videoDecoder;
     private Thread rendererThread;
     private final boolean needsSpsBitstreamFixup, isExynos4;
@@ -46,7 +47,7 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
     private int numPpsIn;
     private int numIframeIn;
 
-    @TargetApi(Build.VERSION_CODES.KITKAT)
+    //@TargetApi(Build.VERSION_CODES.KITKAT)
     public MediaCodecDecoderRenderer() {
         //dumpDecoders();
 
@@ -142,6 +143,7 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP) 
     private void startDirectSubmitRendererThread()
     {
         rendererThread = new Thread() {
@@ -163,6 +165,18 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
 
                                 lastIndex = outIndex;
                                 presentationTimeUs = info.presentationTimeUs;
+                            }
+                            
+                            ByteBuffer outputBuffer;
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            	outputBuffer = videoDecoder.getOutputBuffer(lastIndex);
+                            } else {
+                            	outputBuffer = videoDecoder.getOutputBuffers()[lastIndex];
+                            }
+                            if (info.size != 0) {
+                            	LimeLog.severe("Have an info!");
+                            	outputBuffer.position(info.offset);
+                            	outputBuffer.limit(info.offset + info.size);
                             }
 
                             // Render the last buffer
@@ -220,6 +234,7 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
         return index;
     }
 
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP) 
     private void startLegacyRendererThread()
     {
         rendererThread = new Thread() {
@@ -248,8 +263,14 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
                                 if (du == null || inputIndex == -1) {
                                     break;
                                 }
+                                
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                                	videoDecoderInputBuffer = videoDecoder.getInputBuffer(inputIndex);
+                                } else {
+                                	videoDecoderInputBuffer = videoDecoderInputBuffers[inputIndex];
+                                }
 
-                                submitDecodeUnit(du, videoDecoderInputBuffers[inputIndex], inputIndex);
+                                submitDecodeUnit(du, videoDecoderInputBuffer, inputIndex);
 
                                 du = null;
                                 inputIndex = -1;
@@ -295,7 +316,14 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
                             LimeLog.warning("Receiving an input buffer took too long: "+(submissionTime - lastDuDequeueTime)+" ms");
                         }
 
-                        submitDecodeUnit(du, videoDecoderInputBuffers[inputIndex], inputIndex);
+                        
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        	videoDecoderInputBuffer = videoDecoder.getInputBuffer(inputIndex);
+                        } else {
+                        	videoDecoderInputBuffer = videoDecoderInputBuffers[inputIndex];
+                        }
+
+                        submitDecodeUnit(du, videoDecoderInputBuffer, inputIndex);
 
                         // DU and input buffer have both been consumed
                         du = null;
@@ -315,6 +343,18 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
                                 videoDecoder.releaseOutputBuffer(lastIndex, false);
                                 lastIndex = outIndex;
                                 presentationTimeUs = info.presentationTimeUs;
+                            }
+                                                        
+                            ByteBuffer outputBuffer;
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            	outputBuffer = videoDecoder.getOutputBuffer(lastIndex);
+                            } else {
+                            	outputBuffer = videoDecoder.getOutputBuffers()[lastIndex];
+                            }
+                            if (info.size != 0) {
+                            	LimeLog.severe("Have an info!");
+                            	outputBuffer.position(info.offset);
+                            	outputBuffer.limit(info.offset + info.size);
                             }
 
                             // Render the last buffer
@@ -547,9 +587,17 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void replaySps() {
         int inputIndex = dequeueInputBuffer(true, true);
-        ByteBuffer inputBuffer = videoDecoderInputBuffers[inputIndex];
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        	videoDecoderInputBuffer = videoDecoder.getInputBuffer(inputIndex);
+        } else {
+        	videoDecoderInputBuffer = videoDecoderInputBuffers[inputIndex];
+        }
+
+        ByteBuffer inputBuffer = videoDecoderInputBuffer;
 
         inputBuffer.clear();
 
@@ -617,6 +665,7 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP) 
     @Override
     public void directSubmitDecodeUnit(DecodeUnit du) {
         int inputIndex;
@@ -631,9 +680,15 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
                 handleDecoderException(e, null, 0);
             }
         }
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        	videoDecoderInputBuffer = videoDecoder.getInputBuffer(inputIndex);
+        } else {
+        	videoDecoderInputBuffer = videoDecoderInputBuffers[inputIndex];
+        }
 
         if (inputIndex >= 0) {
-            submitDecodeUnit(du, videoDecoderInputBuffers[inputIndex], inputIndex);
+            submitDecodeUnit(du, videoDecoderInputBuffer, inputIndex);
         }
     }
 
