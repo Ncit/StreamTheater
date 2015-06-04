@@ -648,9 +648,9 @@ void MoviePlayerView::CheckInput( const VrFrame & vrFrame )
 	}
 
 	if(onscreen) {
-		if(lastMouse.x >= -1 && lastMouse.x <= 1 && lastMouse.y >= -1 && lastMouse.y <= 1)
+		Vector2f travel = screenCursor - lastMouse;
+		if(travel.x != 0.0 && travel.y != 0.0)
 		{
-			Vector2f travel = screenCursor - lastMouse;
 			Native::MouseMove(Cinema.app, 1280 / 2 * 1.2 * travel.x, 720 / -2 * 1.2 * travel.y );
 		}
 		lastMouse = screenCursor;
