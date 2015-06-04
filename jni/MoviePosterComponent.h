@@ -39,7 +39,7 @@ public:
 	virtual void 			SetItem( VRMenuObject * self, const CarouselItem * item, const PanelPose &pose );
 
 private:
-    virtual eMsgStatus      OnEvent_Impl( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+    virtual eMsgStatus      OnEvent_Impl( OvrGuiSys & guiSys, VrFrame const & vrFrame,
                                     VRMenuObject * self, VRMenuEvent const & event );
 
     const CarouselItem * 	CurrentItem;

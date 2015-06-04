@@ -10,13 +10,13 @@
   </Project>
   <Build xsi:type="com.visualgdb.build.android">
     <AndroidPlatform>android-19</AndroidPlatform>
+    <AdditionalBuildArguments>-j10 NDK_DEBUG=1 OVR_DEBUG=1</AdditionalBuildArguments>
     <IsDebugConfiguration>true</IsDebugConfiguration>
+    <DoNotEditAndroidManifest>true</DoNotEditAndroidManifest>
     <JNIOnlyBuild>false</JNIOnlyBuild>
-    <AdditionalBuildArguments>-j10</AdditionalBuildArguments>
     <AdditionalANTArguments />
     <AdditionalDirectoriesToDeleteOnClean>bin;obj</AdditionalDirectoriesToDeleteOnClean>
-    <DeleteANTFilesOnClean>false</DeleteANTFilesOnClean>
-    <DoNotEditAndroidManifest>false</DoNotEditAndroidManifest>
+    <DeleteANTFilesOnClean>true</DeleteANTFilesOnClean>
     <CustomActions />
   </Build>
   <Debug xsi:type="com.visualgdb.debug.android">
@@ -48,6 +48,8 @@
       <ExamineRegistersInRawFormat>true</ExamineRegistersInRawFormat>
       <EnableSmartStepping>false</EnableSmartStepping>
       <DisableSignals>false</DisableSignals>
+      <EnableAsyncExecutionMode>false</EnableAsyncExecutionMode>
+      <EnableNonStopMode>false</EnableNonStopMode>
     </AdditionalGDBSettings>
     <LaunchGDBSettings xsi:type="GDBLaunchParametersAndroid" />
     <GenerateCtrlBreakInsteadOfCtrlC>false</GenerateCtrlBreakInsteadOfCtrlC>
@@ -60,9 +62,13 @@
     <AlreadyRunningDecision>Relaunch</AlreadyRunningDecision>
     <ShowLogCat>true</ShowLogCat>
     <EnableThreadNameWatcher>true</EnableThreadNameWatcher>
+    <AppProcess>AutoDetect</AppProcess>
     <StandaloneExeSettings>
+      <LaunchMode>NewInstance</LaunchMode>
       <DeploymentDirectory>/data/local/tmp</DeploymentDirectory>
+      <StartGDBServerAsRoot>false</StartGDBServerAsRoot>
     </StandaloneExeSettings>
+    <LinkerBreakpointWorkaroundMode>EnabledWithEvenAddress</LinkerBreakpointWorkaroundMode>
   </Debug>
   <CustomBuild>
     <PreBuildActions />

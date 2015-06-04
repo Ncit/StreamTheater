@@ -88,11 +88,11 @@ bool ViewManager::Command( const char * msg )
 	return result;
 }
 
-bool ViewManager::OnKeyEvent( const int keyCode, const KeyState::eKeyEventType eventType )
+bool ViewManager::OnKeyEvent( const int keyCode, const int repeatCount, const KeyEventType eventType )
 {
 	if ( ( CurrentView != NULL ) && !CurrentView->IsClosed() )
 	{
-		return CurrentView->OnKeyEvent( keyCode, eventType );
+		return CurrentView->OnKeyEvent( keyCode, repeatCount, eventType );
 	}
 	else
 	{

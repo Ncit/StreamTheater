@@ -16,7 +16,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #if !defined( AppSelectionView_h )
 #define AppSelectionView_h
 
-#include "LibOVR/Src/Kernel/OVR_Array.h"
+#include "Kernel/OVR_Array.h"
 #include "Lerp.h"
 #include "SelectionView.h"
 #include "CarouselBrowserComponent.h"
@@ -50,7 +50,7 @@ public:
 	virtual Matrix4f 					DrawEyeView( const int eye, const float fovDegrees );
 	virtual Matrix4f 					Frame( const VrFrame & vrFrame );
 	virtual bool						Command( const char * msg );
-	virtual bool 						OnKeyEvent( const int keyCode, const KeyState::eKeyEventType eventType );
+	virtual bool 						OnKeyEvent( const int keyCode, const int repeatCount, const KeyEventType eventType );
 
     void 								SetAppList( const Array<const PcDef *> &movies, const PcDef *nextMovie );
     void								PairSuccess();
@@ -62,31 +62,31 @@ public:
 	virtual void						ClearError();
 
 private:
-    class AppCategoryButton
-    {
-    public:
-    	PcCategory 		Category;
-    	String			Text;
-    	UILabel *		Button;
-    	float			Width;
-    	float			Height;
+	class AppCategoryButton
+	{
+	public:
+		PcCategory		Category;
+		String			Text;
+		UILabel *		Button;
+		float			Width;
+		float			Height;
 
-    					AppCategoryButton( const PcCategory category, const String &text ) :
-    						Category( category ), Text( text ), Button( NULL ), Width( 0.0f ), Height( 0.0f ) {}
-    };
+					AppCategoryButton( const PcCategory category, const String &text ) :
+						Category( category ), Text( text ), Button( NULL ), Width( 0.0f ), Height( 0.0f ) {}
+	};
 
 private:
-    CinemaApp &							Cinema;
+	CinemaApp &							Cinema;
 
-    UITexture 							SelectionTexture;
-    UITexture							Is3DIconTexture;
-    UITexture							ShadowTexture;
-    UITexture							BorderTexture;
-    UITexture							SwipeIconLeftTexture;
-    UITexture							SwipeIconRightTexture;
-    UITexture							ResumeIconTexture;
-    UITexture							ErrorIconTexture;
-    UITexture							SDCardTexture;
+	UITexture 							SelectionTexture;
+	UITexture							Is3DIconTexture;
+	UITexture							ShadowTexture;
+	UITexture							BorderTexture;
+	UITexture							SwipeIconLeftTexture;
+	UITexture							SwipeIconRightTexture;
+	UITexture							ResumeIconTexture;
+	UITexture							ErrorIconTexture;
+	UITexture							SDCardTexture;
 
 	UIMenu *							Menu;
 
@@ -99,7 +99,7 @@ private:
 	bool								ErrorMessageClicked;
 
 	UIContainer *						MovieRoot;
-    UIContainer *						CategoryRoot;
+	UIContainer *						CategoryRoot;
 	UIContainer *						TitleRoot;
 
 	UILabel	*							MovieTitle;
@@ -130,7 +130,7 @@ private:
 	Array<CarouselItem *> 				MovieBrowserItems;
 	Array<PanelPose>					MoviePanelPositions;
 
-    Array<CarouselItemComponent *>	 	MoviePosterComponents;
+	Array<CarouselItemComponent *>	 	MoviePosterComponents;
 
 	Array<AppCategoryButton>			Categories;
     PcCategory			 				CurrentCategory;
@@ -146,7 +146,7 @@ private:
 private:
 	const PcDef *						GetSelectedApp() const;
 
-	void 								CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont const & font );
+	void 								CreateMenu( OvrGuiSys & guiSys );
 	Vector3f 							ScalePosition( const Vector3f &startPos, const float scale, const float menuOffset ) const;
 	void 								UpdateMenuPosition();
 

@@ -14,7 +14,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 *************************************************************************************/
 
 #include <dirent.h>
-#include "LibOVR/Src/Kernel/OVR_String_Utils.h"
+#include "Kernel/OVR_String_Utils.h"
 #include "ModelManager.h"
 #include "CinemaApp.h"
 #include "PackageFiles.h"
@@ -44,14 +44,14 @@ ModelManager::~ModelManager()
 void ModelManager::OneTimeInit( const char * launchIntent )
 {
 	LOG( "ModelManager::OneTimeInit" );
-	const double start = ovr_GetTimeInSeconds();
+	const double start = vrapi_GetTimeInSeconds();
 	LaunchIntent = launchIntent;
 
 	DefaultSceneModel = new ModelFile( "default" );
 
 	LoadModels();
 
-	LOG( "ModelManager::OneTimeInit: %i theaters loaded, %3.1f seconds", Theaters.GetSizeI(), ovr_GetTimeInSeconds() - start );
+	LOG( "ModelManager::OneTimeInit: %i theaters loaded, %3.1f seconds", Theaters.GetSizeI(), vrapi_GetTimeInSeconds() - start );
 }
 
 void ModelManager::OneTimeShutdown()
@@ -69,7 +69,7 @@ void ModelManager::OneTimeShutdown()
 void ModelManager::LoadModels()
 {
 	LOG( "ModelManager::LoadModels" );
-	const double start = ovr_GetTimeInSeconds();
+	const double start = vrapi_GetTimeInSeconds();
 
 	BoxOffice = LoadScene( "assets/scenes/BoxOffice.ovrscene", false, true, true );
 	BoxOffice->UseSeats = false;
@@ -108,7 +108,7 @@ void ModelManager::LoadModels()
 		ScanDirectoryForScenes( Cinema.SDCardDir( TheatersDirectory ), true, false, Theaters );
 	}
 
-	LOG( "ModelManager::LoadModels: %i theaters loaded, %3.1f seconds", Theaters.GetSizeI(), ovr_GetTimeInSeconds() - start );
+	LOG( "ModelManager::LoadModels: %i theaters loaded, %3.1f seconds", Theaters.GetSizeI(), vrapi_GetTimeInSeconds() - start );
 }
 
 void ModelManager::ScanDirectoryForScenes( const char * directory, bool useDynamicProgram, bool useScreenGeometry, Array<SceneDef *> &scenes ) const
@@ -173,14 +173,9 @@ SceneDef * ModelManager::LoadScene( const char *sceneFilename, bool useDynamicPr
 	def->UseDynamicProgram = useDynamicProgram;
 
 	MaterialParms materialParms;
-
-	// This may be called during init, before the FramebufferIsSrgb is set,
-	// so use WantsSrgbFramebuffer instead.
-	materialParms.UseSrgbTextureFormats = Cinema.app->GetAppInterface()->GetWantSrgbFramebuffer();
-
+	materialParms.UseSrgbTextureFormats = Cinema.app->GetFramebufferIsSrgb();
 	// Improve the texture quality with anisotropic filtering.
 	materialParms.EnableDiffuseAniso = true;
-
 	// The emissive texture is used as a separate lighting texture and should not be LOD clamped.
 	materialParms.EnableEmissiveLodClamp = false;
 

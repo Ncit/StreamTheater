@@ -1,6 +1,6 @@
 /************************************************************************************
 
-Filename    :   MovieCategoryComponent.h
+Filename    :   PcCategoryComponent.h
 Content     :   Menu component for the movie category menu.
 Created     :   August 13, 2014
 Authors     :   Jim Dosé
@@ -12,8 +12,8 @@ LICENSE file in the Cinema/ directory. An additional grant
 of patent rights can be found in the PATENTS file in the same directory.
 
 *************************************************************************************/
-#if !defined( MovieCategoryComponent_h )
-#define MovieCategoryComponent_h
+#if !defined( PcCategoryComponent_h )
+#define PcCategoryComponent_h
 
 #include "VRMenu/VRMenuComponent.h"
 #include "PcManager.h"
@@ -26,7 +26,7 @@ namespace VRMatterStreamTheater {
 class MovieSelectionView;
 
 //==============================================================
-// MovieCategoryComponent
+// PcCategoryComponent
 class PcCategoryComponent : public VRMenuComponent
 {
 public:
@@ -41,24 +41,24 @@ private:
 
 	bool					HasFocus;
 
-	PcCategory				Category;
+	PcCategory			Category;
 
-    SelectionView 		*	CallbackView;
+    SelectionView *		CallbackView;
 
 private:
-    virtual eMsgStatus      OnEvent_Impl( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+    virtual eMsgStatus      OnEvent_Impl( OvrGuiSys & guiSys, VrFrame const & vrFrame,
                                     VRMenuObject * self, VRMenuEvent const & event );
 
 	void					UpdateColor( VRMenuObject * self );
 
-    eMsgStatus              Frame( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+    eMsgStatus              Frame( OvrGuiSys & guiSys, VrFrame const & vrFrame,
                                     VRMenuObject * self, VRMenuEvent const & event );
-    eMsgStatus              FocusGained( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+    eMsgStatus              FocusGained( OvrGuiSys & guiSys, VrFrame const & vrFrame,
                                     VRMenuObject * self, VRMenuEvent const & event );
-    eMsgStatus              FocusLost( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+    eMsgStatus              FocusLost( OvrGuiSys & guiSys, VrFrame const & vrFrame,
                                     VRMenuObject * self, VRMenuEvent const & event );
 };
 
 } // namespace VRMatterStreamTheater
 
-#endif // MovieCategoryComponent_h
+#endif // PcCategoryComponent_h

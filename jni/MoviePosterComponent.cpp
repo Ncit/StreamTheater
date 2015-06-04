@@ -36,7 +36,7 @@ MoviePosterComponent::MoviePosterComponent() :
 
 //==============================
 //  MoviePosterComponent::OnEvent_Impl
-eMsgStatus MoviePosterComponent::OnEvent_Impl( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus MoviePosterComponent::OnEvent_Impl( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
 	return MSG_STATUS_ALIVE;

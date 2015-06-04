@@ -16,6 +16,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "UI/UIWidget.h"
 #include "UI/UIMenu.h"
 #include "VRMenu/VRMenuMgr.h"
+#include "VRMenu/GuiSys.h"
 #include "CinemaApp.h"
 
 namespace VRMatterStreamTheater {
@@ -37,10 +38,10 @@ UIWidget::~UIWidget()
 
 VRMenuObject * UIWidget::GetMenuObject() const
 {
-	return Cinema.app->GetVRMenuMgr().ToObject( GetHandle() );
+	return Cinema.GetGuiSys().GetVRMenuMgr().ToObject( GetHandle() );
 }
 
-void UIWidget::AddToMenuWithParms( UIMenu *menu, UIWidget *parent, VRMenuObjectParms &parms )
+void UIWidget::AddToMenuWithParms( OvrGuiSys & guiSys, UIMenu *menu, UIWidget *parent, VRMenuObjectParms &parms )
 {
 	Menu = menu;
 	Parent = parent;
@@ -51,16 +52,16 @@ void UIWidget::AddToMenuWithParms( UIMenu *menu, UIWidget *parent, VRMenuObjectP
 	parmArray.PushBack( &parms );
 
 	menuHandle_t parentHandle = ( parent == NULL ) ? menu->GetVRMenu()->GetRootHandle() : parent->GetHandle();
-    Menu->GetVRMenu()->AddItems( Cinema.app->GetVRMenuMgr(), Cinema.app->GetDefaultFont(), parmArray, parentHandle, false );
+    Menu->GetVRMenu()->AddItems( guiSys, parmArray, parentHandle, false );
     parmArray.Clear();
 
     if ( parent == NULL )
     {
-    	Handle = Menu->GetVRMenu()->HandleForId( Cinema.app->GetVRMenuMgr(), Id );
+    	Handle = Menu->GetVRMenu()->HandleForId( Cinema.GetGuiSys().GetVRMenuMgr(), Id );
     }
     else
     {
-    	Handle = parent->GetMenuObject()->ChildHandleForId( Cinema.app->GetVRMenuMgr(), Id );
+    	Handle = parent->GetMenuObject()->ChildHandleForId( Cinema.GetGuiSys().GetVRMenuMgr(), Id );
     }
 }
 

@@ -16,7 +16,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #if !defined( TheaterSelectionView_h )
 #define TheaterSelectionView_h
 
-#include "LibOVR/Src/Kernel/OVR_Array.h"
+#include "Kernel/OVR_Array.h"
 #include "View.h"
 #include "VRMenu/GuiSys.h"
 
@@ -39,7 +39,7 @@ public:
 	virtual void 				OnClose();
 
 	virtual bool 				Command( const char * msg );
-	virtual bool 				OnKeyEvent( const int keyCode, const KeyState::eKeyEventType eventType );
+	virtual bool 				OnKeyEvent( const int keyCode, const int repeatCount, const KeyEventType eventType );
 
 	virtual Matrix4f 			DrawEyeView( const int eye, const float fovDegrees );
 	virtual Matrix4f 			Frame( const VrFrame & vrFrame );
@@ -63,15 +63,15 @@ private:
 	VRMenuObject * 				SelectionObject;
 
 	CarouselBrowserComponent *	TheaterBrowser;
-    Array<CarouselItem *> 		Theaters;
+	Array<CarouselItem *> 		Theaters;
 
 	int							SelectedTheater;
 
 	double						IgnoreSelectTime;
 
 private:
-    void						SetPosition( OvrVRMenuMgr & menuMgr, const Vector3f &pos );
-    void 						CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont const & font );
+	void						SetPosition( OvrVRMenuMgr & menuMgr, const Vector3f &pos );
+	void 						CreateMenu( OvrGuiSys & guiSys );
 };
 
 } // namespace VRMatterStreamTheater

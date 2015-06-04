@@ -15,7 +15,6 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 #include "TheaterSelectionComponent.h"
 #include "TheaterSelectionView.h"
-#include "VrApi/Vsync.h"
 #include "Input.h"
 
 namespace VRMatterStreamTheater {
@@ -62,28 +61,28 @@ void TheaterSelectionComponent::SetItem( VRMenuObject * self, const CarouselItem
 
 //==============================
 //  TheaterSelectionComponent::OnEvent_Impl
-eMsgStatus TheaterSelectionComponent::OnEvent_Impl( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus TheaterSelectionComponent::OnEvent_Impl( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
     switch( event.EventType )
     {
         case VRMENU_EVENT_FOCUS_GAINED:
-            return FocusGained( app, vrFrame, menuMgr, self, event );
+            return FocusGained( guiSys, vrFrame, self, event );
         case VRMENU_EVENT_FOCUS_LOST:
-            return FocusLost( app, vrFrame, menuMgr, self, event );
+            return FocusLost( guiSys, vrFrame, self, event );
         case VRMENU_EVENT_FRAME_UPDATE:
-            return Frame( app, vrFrame, menuMgr, self, event );
+            return Frame( guiSys, vrFrame, self, event );
         case VRMENU_EVENT_TOUCH_DOWN:
         	if ( CallbackView != NULL )
         	{
-        		Sound.PlaySound( app, "touch_down", 0.1 );
+        		Sound.PlaySound( guiSys.GetApp(), "touch_down", 0.1 );
         		return MSG_STATUS_CONSUMED;
         	}
         	return MSG_STATUS_ALIVE;
         case VRMENU_EVENT_TOUCH_UP:
         	if ( !( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) && ( CallbackView != NULL ) )
         	{
-                Sound.PlaySound( app, "touch_up", 0.1 );
+                Sound.PlaySound( guiSys.GetApp(), "touch_up", 0.1 );
                 CallbackView->SelectPressed();
         		return MSG_STATUS_CONSUMED;
         	}
@@ -96,42 +95,42 @@ eMsgStatus TheaterSelectionComponent::OnEvent_Impl( App * app, VrFrame const & v
 
 //==============================
 //  TheaterSelectionComponent::FocusGained
-eMsgStatus TheaterSelectionComponent::FocusGained( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus TheaterSelectionComponent::FocusGained( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
     // set the hilight flag
     self->SetHilighted( true );
 
     StartFadeOutTime = -1.0;
-    StartFadeInTime = ovr_GetTimeInSeconds();
+    StartFadeInTime = vrapi_GetTimeInSeconds();
 
-    Sound.PlaySound( app, "gaze_on", 0.1 );
+    Sound.PlaySound( guiSys.GetApp(), "gaze_on", 0.1 );
 
     return MSG_STATUS_ALIVE;
 }
 
 //==============================
 //  TheaterSelectionComponent::FocusLost
-eMsgStatus TheaterSelectionComponent::FocusLost( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus TheaterSelectionComponent::FocusLost( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
     // clear the hilight flag
     self->SetHilighted( false );
 
     StartFadeInTime = -1.0;
-    StartFadeOutTime = ovr_GetTimeInSeconds();
+    StartFadeOutTime = vrapi_GetTimeInSeconds();
 
-    Sound.PlaySound( app, "gaze_off", 0.1 );
+    Sound.PlaySound( guiSys.GetApp(), "gaze_off", 0.1 );
 
     return MSG_STATUS_ALIVE;
 }
 
 //==============================
 //  TheaterSelectionComponent::Frame
-eMsgStatus TheaterSelectionComponent::Frame( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus TheaterSelectionComponent::Frame( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
-    double t = ovr_GetTimeInSeconds();
+    double t = vrapi_GetTimeInSeconds();
     if ( StartFadeInTime >= 0.0f && t >= StartFadeInTime )
     {
         HilightFader.StartFadeIn();
@@ -157,11 +156,11 @@ eMsgStatus TheaterSelectionComponent::Frame( App * app, VrFrame const & vrFrame,
 	{
 		if ( vrFrame.Input.buttonPressed & BUTTON_A )
 		{
-			Sound.PlaySound( app, "touch_down", 0.1 );
+			Sound.PlaySound( guiSys.GetApp(), "touch_down", 0.1 );
 		}
 		if ( vrFrame.Input.buttonReleased & BUTTON_A )
 		{
-			Sound.PlaySound( app, "touch_up", 0.1 );
+			Sound.PlaySound( guiSys.GetApp(), "touch_up", 0.1 );
 			CallbackView->SelectPressed();
 		}
 	}

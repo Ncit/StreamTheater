@@ -37,7 +37,7 @@ public:
 	void 			CloseView();
 
 	bool 			Command( const char * msg );
-	bool 			OnKeyEvent( const int keyCode, const KeyState::eKeyEventType eventType );
+	bool 			OnKeyEvent( const int keyCode, const int repeatCount, const KeyEventType eventType );
 
 	Matrix4f 		DrawEyeView( const int eye, const float fovDegrees );
 	Matrix4f 		Frame( const VrFrame & vrFrame );

@@ -36,7 +36,7 @@ UIButton::~UIButton()
 {
 }
 
-void UIButton::AddToMenu( UIMenu *menu, UIWidget *parent )
+void UIButton::AddToMenu( OvrGuiSys & guiSys, UIMenu *menu, UIWidget *parent )
 {
 	const Posef pose( Quatf( Vector3f( 0.0f, 1.0f, 0.0f ), 0.0f ), Vector3f( 0.0f, 0.0f, 0.0f ) );
 
@@ -47,7 +47,7 @@ void UIButton::AddToMenu( UIMenu *menu, UIWidget *parent )
 			"", pose, defaultScale, fontParms, menu->AllocId(),
 			VRMenuObjectFlags_t(), VRMenuObjectInitFlags_t( VRMENUOBJECT_INIT_FORCE_POSITION ) );
 
-	AddToMenuWithParms( menu, parent, parms );
+	AddToMenuWithParms( guiSys, menu, parent, parms );
 
 	VRMenuObject * object = GetMenuObject();
 	OVR_ASSERT( object );
@@ -112,25 +112,25 @@ UIButtonComponent::UIButtonComponent( UIButton &button ) :
 
 //==============================
 //  UIButtonComponent::OnEvent_Impl
-eMsgStatus UIButtonComponent::OnEvent_Impl( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus UIButtonComponent::OnEvent_Impl( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
     switch( event.EventType )
     {
         case VRMENU_EVENT_FOCUS_GAINED:
-            return FocusGained( app, vrFrame, menuMgr, self, event );
+            return FocusGained( guiSys, vrFrame, self, event );
         case VRMENU_EVENT_FOCUS_LOST:
-            return FocusLost( app, vrFrame, menuMgr, self, event );
+            return FocusLost( guiSys, vrFrame, self, event );
         case VRMENU_EVENT_TOUCH_DOWN:
         	TouchDown = true;
         	Button.UpdateButtonState();
-            DownSoundLimiter.PlaySound( app, "touch_down", 0.1 );
+            DownSoundLimiter.PlaySound( guiSys.GetApp(), "touch_down", 0.1 );
             return MSG_STATUS_ALIVE;
         case VRMENU_EVENT_TOUCH_UP:
         	TouchDown = false;
         	Button.UpdateButtonState();
         	Button.OnClick();
-            UpSoundLimiter.PlaySound( app, "touch_up", 0.1 );
+            UpSoundLimiter.PlaySound( guiSys.GetApp(), "touch_up", 0.1 );
             return MSG_STATUS_ALIVE;
         default:
             OVR_ASSERT( !"Event flags mismatch!" );
@@ -140,26 +140,26 @@ eMsgStatus UIButtonComponent::OnEvent_Impl( App * app, VrFrame const & vrFrame, 
 
 //==============================
 //  UIButtonComponent::FocusGained
-eMsgStatus UIButtonComponent::FocusGained( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus UIButtonComponent::FocusGained( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
     // set the hilight flag
     self->SetHilighted( true );
     Button.UpdateButtonState();
-	GazeOverSoundLimiter.PlaySound( app, "gaze_on", 0.1 );
+	GazeOverSoundLimiter.PlaySound( guiSys.GetApp(), "gaze_on", 0.1 );
     return MSG_STATUS_ALIVE;
 }
 
 //==============================
 //  UIButtonComponent::FocusLost
-eMsgStatus UIButtonComponent::FocusLost( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus UIButtonComponent::FocusLost( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
     // clear the hilight flag
     self->SetHilighted( false );
     TouchDown = false;
     Button.UpdateButtonState();
-    GazeOverSoundLimiter.PlaySound( app, "gaze_off", 0.1 );
+    GazeOverSoundLimiter.PlaySound( guiSys.GetApp(), "gaze_off", 0.1 );
     return MSG_STATUS_ALIVE;
 }
 

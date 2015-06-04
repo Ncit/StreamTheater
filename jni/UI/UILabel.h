@@ -31,7 +31,7 @@ public:
 										UILabel( CinemaApp &cinema );
 										~UILabel();
 
-	void 								AddToMenu( UIMenu *menu, UIWidget *parent = NULL );
+	void 								AddToMenu( OvrGuiSys & guiSys, UIMenu *menu, UIWidget *parent = NULL );
 
 	void								SetText( const char *text );
 	void								SetText( const String &text );

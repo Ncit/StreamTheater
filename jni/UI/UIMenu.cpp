@@ -15,6 +15,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 #include "UI/UIMenu.h"
 #include "VRMenu/VRMenuMgr.h"
+#include "VRMenu/GuiSys.h"
 #include "CinemaApp.h"
 
 namespace VRMatterStreamTheater {
@@ -47,14 +48,14 @@ VRMenuId_t UIMenu::AllocId()
 void UIMenu::Open()
 {
 	LOG( "Open" );
-	Cinema.app->GetGuiSys().OpenMenu( Cinema.app, Cinema.app->GetGazeCursor(), MenuName.ToCStr() );
+	Cinema.GetGuiSys().OpenMenu( MenuName.ToCStr() );
 	MenuOpen = true;
 }
 
 void UIMenu::Close()
 {
 	LOG( "Close" );
-	Cinema.app->GetGuiSys().CloseMenu( Cinema.app, Menu, false );
+	Cinema.GetGuiSys().CloseMenu( Menu, false );
 	MenuOpen = false;
 }
 
@@ -64,8 +65,8 @@ void UIMenu::Create( const char *menuName )
 {
 	MenuName = menuName;
 	Menu = VRMenu::Create( menuName );
-	Menu->Init( Cinema.app->GetVRMenuMgr(), Cinema.app->GetDefaultFont(), 0.0f, VRMenuFlags_t() );
-    Cinema.app->GetGuiSys().AddMenu( Menu );
+	Menu->Init( Cinema.GetGuiSys(), 0.0f, VRMenuFlags_t() );
+    Cinema.GetGuiSys().AddMenu( Menu );
 }
 
 VRMenuFlags_t const & UIMenu::GetFlags() const

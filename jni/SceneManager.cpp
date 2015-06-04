@@ -14,12 +14,11 @@ of patent rights can be found in the PATENTS file in the same directory.
 *************************************************************************************/
 
 #include "Kernel/OVR_String_Utils.h"
-#include "VrApi/VrApi.h"
-#include "VrApi/VrApi_Helpers.h"
 
 #include "CinemaApp.h"
 #include "Native.h"
 #include "SceneManager.h"
+#include "VRMenu/GuiSys.h"
 
 
 namespace VRMatterStreamTheater
@@ -34,13 +33,13 @@ SceneManager::SceneManager( CinemaApp &cinema ) :
 	FreeScreenActive( false ),
 	FreeScreenScale( 1.0f ),
 	FreeScreenDistance( 1.5f ),
-	FreeScreenOrientation(),
-	FreeScreenAngles(),
+	FreeScreenPose(),
 	ForceMono( false ),
 	CurrentMovieWidth( 0 ),
 	CurrentMovieHeight( 480 ),
 	MovieTextureWidth( 0 ),
 	MovieTextureHeight( 0 ),
+	CurrentMovieFormat( VT_2D ),
 	MovieRotation( 0 ),
 	MovieDuration( 0 ),
 	FrameUpdateNeeded( false ),
@@ -71,7 +70,7 @@ void SceneManager::OneTimeInit( const char * launchIntent )
 {
 	LOG( "SceneManager::OneTimeInit" );
 
-	const double start = ovr_GetTimeInSeconds();
+	const double start = vrapi_GetTimeInSeconds();
 
 	UnitSquare = BuildTesselatedQuad( 1, 1 );
 
@@ -80,7 +79,7 @@ void SceneManager::OneTimeInit( const char * launchIntent )
 	ScreenVignetteTexture = BuildScreenVignetteTexture( 1 );
 	ScreenVignetteSbsTexture = BuildScreenVignetteTexture( 2 );
 
-	LOG( "SceneManager::OneTimeInit: %3.1f seconds", ovr_GetTimeInSeconds() - start );
+	LOG( "SceneManager::OneTimeInit: %3.1f seconds", vrapi_GetTimeInSeconds() - start );
 }
 
 void SceneManager::OneTimeShutdown()
@@ -106,45 +105,40 @@ void SceneManager::OneTimeShutdown()
 
 //=========================================================================================
 
-static Vector3f MatrixUp( const Matrix4f & m )
+static Vector3f GetMatrixUp( const Matrix4f & view )
 {
-	return Vector3f( m.M[1][0], m.M[1][1], m.M[1][2] );
+	return Vector3f( view.M[0][1], view.M[1][1], view.M[2][1] );
 }
 
-static Vector3f MatrixForward( const Matrix4f & m )
+static Vector3f GetMatrixForward( const Matrix4f & view )
 {
-	return Vector3f( -m.M[2][0], -m.M[2][1], -m.M[2][2] );
+	return Vector3f( -view.M[0][2], -view.M[1][2], -view.M[2][2] );
 }
 
-static Vector3f AnglesForMatrix( const Matrix4f &m )
+static float YawForMatrix( const Matrix4f &m )
 {
-	const Vector3f viewForward = MatrixForward( m );
-	const Vector3f viewUp = MatrixUp( m );
+	const Vector3f forward = GetMatrixForward( m );
+	const Vector3f up = GetMatrixUp( m );
 
-	Vector3f angles;
-
-	angles.z = 0.0f;
-
-	if ( viewForward.y > 0.7f )
+	float yaw;
+	if ( forward.y > 0.7f )
 	{
-		angles.y = atan2( viewUp.x, viewUp.z );
+		yaw = atan2( up.x, up.z );
 	}
-	else if ( viewForward.y < -0.7f )
+	else if ( forward.y < -0.7f )
 	{
-		angles.y = atan2( -viewUp.x, -viewUp.z );
+		yaw = atan2( -up.x, -up.z );
 	}
-	else if ( viewUp.y < 0.0f )
+	else if ( up.y < 0.0f )
 	{
-		angles.y = atan2( viewForward.x, viewForward.z );
+		yaw = atan2( forward.x, forward.z );
 	}
 	else
 	{
-		angles.y = atan2( -viewForward.x, -viewForward.z );
+		yaw = atan2( -forward.x, -forward.z );
 	}
 
-	angles.x = atan2( viewForward.y, viewUp.y );
-
-	return angles;
+	return yaw;
 }
 
 //=========================================================================================
@@ -187,7 +181,7 @@ void SceneManager::SetSceneModel( const SceneDef &sceneDef )
 			break;
 		}
 		SceneSeatPositions[SceneSeatCount] = tag->matrix.GetTranslation();
-		SceneSeatPositions[SceneSeatCount].y -= Cinema.app->GetVrViewParms().EyeHeight;
+		SceneSeatPositions[SceneSeatCount].y -= Cinema.app->GetHeadModelParms().EyeHeight;
 	}
 
 	if ( !sceneDef.UseSeats )
@@ -223,9 +217,9 @@ void SceneManager::SetSceneModel( const SceneDef &sceneDef )
 		SetSeat( 1 );
 	}
 
-	Scene.YawOffset = 0.0f;
-	Scene.Znear = 0.1f;
-	Scene.Zfar = 2000.0f;
+	Scene.SetYawOffset( 0.0f );
+	Scene.SetZnear( 0.1f );
+	Scene.SetZfar( 2000.0f );
 
 	ClearGazeCursorGhosts();
 
@@ -246,17 +240,14 @@ void SceneManager::SetSceneModel( const SceneDef &sceneDef )
 	FreeScreenActive = false;
 	if ( SceneInfo.UseFreeScreen )
 	{
-		Vector3f angles = AnglesForMatrix( Scene.ViewMatrix );
-		angles.x = 0.0f;
-		angles.z = 0.0f;
-		SetFreeScreenAngles( angles );
+		SetFreeScreenPose( Scene.CenterViewMatrix().Inverted() );
 		FreeScreenActive = true;
 	}
 }
 
 void SceneManager::SetSceneProgram( const sceneProgram_t opaqueProgram, const sceneProgram_t additiveProgram )
 {
-	if ( !Scene.WorldModel.Definition || !SceneInfo.UseDynamicProgram )
+	if ( !Scene.GetWorldModel().Definition || !SceneInfo.UseDynamicProgram )
 	{
 		return;
 	}
@@ -268,7 +259,7 @@ void SceneManager::SetSceneProgram( const sceneProgram_t opaqueProgram, const sc
 
 	LOG( "SetSceneProgram: %d(%d), %d(%d)", opaqueProgram, opaqueProg.program, additiveProgram, additiveProg.program );
 
-	ModelDef & def = *const_cast< ModelDef * >( &Scene.WorldModel.Definition->Def );
+	ModelDef & def = *const_cast< ModelDef * >( &Scene.GetWorldModel().Definition->Def );
 	for ( int i = 0; i < def.surfaces.GetSizeI(); i++ )
 	{
 		if ( &def.surfaces[i] == SceneScreenSurface )
@@ -326,11 +317,11 @@ Posef SceneManager::GetScreenPose() const
 	if ( FreeScreenActive )
 	{
 		const float applyScale = pow( 2.0f, FreeScreenScale );
-		const Matrix4f screenMvp = FreeScreenOrientation *
+		const Matrix4f screenMvp = FreeScreenPose *
 				Matrix4f::Translation( 0, 0, -FreeScreenDistance*applyScale ) *
 				Matrix4f::Scaling( applyScale, applyScale * (3.0f/4.0f), applyScale );
 
-		return Posef( Quatf( FreeScreenOrientation ), ViewOrigin( screenMvp ) );
+		return Posef( Quatf( FreeScreenPose ), ViewOrigin( screenMvp ) );
 	}
 	else
 	{
@@ -361,7 +352,7 @@ Vector3f SceneManager::GetFreeScreenScale() const
 
 	// adjust size based on aspect ratio
 	float scaleX = 1.0f;
-	float scaleY = (float)CurrentMovieHeight / CurrentMovieWidth;
+	float scaleY = ( CurrentMovieWidth == 0 ) ? 1.0f : (float)CurrentMovieHeight / CurrentMovieWidth;
 	if ( scaleY > 0.6f )
 	{
 		scaleX *= 0.6f / scaleY;
@@ -374,7 +365,7 @@ Vector3f SceneManager::GetFreeScreenScale() const
 Matrix4f SceneManager::FreeScreenMatrix() const
 {
 	const Vector3f scale = GetFreeScreenScale();
-	return FreeScreenOrientation *
+	return FreeScreenPose *
 			Matrix4f::Translation( 0, 0, -FreeScreenDistance * scale.z ) *
 			Matrix4f::Scaling( scale );
 }
@@ -446,62 +437,20 @@ void SceneManager::ClearMovie()
 	MovieTexture = NULL;
 }
 
-void SceneManager::SetFreeScreenAngles( const Vector3f &angles )
+void SceneManager::SetFreeScreenPose( const Matrix4f & headPose )
 {
-	FreeScreenAngles = angles;
+	const float yaw = YawForMatrix( headPose );
 
-	Matrix4f rollPitchYaw = Matrix4f::RotationY( FreeScreenAngles.y ) * Matrix4f::RotationX( FreeScreenAngles.x );
-	const Vector3f ForwardVector( 0.0f, 0.0f, -1.0f );
-	const Vector3f UpVector( 0.0f, 1.0f, 0.0f );
-	const Vector3f forward = rollPitchYaw.Transform( ForwardVector );
-	const Vector3f up = rollPitchYaw.Transform( UpVector );
+	const ovrMatrix4f headYaw = Matrix4f::RotationY( yaw );
+	const ovrVector3f headModelCenterEyeOffset = vrapi_GetHeadModelCenterEyeOffset( &Scene.GetHeadModelParms(), &headYaw );
 
-	Vector3f shiftedEyePos = Scene.CenterEyePos();
-	Vector3f headModelOffset = Scene.HeadModelOffset( 0.0f, FreeScreenAngles.x, FreeScreenAngles.y,
-			Scene.ViewParms.HeadModelDepth, Scene.ViewParms.HeadModelHeight );
-	shiftedEyePos += headModelOffset;
-	Matrix4f result = Matrix4f::LookAtRH( shiftedEyePos, shiftedEyePos + forward, up );
-
-	FreeScreenOrientation = result.Inverted();
+	FreeScreenPose = Matrix4f( headYaw ) * Matrix4f::Translation( Scene.CenterEyePos() + Vector3f( headModelCenterEyeOffset ) );
 }
 
 void SceneManager::PutScreenInFront()
 {
-	FreeScreenOrientation = Scene.ViewMatrix.Inverted();
+	FreeScreenPose = Scene.CenterViewMatrix().Inverted();
 	Cinema.app->RecenterYaw( false );
-}
-
-void SceneManager::ClampScreenToView()
-{
-	if ( !FreeScreenActive )
-	{
-		return;
-	}
-
-	Vector3f viewAngles = AnglesForMatrix( Scene.ViewMatrix );
-	Vector3f deltaAngles = FreeScreenAngles - viewAngles;
-
-	if ( deltaAngles.y > M_PI )
-	{	// screen is a bit under PI and view is a bit above -PI
-		deltaAngles.y -= 2 * M_PI;
-	}
-	else if ( deltaAngles.y < -M_PI )
-	{	// screen is a bit above -PI and view is a bit below PI
-		deltaAngles.y += 2 * M_PI;
-	}
-	deltaAngles.y = OVR::Alg::Clamp( deltaAngles.y, -( float )M_PI * 0.20f, ( float )M_PI * 0.20f );
-
-	if ( deltaAngles.x > M_PI )
-	{	// screen is a bit under PI and view is a bit above -PI
-		deltaAngles.x -= 2 * M_PI;
-	}
-	else if ( deltaAngles.x < -M_PI )
-	{	// screen is a bit above -PI and view is a bit below PI
-		deltaAngles.x += 2 * M_PI;
-	}
-	deltaAngles.x = OVR::Alg::Clamp( deltaAngles.x, -( float )M_PI * 0.125f, ( float )M_PI * 0.125f );
-
-	SetFreeScreenAngles( viewAngles + deltaAngles );
 }
 
 void SceneManager::ClearGazeCursorGhosts()
@@ -512,19 +461,19 @@ void SceneManager::ClearGazeCursorGhosts()
 
 void SceneManager::ToggleLights( const float duration )
 {
-	const double now = ovr_GetTimeInSeconds();
+	const double now = vrapi_GetTimeInSeconds();
 	StaticLighting.Set( now, StaticLighting.Value( now ), now + duration, 1.0 - StaticLighting.endValue );
 }
 
 void SceneManager::LightsOn( const float duration )
 {
-	const double now = ovr_GetTimeInSeconds();
+	const double now = vrapi_GetTimeInSeconds();
 	StaticLighting.Set( now, StaticLighting.Value( now ), now + duration, 1.0 );
 }
 
 void SceneManager::LightsOff( const float duration )
 {
-	const double now = ovr_GetTimeInSeconds();
+	const double now = vrapi_GetTimeInSeconds();
 	StaticLighting.Set( now, StaticLighting.Value( now ), now + duration, 0.0 );
 }
 
@@ -553,18 +502,18 @@ GLuint SceneManager::BuildScreenVignetteTexture( const int horizontalTile ) cons
 			buffer[i * width + width / 2] = 0;
 		}
 	}
-    GLuint texId;
+	GLuint texId;
 	glGenTextures( 1, &texId );
-    glBindTexture( GL_TEXTURE_2D, texId );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, buffer );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+	glBindTexture( GL_TEXTURE_2D, texId );
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, buffer );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glBindTexture( GL_TEXTURE_2D, 0 );
+	glBindTexture( GL_TEXTURE_2D, 0 );
 
-    GL_CheckErrors( "screenVignette" );
-    return texId;
+	GL_CheckErrors( "screenVignette" );
+	return texId;
 }
 
 int SceneManager::BottomMipLevel( const int width, const int height ) const
@@ -584,7 +533,7 @@ int SceneManager::BottomMipLevel( const int width, const int height ) const
 void SceneManager::SetSeat( int newSeat )
 {
 	SeatPosition = newSeat;
-	Scene.FootPos = SceneSeatPositions[ SeatPosition ];
+	Scene.SetFootPos( SceneSeatPositions[ SeatPosition ] );
 }
 
 bool SceneManager::ChangeSeats( const VrFrame & vrFrame )
@@ -618,7 +567,7 @@ bool SceneManager::ChangeSeats( const VrFrame & vrFrame )
 		{
 			// Find the closest seat in the desired direction away from the current seat.
 			direction.Normalize();
-			const float distance = direction.Dot( Scene.FootPos );
+			const float distance = direction.Dot( Scene.GetFootPos() );
 			float bestSeatDistance = Math<float>::MaxValue;
 			int bestSeat = -1;
 			for ( int i = 0; i < SceneSeatCount; i++ )
@@ -657,7 +606,7 @@ bool SceneManager::Command( const char * msg )
 		MovieTexture = new SurfaceTexture( Cinema.app->GetVrJni() );
 		LOG( "RC_NEW_VIDEO texId %i", MovieTexture->textureId );
 
-		MessageQueue * receiver;
+		ovrMessageQueue * receiver;
 		sscanf( msg, "newVideo %p", &receiver );
 
 		receiver->PostPrintf( "surfaceTexture %p", MovieTexture->javaObject );
@@ -672,9 +621,39 @@ bool SceneManager::Command( const char * msg )
 		int width, height;
 		sscanf( msg, "video %i %i %i %i", &width, &height, &MovieRotation, &MovieDuration );
 
-		//const AppDef *movie = Cinema.GetCurrentMovie();
-		//assert( movie );
+		/* const AppDef *movie = Cinema.GetCurrentMovie();
+		assert( movie );
 
+		// always use 2d form lobby movies
+		if ( ( movie == NULL ) || SceneInfo.LobbyScreen )
+		{*/
+			CurrentMovieFormat = VT_2D;
+		/*}
+		else
+		{
+			CurrentMovieFormat = movie->Format;
+
+			// if movie format is not set, make some assumptions based on the width and if it's 3D
+			if ( movie->Format == VT_UNKNOWN )
+			{
+				if ( movie->Is3D )
+				{
+					if ( width > height * 3 )
+					{
+						CurrentMovieFormat = VT_LEFT_RIGHT_3D_FULL;
+					}
+					else
+					{
+						CurrentMovieFormat = VT_LEFT_RIGHT_3D;
+					}
+				}
+				else
+				{
+					CurrentMovieFormat = VT_2D;
+				}
+			}
+		}
+		*/
 		MovieTextureWidth = width;
 		MovieTextureHeight = height;
 
@@ -706,8 +685,23 @@ bool SceneManager::Command( const char * msg )
 			}
 		}
 
-		CurrentMovieWidth = width;
-		CurrentMovieHeight = height;
+		switch( CurrentMovieFormat )
+		{
+			case VT_LEFT_RIGHT_3D_FULL:
+				CurrentMovieWidth = width / 2;
+				CurrentMovieHeight = height;
+				break;
+
+			case VT_TOP_BOTTOM_3D_FULL:
+				CurrentMovieWidth = width;
+				CurrentMovieHeight = height / 2;
+				break;
+
+			default:
+				CurrentMovieWidth = width;
+				CurrentMovieHeight = height;
+				break;
+		}
 
 		Cinema.MovieLoaded( CurrentMovieWidth, CurrentMovieHeight, MovieDuration );
 
@@ -725,7 +719,7 @@ bool SceneManager::Command( const char * msg )
 			glGenTextures( 1, &MipMappedMovieTextures[i] );
 			glBindTexture( GL_TEXTURE_2D, MipMappedMovieTextures[i] );
 
-			glTexImage2D( GL_TEXTURE_2D, 0, Cinema.app->GetAppInterface()->GetWantSrgbFramebuffer() ? GL_SRGB8_ALPHA8 :GL_RGBA,
+			glTexImage2D( GL_TEXTURE_2D, 0, Cinema.app->GetFramebufferIsSrgb() ? GL_SRGB8_ALPHA8 :GL_RGBA,
 					MovieTextureWidth, MovieTextureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
 
 			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
@@ -753,13 +747,13 @@ bool SceneManager::Command( const char * msg )
 Matrix4f SceneManager::DrawEyeView( const int eye, const float fovDegrees )
 {
 	// allow stereo movies to also be played in mono
-	//const int stereoEye = ForceMono ? 0 : eye;
+	const int stereoEye = ForceMono ? 0 : eye;
 
 	if ( SceneInfo.UseDynamicProgram )
 	{
 		// lights fading in and out, always on if no movie loaded
 		const float cinemaLights = ( ( MovieTextureWidth > 0 ) && !SceneInfo.UseFreeScreen ) ?
-				(float)StaticLighting.Value( ovr_GetTimeInSeconds() ) : 1.0f;
+				(float)StaticLighting.Value( vrapi_GetTimeInSeconds() ) : 1.0f;
 
 		if ( cinemaLights <= 0.0f )
 		{
@@ -812,6 +806,7 @@ Matrix4f SceneManager::DrawEyeView( const int eye, const float fovDegrees )
 	// draw the screen on top
 	if ( !drawScreen )
 	{
+		Cinema.app->GetFrameParms().WarpProgram = VRAPI_FRAME_PROGRAM_SIMPLE;
 		return mvp;
 	}
 
@@ -876,19 +871,32 @@ Matrix4f SceneManager::DrawEyeView( const int eye, const float fovDegrees )
 
 	Matrix4f texMatrix;
 
-	switch( MovieRotation )
+	switch ( CurrentMovieFormat )
 	{
-		case 0 :
-			texMatrix = Matrix4f::Identity();
+		case VT_LEFT_RIGHT_3D:
+		case VT_LEFT_RIGHT_3D_FULL:
+			texMatrix = ( stereoEye ? stretchRight : stretchLeft );
 			break;
-		case 90 :
-			texMatrix = rotate90;
+		case VT_TOP_BOTTOM_3D:
+		case VT_TOP_BOTTOM_3D_FULL:
+			texMatrix = ( stereoEye ? stretchBottom : stretchTop );
 			break;
-		case 180 :
-			texMatrix = rotate180;
-			break;
-		case 270 :
-			texMatrix = rotate270;
+		default:
+			switch( MovieRotation )
+			{
+				case 0 :
+					texMatrix = Matrix4f::Identity();
+					break;
+				case 90 :
+					texMatrix = rotate90;
+					break;
+				case 180 :
+					texMatrix = rotate180;
+					break;
+				case 270 :
+					texMatrix = rotate270;
+					break;
+			}
 			break;
 	}
 
@@ -898,8 +906,8 @@ Matrix4f SceneManager::DrawEyeView( const int eye, const float fovDegrees )
 	if ( !GetUseOverlay() || SceneInfo.LobbyScreen || ( SceneInfo.UseScreenGeometry && ( SceneScreenSurface != NULL ) ) )
 	{
 		// no overlay
-		Cinema.app->GetSwapParms().WarpProgram = WP_CHROMATIC;
-		Cinema.app->GetSwapParms().Images[eye][1].TexId = 0;
+		Cinema.app->GetFrameParms().WarpProgram = VRAPI_FRAME_PROGRAM_SIMPLE;
+		Cinema.app->GetFrameParms().Layers[VRAPI_FRAME_LAYER_TYPE_OVERLAY].Images[eye].TexId = 0;
 
 		glActiveTexture( GL_TEXTURE0 );
 		glBindTexture( GL_TEXTURE_EXTERNAL_OES, MovieTexture->textureId );
@@ -934,10 +942,10 @@ Matrix4f SceneManager::DrawEyeView( const int eye, const float fovDegrees )
 		const Matrix4f screenModel = ScreenMatrix();
 		const ovrMatrix4f mv = Scene.ViewMatrixForEye( eye ) * screenModel;
 
-		Cinema.app->GetSwapParms().WarpProgram = WP_CHROMATIC_MASKED_PLANE;
-		Cinema.app->GetSwapParms().Images[eye][1].TexId = MipMappedMovieTextures[CurrentMipMappedMovieTexture];
-		Cinema.app->GetSwapParms().Images[eye][1].Pose = Cinema.app->GetSensorForNextWarp().Predicted;
-		Cinema.app->GetSwapParms().Images[eye][1].TexCoordsFromTanAngles = texMatrix * TanAngleMatrixFromUnitSquare( &mv );
+		Cinema.app->GetFrameParms().WarpProgram = VRAPI_FRAME_PROGRAM_MASKED_PLANE;
+		Cinema.app->GetFrameParms().Layers[VRAPI_FRAME_LAYER_TYPE_OVERLAY].Images[eye].TexId = MipMappedMovieTextures[CurrentMipMappedMovieTexture];
+		Cinema.app->GetFrameParms().Layers[VRAPI_FRAME_LAYER_TYPE_OVERLAY].Images[eye].TexCoordsFromTanAngles = texMatrix * ovrMatrix4f_TanAngleMatrixFromUnitSquare( &mv );
+		Cinema.app->GetFrameParms().Layers[VRAPI_FRAME_LAYER_TYPE_OVERLAY].Images[eye].HeadPose = Cinema.app->GetHeadPoseForNextWarp();
 
 		// explicitly clear a hole in alpha
 		const ovrMatrix4f screenMvp = mvp * screenModel;
@@ -962,11 +970,11 @@ Matrix4f SceneManager::Frame( const VrFrame & vrFrame )
 		vrFrameWithoutMove.Input.sticks[0][0] = 0.0f;
 		vrFrameWithoutMove.Input.sticks[0][1] = 0.0f;
 	}
-	Scene.Frame( Cinema.app->GetVrViewParms(), vrFrameWithoutMove, Cinema.app->GetSwapParms().ExternalVelocity );
+	Scene.Frame( Cinema.app->GetHeadModelParms(), vrFrameWithoutMove, Cinema.app->GetFrameParms().ExternalVelocity );
 
 	if ( ClearGhostsFrames > 0 )
 	{
-		Cinema.app->GetGazeCursor().ClearGhosts();
+		Cinema.GetGuiSys().GetGazeCursor().ClearGhosts();
 		ClearGhostsFrames--;
 	}
 
@@ -977,7 +985,6 @@ Matrix4f SceneManager::Frame( const VrFrame & vrFrame )
 		glActiveTexture( GL_TEXTURE0 );
 		MovieTexture->Update();
 		glBindTexture( GL_TEXTURE_EXTERNAL_OES, 0 );
-
 		if ( MovieTexture->nanoTimeStamp != MovieTextureTimestamp )
 		{
 			MovieTextureTimestamp = MovieTexture->nanoTimeStamp;
@@ -991,16 +998,23 @@ Matrix4f SceneManager::Frame( const VrFrame & vrFrame )
 		FrameUpdateNeeded = false;
 		CurrentMipMappedMovieTexture = (CurrentMipMappedMovieTexture+1)%3;
 		glActiveTexture( GL_TEXTURE1 );
-		glBindTexture( GL_TEXTURE_2D, ScreenVignetteTexture );
+		if ( CurrentMovieFormat == VT_LEFT_RIGHT_3D || CurrentMovieFormat == VT_LEFT_RIGHT_3D_FULL )
+		{
+			glBindTexture( GL_TEXTURE_2D, ScreenVignetteSbsTexture );
+		}
+		else
+		{
+			glBindTexture( GL_TEXTURE_2D, ScreenVignetteTexture );
+		}
 		glActiveTexture( GL_TEXTURE0 );
 		glBindFramebuffer( GL_FRAMEBUFFER, MipMappedMovieFBOs[CurrentMipMappedMovieTexture] );
 		glDisable( GL_DEPTH_TEST );
 		glDisable( GL_SCISSOR_TEST );
 		GL_InvalidateFramebuffer( INV_FBO, true, false );
 		glViewport( 0, 0, MovieTextureWidth, MovieTextureHeight );
-		if ( Cinema.app->GetAppInterface()->GetWantSrgbFramebuffer() )
+		if ( Cinema.app->GetFramebufferIsSrgb() )
 		{	// we need this copied without sRGB conversion on the top level
-	    	glDisable( GL_FRAMEBUFFER_SRGB_EXT );
+			glDisable( GL_FRAMEBUFFER_SRGB_EXT );
 		}
 		if ( CurrentMovieWidth > 0 )
 		{
@@ -1008,9 +1022,9 @@ Matrix4f SceneManager::Frame( const VrFrame & vrFrame )
 			glUseProgram( Cinema.ShaderMgr.CopyMovieProgram.program );
 			UnitSquare.Draw();
 			glBindTexture( GL_TEXTURE_EXTERNAL_OES, 0 );
-			if ( Cinema.app->GetAppInterface()->GetWantSrgbFramebuffer() )
+			if ( Cinema.app->GetFramebufferIsSrgb() )
 			{	// we need this copied without sRGB conversion on the top level
-		    	glEnable( GL_FRAMEBUFFER_SRGB_EXT );
+				glEnable( GL_FRAMEBUFFER_SRGB_EXT );
 			}
 		}
 		else
@@ -1030,9 +1044,6 @@ Matrix4f SceneManager::Frame( const VrFrame & vrFrame )
 
 		GL_Flush();
 	}
-
-	// Generate callbacks into DrawEyeView
-	Cinema.app->DrawEyeViewsPostDistorted( Scene.CenterViewMatrix() );
 
 	return Scene.CenterViewMatrix();
 }

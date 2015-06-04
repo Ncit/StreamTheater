@@ -63,8 +63,8 @@ private:
 	bool					HasFocus;
 
 private:
-    virtual eMsgStatus      OnEvent_Impl( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
-                                    VRMenuObject * self, VRMenuEvent const & event );
+	virtual eMsgStatus		OnEvent_Impl( OvrGuiSys & guiSys, VrFrame const & vrFrame,
+									VRMenuObject * self, VRMenuEvent const & event );
 };
 
 class ScrubBarComponent : public VRMenuComponent
@@ -100,15 +100,15 @@ private:
 	void *					OnClickObject;
 
 private:
-    virtual eMsgStatus      OnEvent_Impl( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+	virtual eMsgStatus      OnEvent_Impl( OvrGuiSys & guiSys, VrFrame const & vrFrame,
                                     VRMenuObject * self, VRMenuEvent const & event );
 
-    eMsgStatus 				OnFrame( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
-            VRMenuObject * self, VRMenuEvent const & event );
+	eMsgStatus 				OnFrame( OvrGuiSys & guiSys, VrFrame const & vrFrame,
+									VRMenuObject * self, VRMenuEvent const & event );
 
-    void 					OnClick( App * app, VrFrame const & vrFrame, VRMenuEvent const & event );
+	void 					OnClick( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuEvent const & event );
 
-    void 					SetTimeText( UILabel *label, const int time );
+	void 					SetTimeText( UILabel *label, const int time );
 };
 
 class MoviePlayerView : public View
@@ -124,14 +124,14 @@ public:
 	virtual void 			OnClose();
 
 	virtual bool 			Command( const char * msg );
-	virtual bool 			OnKeyEvent( const int keyCode, const KeyState::eKeyEventType eventType );
+	virtual bool 			OnKeyEvent( const int keyCode, const int repeatCount, const KeyEventType eventType );
 
 	void 					MovieLoaded( const int width, const int height, const int duration );
 
 	virtual Matrix4f 		DrawEyeView( const int eye, const float fovDegrees );
 	virtual Matrix4f 		Frame( const VrFrame & vrFrame );
 
-	virtual void			SetError( const char *text, bool showSDCard, bool showErrorIcon );
+		virtual void			SetError( const char *text, bool showSDCard, bool showErrorIcon );
 
 private:
 	CinemaApp &				Cinema;
@@ -224,10 +224,8 @@ private:
 	bool					mouseDownRight;
 	bool					mouseDownMiddle;
 
-
-
 private:
-	void 					CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont const & font );
+	void 					CreateMenu( OvrGuiSys & guiSys );
 	void					SetSeekIcon( const int seekSpeed );
 
 	void					BackPressed();

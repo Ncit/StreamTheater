@@ -90,7 +90,7 @@ public:
 	Array< VRMenuComponent* > const & 	GetComponentList() const;
 
 protected:
-	void 								AddToMenuWithParms( UIMenu *menu, UIWidget *parent, VRMenuObjectParms &parms );
+	void 								AddToMenuWithParms( OvrGuiSys & guiSys, UIMenu *menu, UIWidget *parent, VRMenuObjectParms &parms );
 
     CinemaApp &							Cinema;
 

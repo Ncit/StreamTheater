@@ -36,7 +36,7 @@ public:
 	virtual void 		OnClose();
 
 	virtual bool 		Command( const char * msg );
-	virtual bool 		OnKeyEvent( const int keyCode, const KeyState::eKeyEventType eventType );
+	virtual bool 		OnKeyEvent( const int keyCode, const int repeatCount, const KeyEventType eventType );
 
 	virtual Matrix4f 	DrawEyeView( const int eye, const float fovDegrees );
 	virtual Matrix4f 	Frame( const VrFrame & vrFrame );
@@ -54,8 +54,8 @@ private:
 	VRMenu *			Menu;
 
 private:
-    void				SetPosition( OvrVRMenuMgr & menuMgr, const Vector3f &pos );
-    void 				CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont const & font );
+	void				SetPosition( OvrVRMenuMgr & menuMgr, const Vector3f &pos );
+	void 				CreateMenu( OvrGuiSys & guiSys );
 };
 
 } // namespace VRMatterStreamTheater

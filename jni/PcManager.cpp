@@ -1,17 +1,17 @@
 /************************************************************************************
 
- Filename    :   PcManager.cpp
- Content     :
- Created     :	9/10/2014
- Authors     :   Jim Dosé
+Filename    :   PcManager.cpp
+Content     :
+Created     :	9/10/2014
+Authors     :   Jim Dosé
 
- Copyright   :   Copyright 2014 Oculus VR, LLC. All Rights reserved.
+Copyright   :   Copyright 2014 Oculus VR, LLC. All Rights reserved.
 
- This source code is licensed under the BSD-style license found in the
- LICENSE file in the Cinema/ directory. An additional grant
- of patent rights can be found in the PATENTS file in the same directory.
+This source code is licensed under the BSD-style license found in the
+LICENSE file in the Cinema/ directory. An additional grant 
+of patent rights can be found in the PATENTS file in the same directory.
 
- *************************************************************************************/
+*************************************************************************************/
 
 #include <sys/stat.h>
 #include <errno.h>
@@ -23,6 +23,8 @@
 #include "PcManager.h"
 #include "CinemaApp.h"
 #include "PackageFiles.h"
+#include "Native.h"
+
 
 namespace VRMatterStreamTheater {
 
@@ -31,16 +33,21 @@ const int PcManager::PosterHeight = 344;
 
 //=======================================================================================
 
-PcManager::PcManager(CinemaApp &cinema) :
-		Movies(), updated(false), Cinema(cinema) {
+PcManager::PcManager( CinemaApp &cinema ) :
+    Movies(),
+	updated(false),
+	Cinema( cinema )
+{
 }
 
-PcManager::~PcManager() {
+PcManager::~PcManager()
+{
 }
 
-void PcManager::OneTimeInit(const char * launchIntent) {
-	LOG("PcManager::OneTimeInit");
-	const double start = ovr_GetTimeInSeconds();
+void PcManager::OneTimeInit( const char * launchIntent )
+{
+	LOG( "PcManager::OneTimeInit" );
+	const double start = vrapi_GetTimeInSeconds();
 
 	int width, height;
 
@@ -76,12 +83,12 @@ void PcManager::OneTimeInit(const char * launchIntent) {
 	MakeTextureTrilinear(PcPosterWTF);
 	MakeTextureClamped(PcPosterWTF);
 
-	LOG("PcManager::OneTimeInit: %i movies loaded, %3.1f seconds",
-			Movies.GetSizeI(), ovr_GetTimeInSeconds() - start);
+	LOG( "PcManager::OneTimeInit: %i movies loaded, %3.1f seconds", Movies.GetSizeI(), vrapi_GetTimeInSeconds() - start );
 }
 
-void PcManager::OneTimeShutdown() {
-	LOG("PcManager::OneTimeShutdown");
+void PcManager::OneTimeShutdown()
+{
+	LOG( "PcManager::OneTimeShutdown" );
 }
 
 void PcManager::AddPc(const String &name, const String &uuid, Native::PairState pairState, const String &binding) {
@@ -126,13 +133,12 @@ void PcManager::RemovePc(const String &name) {
 }
 
 void PcManager::LoadPcs() {
-	LOG("LoadMovies");
+	LOG("LoadPcs");
 
-	const double start = ovr_GetTimeInSeconds();
+	const double start = vrapi_GetTimeInSeconds();
 
 	Array<String> movieFiles; //TODO: Get enumerated PCs and updates from JNI PCSelector
-	LOG("%i movies scanned, %3.1f seconds", movieFiles.GetSizeI(),
-			ovr_GetTimeInSeconds() - start);
+	LOG( "%i movies scanned, %3.1f seconds", movieFiles.GetSizeI(), vrapi_GetTimeInSeconds() - start );
 
 	for (UPInt i = 0; i < movieFiles.GetSize(); i++) {
 		PcDef *movie = new PcDef();
@@ -143,37 +149,39 @@ void PcManager::LoadPcs() {
 		ReadMetaData(movie);
 	}
 
-	LOG("%i movies panels loaded, %3.1f seconds", Movies.GetSizeI(),
-			ovr_GetTimeInSeconds() - start);
+	LOG("%i movies panels loaded, %3.1f seconds", Movies.GetSizeI(), vrapi_GetTimeInSeconds() - start);
 }
 
-PcCategory PcManager::CategoryFromString(const String &categoryString) const {
+
+PcCategory PcManager::CategoryFromString( const String &categoryString ) const
+{
 	return CATEGORY_LIMELIGHT;
 }
 
-void PcManager::ReadMetaData(PcDef *movie) {
+void PcManager::ReadMetaData( PcDef *movie )
+{
 	String filename = movie->Name;
 	filename.StripExtension();
-	filename.AppendString(".txt");
+	filename.AppendString( ".txt" );
 
 	const char* error = NULL;
 
-	if (!Cinema.FileExists(filename.ToCStr())) {
+	if ( !Cinema.FileExists( filename.ToCStr() ) )
+	{
 		return;
 	}
 
-	if (JSON* metadata = JSON::Load(filename.ToCStr(), &error)) {
-
+	if ( JSON* metadata = JSON::Load( filename.ToCStr(), &error ) )
+	{
 		metadata->Release();
 
-		LOG("Loaded metadata: %s", filename.ToCStr());
-	} else {
-		LOG("Error loading metadata for %s: %s", filename.ToCStr(),
-				(error == NULL) ? "NULL" : error);
+		LOG( "Loaded metadata: %s", filename.ToCStr() );
+	}
+	else
+	{
+		LOG( "Error loading metadata for %s: %s", filename.ToCStr(), ( error == NULL ) ? "NULL" : error );
 	}
 }
-
-
 
 Array<const PcDef *> PcManager::GetPcList(PcCategory category) const {
 	Array<const PcDef *> result;

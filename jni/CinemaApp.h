@@ -1,14 +1,14 @@
 /************************************************************************************
 
 Filename    :   CinemaApp.h
-Content     :
+Content     :   
 Created     :	6/17/2014
 Authors     :   Jim Dosé
 
 Copyright   :   Copyright 2014 Oculus VR, LLC. All Rights reserved.
 
 This source code is licensed under the BSD-style license found in the
-LICENSE file in the Cinema/ directory. An additional grant
+LICENSE file in the Cinema/ directory. An additional grant 
 of patent rights can be found in the PATENTS file in the same directory.
 
 *************************************************************************************/
@@ -35,19 +35,17 @@ class CinemaApp : public OVR::VrAppInterface
 {
 public:
 							CinemaApp();
+	virtual					~CinemaApp();
 
+	virtual void			Configure( ovrSettings & settings );
 	virtual void 			OneTimeInit( const char * fromPackage, const char * launchIntentJSON, const char * launchIntentURI );
 	virtual void			OneTimeShutdown();
-
+	virtual bool 			OnKeyEvent( const int keyCode, const int repeatCount, const KeyEventType eventType );
+	virtual Matrix4f 		Frame( const VrFrame & vrFrame );
 	virtual Matrix4f 		DrawEyeView( const int eye, const float fovDegrees );
 
-	virtual void			ConfigureVrMode( ovrModeParms & modeParms );
-
-	virtual void 			Command( const char * msg );
-	virtual bool 			OnKeyEvent( const int keyCode, const KeyState::eKeyEventType eventType );
-
-	// Called by App loop
-	virtual Matrix4f 		Frame( const VrFrame vrFrame );
+	OvrGuiSys &				GetGuiSys() { return *GuiSys; }
+	ovrMessageQueue &		GetMessageQueue() { return MessageQueue; }
 
 	void			    	SetPlaylist( const Array<const PcDef *> &playList, const int nextMovie );
 	void			    	SetMovie( const PcDef * nextMovie );
@@ -88,6 +86,7 @@ public:
 	void					ClearError();
 
 public:
+	OvrGuiSys *				GuiSys;
 	double					StartTime;
 
 	jclass					MainActivityClass;	// need to look up from main thread
@@ -109,17 +108,24 @@ private:
 	TheaterSelectionView	TheaterSelectionMenu;
 	ResumeMovieView			ResumeMovieMenu;
 
+	ovrMessageQueue			MessageQueue;
+
 	VrFrame					vrFrame;
 	int						FrameCount;
 
-    const PcDef *			CurrentMovie;
+	const PcDef *			CurrentMovie;
     const PcDef *			CurrentPc;
 	Array<const PcDef *>	PlayList;
 
 	bool					ShouldResumeMovie;
 	bool					MovieFinishedPlaying;
 
+	Matrix4f				CenterViewMatrix;
+
 	OVR::String*			DelayedError;
+
+private:
+	void 					Command( const char * msg );
 };
 
 } // namespace VRMatterStreamTheater

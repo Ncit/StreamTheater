@@ -15,7 +15,6 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 #include "CinemaApp.h"
 #include "Native.h"
-
 #include "Android/JniUtils.h"
 
 namespace VRMatterStreamTheater
@@ -27,23 +26,25 @@ long Java_com_vrmatter_streamtheater_MainActivity_nativeSetAppInterface( JNIEnv 
 		jstring fromPackageName, jstring commandString, jstring uriString )
 {
 	LOG( "nativeSetAppInterface" );
-	return (new CinemaApp())->SetActivity( jni, clazz, activity, fromPackageName, commandString, uriString );
+	return (new VRMatterStreamTheater::CinemaApp())->SetActivity( jni, clazz, activity, fromPackageName, commandString, uriString );
 }
 
-void Java_com_vrmatter_streamtheater_MainActivity_nativeSetVideoSize( JNIEnv *jni, jclass clazz, jlong interfacePtr, int width, int height, int rotation, int duration ) {
-	LOG( "nativeSetVideoSize: width=%i height=%i rotation=%i duration=%i", width, height, rotation, duration );
+void Java_com_vrmatter_streamtheater_MainActivity_nativeSetVideoSize( JNIEnv *jni, jclass clazz, jlong interfacePtr, int width, int height, int rotation, int duration )
+{
+	LOG( "nativeSetVideoSizes: width=%i height=%i rotation=%i duration=%i", width, height, rotation, duration );
 
-	CinemaApp *cinema = ( CinemaApp * )( ( (App *)interfacePtr )->GetAppInterface() );
-	cinema->app->GetMessageQueue().PostPrintf( "video %i %i %i %i", width, height, rotation, duration );
+	VRMatterStreamTheater::CinemaApp * cinema = static_cast< VRMatterStreamTheater::CinemaApp * >( ( (App *)interfacePtr )->GetAppInterface() );
+	cinema->GetMessageQueue().PostPrintf( "video %i %i %i %i", width, height, rotation, duration );
 }
 
-jobject Java_com_vrmatter_streamtheater_MainActivity_nativePrepareNewVideo( JNIEnv *jni, jclass clazz, jlong interfacePtr ) {
-	CinemaApp *cinema = ( CinemaApp * )( ( (App *)interfacePtr )->GetAppInterface() );
+jobject Java_com_vrmatter_streamtheater_MainActivity_nativePrepareNewVideo( JNIEnv *jni, jclass clazz, jlong interfacePtr )
+{
+	VRMatterStreamTheater::CinemaApp * cinema = static_cast< VRMatterStreamTheater::CinemaApp * >( ( (App *)interfacePtr )->GetAppInterface() );
 
 	// set up a message queue to get the return message
 	// TODO: make a class that encapsulates this work
-	MessageQueue	result(1);
-	cinema->app->GetMessageQueue().PostPrintf( "newVideo %p", &result);
+	ovrMessageQueue result( 1 );
+	cinema->GetMessageQueue().PostPrintf( "newVideo %p", &result );
 
 	result.SleepUntilMessage();
 	const char * msg = result.GetNextMessage();
@@ -151,7 +152,7 @@ void Native::OneTimeInit( App *app, jclass mainActivityClass )
 {
 	LOG( "Native::OneTimeInit" );
 
-	const double start = ovr_GetTimeInSeconds();
+	const double start = vrapi_GetTimeInSeconds();
 
 	getExternalCacheDirectoryMethodId 	= GetMethodID( app, mainActivityClass, "getExternalCacheDirectory", "()Ljava/lang/String;" );
 	createVideoThumbnailMethodId 		= GetMethodID( app, mainActivityClass, "createVideoThumbnail", "(Ljava/lang/String;ILjava/lang/String;II)Z" );
@@ -174,7 +175,7 @@ void Native::OneTimeInit( App *app, jclass mainActivityClass )
 	startPcUpdatesMethodId				= GetMethodID( app, mainActivityClass, "startPcUpdates", "()V" );
 	stopAppUpdatesMethodId				= GetMethodID( app, mainActivityClass, "stopAppUpdates", "()V" );
 	startAppUpdatesMethodId				= GetMethodID( app, mainActivityClass, "startAppUpdates", "()V" );
-	LOG( "Native::OneTimeInit: %3.1f seconds", ovr_GetTimeInSeconds() - start );
+	LOG( "Native::OneTimeInit: %3.1f seconds", vrapi_GetTimeInSeconds() - start );
 }
 
 void Native::OneTimeShutdown()

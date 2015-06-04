@@ -15,6 +15,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 #include "CarouselBrowserComponent.h"
 #include "App.h"
+#include "VRMenu/GuiSys.h"
 
 using namespace OVR;
 
@@ -33,7 +34,7 @@ CarouselBrowserComponent::CarouselBrowserComponent( const Array<CarouselItem *> 
 	SetItems( items );
 }
 
-eMsgStatus CarouselBrowserComponent::OnEvent_Impl( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus CarouselBrowserComponent::OnEvent_Impl( OvrGuiSys & guiSys, VrFrame const & vrFrame,
 	VRMenuObject * self, VRMenuEvent const & event )
 {
 	OVR_ASSERT( HandlesEvent( VRMenuEventFlags_t( event.EventType ) ) );
@@ -41,19 +42,19 @@ eMsgStatus CarouselBrowserComponent::OnEvent_Impl( App * app, VrFrame const & vr
 	switch( event.EventType )
 	{
 		case VRMENU_EVENT_FRAME_UPDATE:
-			return Frame( app, vrFrame, menuMgr, self, event );
+			return Frame( guiSys, vrFrame, self, event );
 		case VRMENU_EVENT_TOUCH_DOWN:
-			return TouchDown( app, vrFrame, menuMgr, self, event);
+			return TouchDown( guiSys, vrFrame, self, event);
 		case VRMENU_EVENT_TOUCH_UP:
-			return TouchUp( app, vrFrame, menuMgr, self, event );
+			return TouchUp( guiSys, vrFrame, self, event );
 		case VRMENU_EVENT_OPENED:
-			return Opened( app, vrFrame, menuMgr, self, event );
+			return Opened( guiSys, vrFrame, self, event );
 		case VRMENU_EVENT_CLOSED:
-			return Closed( app, vrFrame, menuMgr, self, event );
+			return Closed( guiSys, vrFrame, self, event );
 		case VRMENU_EVENT_SWIPE_FORWARD:
-			return SwipeForward( app, vrFrame, menuMgr, self );
+			return SwipeForward( guiSys, vrFrame, self );
 		case VRMENU_EVENT_SWIPE_BACK:
-			return SwipeBack( app, vrFrame, menuMgr, self );
+			return SwipeBack( guiSys, vrFrame, self );
 		default:
 			OVR_ASSERT( !"Event flags mismatch!" ); // the constructor is specifying a flag that's not handled
 			return MSG_STATUS_ALIVE;
@@ -179,7 +180,7 @@ void CarouselBrowserComponent::UpdatePanels( OvrVRMenuMgr & menuMgr, VRMenuObjec
 	PanelsNeedUpdate = false;
 }
 
-void CarouselBrowserComponent::CheckGamepad( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr, VRMenuObject * self )
+void CarouselBrowserComponent::CheckGamepad( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuObject * self )
 {
 	if ( Swiping )
 	{
@@ -188,22 +189,22 @@ void CarouselBrowserComponent::CheckGamepad( App * app, VrFrame const & vrFrame,
 
 	if ( CanSwipeBack() && ( ( vrFrame.Input.buttonState & BUTTON_DPAD_LEFT ) || ( vrFrame.Input.sticks[0][0] < -0.5f ) ) )
 	{
-		SwipeBack( app, vrFrame, menuMgr, self );
+		SwipeBack( guiSys, vrFrame, self );
 		return;
 	}
 
 	if ( CanSwipeForward() && ( ( vrFrame.Input.buttonState & BUTTON_DPAD_RIGHT ) || ( vrFrame.Input.sticks[0][0] > 0.5f ) ) )
 	{
-		SwipeForward( app, vrFrame, menuMgr, self );
+		SwipeForward( guiSys, vrFrame, self );
 		return;
 	}
 }
 
-eMsgStatus CarouselBrowserComponent::Frame( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr, VRMenuObject * self, VRMenuEvent const & event )
+eMsgStatus CarouselBrowserComponent::Frame( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuObject * self, VRMenuEvent const & event )
 {
 	if ( Swiping )
 	{
-		float frac = ( vrFrame.PoseState.TimeInSeconds - StartTime ) / ( EndTime - StartTime );
+		float frac = ( vrFrame.PredictedDisplayTimeInSeconds - StartTime ) / ( EndTime - StartTime );
 		if ( frac >= 1.0f )
 		{
 			frac = 1.0f;
@@ -219,22 +220,22 @@ eMsgStatus CarouselBrowserComponent::Frame( App * app, VrFrame const & vrFrame, 
 
 	if ( PanelsNeedUpdate )
 	{
-		UpdatePanels( menuMgr, self );
+		UpdatePanels( guiSys.GetVRMenuMgr(), self );
 	}
 
 	return MSG_STATUS_ALIVE;
 }
 
-eMsgStatus CarouselBrowserComponent::SwipeForward( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr, VRMenuObject * self )
+eMsgStatus CarouselBrowserComponent::SwipeForward( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuObject * self )
 {
 	if ( !Swiping )
 	{
 		float nextPos = floor( Position ) + 1.0f;
 		if ( nextPos < Items.GetSizeI() )
 		{
-			app->PlaySound( "carousel_move" );
+			guiSys.GetApp()->PlaySound( "carousel_move" );
 			PrevPosition = Position;
-			StartTime = vrFrame.PoseState.TimeInSeconds;
+			StartTime = vrFrame.PredictedDisplayTimeInSeconds;
 			EndTime = StartTime + 0.25;
 			NextPosition = nextPos;
 			Swiping = true;
@@ -244,16 +245,16 @@ eMsgStatus CarouselBrowserComponent::SwipeForward( App * app, VrFrame const & vr
 	return MSG_STATUS_CONSUMED;
 }
 
-eMsgStatus CarouselBrowserComponent::SwipeBack( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr, VRMenuObject * self )
+eMsgStatus CarouselBrowserComponent::SwipeBack( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuObject * self )
 {
 	if ( !Swiping )
 	{
 		float nextPos = floor( Position ) - 1.0f;
 		if ( nextPos >= 0.0f )
 		{
-			app->PlaySound( "carousel_move" );
+			guiSys.GetApp()->PlaySound( "carousel_move" );
 			PrevPosition = Position;
-			StartTime = vrFrame.PoseState.TimeInSeconds;
+			StartTime = vrFrame.PredictedDisplayTimeInSeconds;
 			EndTime = StartTime + 0.25;
 			NextPosition = nextPos;
 			Swiping = true;
@@ -263,10 +264,10 @@ eMsgStatus CarouselBrowserComponent::SwipeBack( App * app, VrFrame const & vrFra
 	return MSG_STATUS_CONSUMED;
 }
 
-eMsgStatus CarouselBrowserComponent::TouchDown( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr, VRMenuObject * self, VRMenuEvent const & event )
+eMsgStatus CarouselBrowserComponent::TouchDown( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuObject * self, VRMenuEvent const & event )
 {
 	//LOG( "TouchDown" );
-	TouchDownTime = ovr_GetTimeInSeconds();
+	TouchDownTime = vrapi_GetTimeInSeconds();
 
 	if ( Swiping )
 	{
@@ -276,11 +277,11 @@ eMsgStatus CarouselBrowserComponent::TouchDown( App * app, VrFrame const & vrFra
 	return MSG_STATUS_ALIVE;	// don't consume -- we're just listening
 }
 
-eMsgStatus CarouselBrowserComponent::TouchUp( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr, VRMenuObject * self, VRMenuEvent const & event )
+eMsgStatus CarouselBrowserComponent::TouchUp( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuObject * self, VRMenuEvent const & event )
 {
 	//LOG( "TouchUp" );
 
-	float const timeTouchHasBeenDown = (float)( ovr_GetTimeInSeconds() - TouchDownTime );
+	float const timeTouchHasBeenDown = (float)( vrapi_GetTimeInSeconds() - TouchDownTime );
 	TouchDownTime = -1.0;
 
 	float dist = event.FloatValue.LengthSq();
@@ -298,7 +299,7 @@ eMsgStatus CarouselBrowserComponent::TouchUp( App * app, VrFrame const & vrFrame
 	return MSG_STATUS_ALIVE; // don't consume -- we are just listening
 }
 
-eMsgStatus CarouselBrowserComponent::Opened( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr, VRMenuObject * self, VRMenuEvent const & event )
+eMsgStatus CarouselBrowserComponent::Opened( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuObject * self, VRMenuEvent const & event )
 {
 	Swiping = false;
 	Position = floor( Position );
@@ -306,7 +307,7 @@ eMsgStatus CarouselBrowserComponent::Opened( App * app, VrFrame const & vrFrame,
 	return MSG_STATUS_ALIVE;
 }
 
-eMsgStatus CarouselBrowserComponent::Closed( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr, VRMenuObject * self, VRMenuEvent const & event )
+eMsgStatus CarouselBrowserComponent::Closed( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuObject * self, VRMenuEvent const & event )
 {
 	SelectPressed = false;
 	return MSG_STATUS_ALIVE;

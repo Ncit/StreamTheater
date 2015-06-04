@@ -51,12 +51,12 @@ private:
     bool			TouchDown;
 
 private:
-    virtual eMsgStatus      OnEvent_Impl( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+    virtual eMsgStatus      OnEvent_Impl( OvrGuiSys & guiSys, VrFrame const & vrFrame,
                                     VRMenuObject * self, VRMenuEvent const & event );
 
-    eMsgStatus              FocusGained( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+    eMsgStatus              FocusGained( OvrGuiSys & guiSys, VrFrame const & vrFrame,
                                     VRMenuObject * self, VRMenuEvent const & event );
-    eMsgStatus              FocusLost( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+    eMsgStatus              FocusLost( OvrGuiSys & guiSys, VrFrame const & vrFrame,
                                     VRMenuObject * self, VRMenuEvent const & event );
 };
 
@@ -71,7 +71,7 @@ public:
 										UIButton( CinemaApp &cinema );
 										~UIButton();
 
-	void 								AddToMenu( UIMenu *menu, UIWidget *parent = NULL );
+	void 								AddToMenu( OvrGuiSys & guiSys, UIMenu *menu, UIWidget *parent = NULL );
 
 	void								SetButtonImages( const UITexture &normal, const UITexture &hover, const UITexture &pressed );
 

@@ -15,6 +15,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 #include "GazeCursor.h"
 #include "VRMenu/VRMenuMgr.h"
+#include "VRMenu/GuiSys.h"
 #include "CinemaApp.h"
 #include "ResumeMovieView.h"
 #include "ResumeMovieComponent.h"
@@ -45,11 +46,11 @@ void ResumeMovieView::OneTimeInit( const char * launchIntent )
 {
 	LOG( "ResumeMovieView::OneTimeInit" );
 
-	const double start = ovr_GetTimeInSeconds();
+	const double start = vrapi_GetTimeInSeconds();
 
-	CreateMenu( Cinema.app, Cinema.app->GetVRMenuMgr(), Cinema.app->GetDefaultFont() );
+	CreateMenu( Cinema.GetGuiSys() );
 
-	LOG( "ResumeMovieView::OneTimeInit: %3.1f seconds", ovr_GetTimeInSeconds() - start );
+	LOG( "ResumeMovieView::OneTimeInit: %3.1f seconds", vrapi_GetTimeInSeconds() - start );
 }
 
 void ResumeMovieView::OneTimeShutdown()
@@ -63,12 +64,10 @@ void ResumeMovieView::OnOpen()
 
 	Cinema.SceneMgr.LightsOn( 0.5f );
 
-	Cinema.app->GetSwapParms().WarpProgram = WP_CHROMATIC;
-
-	SetPosition(Cinema.app->GetVRMenuMgr(), Cinema.SceneMgr.Scene.FootPos);
+	SetPosition( Cinema.GetGuiSys().GetVRMenuMgr(), Cinema.SceneMgr.Scene.GetFootPos() );
 
 	Cinema.SceneMgr.ClearGazeCursorGhosts();
-	Cinema.app->GetGuiSys().OpenMenu( Cinema.app, Cinema.app->GetGazeCursor(), "ResumeMoviePrompt" );
+	Cinema.GetGuiSys().OpenMenu( "ResumeMoviePrompt" );
 
 	CurViewState = VIEWSTATE_OPEN;
 }
@@ -77,7 +76,7 @@ void ResumeMovieView::OnClose()
 {
 	LOG( "OnClose" );
 
-	Cinema.app->GetGuiSys().CloseMenu( Cinema.app, Menu, false );
+	Cinema.GetGuiSys().CloseMenu( Menu, false );
 
 	CurViewState = VIEWSTATE_CLOSED;
 }
@@ -87,7 +86,7 @@ bool ResumeMovieView::Command( const char * msg )
 	return false;
 }
 
-bool ResumeMovieView::OnKeyEvent( const int keyCode, const KeyState::eKeyEventType eventType )
+bool ResumeMovieView::OnKeyEvent( const int keyCode, const int repeatCount, const KeyEventType eventType )
 {
 	return false;
 }
@@ -99,24 +98,24 @@ Matrix4f ResumeMovieView::DrawEyeView( const int eye, const float fovDegrees )
 
 void ResumeMovieView::SetPosition( OvrVRMenuMgr & menuMgr, const Vector3f &pos )
 {
-    menuHandle_t centerRootHandle = Menu->HandleForId( menuMgr, ID_CENTER_ROOT );
-    VRMenuObject * centerRoot = menuMgr.ToObject( centerRootHandle );
-    OVR_ASSERT( centerRoot != NULL );
+	menuHandle_t centerRootHandle = Menu->HandleForId( menuMgr, ID_CENTER_ROOT );
+	VRMenuObject * centerRoot = menuMgr.ToObject( centerRootHandle );
+	OVR_ASSERT( centerRoot != NULL );
 
-    Posef pose = centerRoot->GetLocalPose();
-    pose.Position = pos;
-    centerRoot->SetLocalPose( pose );
+	Posef pose = centerRoot->GetLocalPose();
+	pose.Position = pos;
+	centerRoot->SetLocalPose( pose );
 }
 
-void ResumeMovieView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont const & font )
+void ResumeMovieView::CreateMenu( OvrGuiSys & guiSys )
 {
 	Menu = VRMenu::Create( "ResumeMoviePrompt" );
 
-    Vector3f fwd( 0.0f, 0.0f, 1.0f );
+	Vector3f fwd( 0.0f, 0.0f, 1.0f );
 	Vector3f up( 0.0f, 1.0f, 0.0f );
 	Vector3f defaultScale( 1.0f );
 
-    Array< VRMenuObjectParms const * > parms;
+	Array< VRMenuObjectParms const * > parms;
 
 	VRMenuFontParms fontParms( true, true, false, false, false, 1.3f );
 
@@ -126,22 +125,22 @@ void ResumeMovieView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 	VRMenuObjectParms centerRootParms( VRMENU_CONTAINER, Array< VRMenuComponent* >(), VRMenuSurfaceParms(), "CenterRoot",
 			Posef( orientation, centerPos ), Vector3f( 1.0f, 1.0f, 1.0f ), fontParms,
 			ID_CENTER_ROOT, VRMenuObjectFlags_t(), VRMenuObjectInitFlags_t( VRMENUOBJECT_INIT_FORCE_POSITION ) );
-    parms.PushBack( &centerRootParms );
+	parms.PushBack( &centerRootParms );
 
-	Menu->InitWithItems( menuMgr, font, 0.0f, VRMenuFlags_t(), parms );
-    parms.Clear();
+	Menu->InitWithItems( guiSys, 0.0f, VRMenuFlags_t(), parms );
+	parms.Clear();
 
-    // the centerroot item will get touch relative and touch absolute events and use them to rotate the centerRoot
-    menuHandle_t centerRootHandle = Menu->HandleForId( menuMgr, ID_CENTER_ROOT );
-    VRMenuObject * centerRoot = menuMgr.ToObject( centerRootHandle );
-    OVR_ASSERT( centerRoot != NULL );
+	// the centerroot item will get touch relative and touch absolute events and use them to rotate the centerRoot
+	menuHandle_t centerRootHandle = Menu->HandleForId( guiSys.GetVRMenuMgr(), ID_CENTER_ROOT );
+	VRMenuObject * centerRoot = guiSys.GetVRMenuMgr().ToObject( centerRootHandle );
+	OVR_ASSERT( centerRoot != NULL );
 
-    // ==============================================================================
-    //
-    // title
-    //
-    {
-        Posef panelPose( Quatf( up, 0.0f ), Vector3f( 0.0f, 2.2f, -3.0f ) );
+	// ==============================================================================
+	//
+	// title
+	//
+	{
+		Posef panelPose( Quatf( up, 0.0f ), Vector3f( 0.0f, 2.2f, -3.0f ) );
 
 		VRMenuObjectParms p( VRMENU_STATIC, Array< VRMenuComponent* >(),
 				VRMenuSurfaceParms(), CinemaStrings::ResumeMenu_Title.ToCStr(), panelPose, defaultScale, fontParms, VRMenuId_t( ID_TITLE.Get() ),
@@ -149,28 +148,28 @@ void ResumeMovieView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 
 		parms.PushBack( &p );
 
-		Menu->AddItems( menuMgr, font, parms, centerRootHandle, false );
+		Menu->AddItems( guiSys, parms, centerRootHandle, false );
 		parms.Clear();
-    }
+	}
 
-    // ==============================================================================
-    //
-    // options
-    //
-    Array<const char *> options;
-    options.PushBack( CinemaStrings::ResumeMenu_Resume.ToCStr() );
-    options.PushBack( CinemaStrings::ResumeMenu_Restart.ToCStr() );
+	// ==============================================================================
+	//
+	// options
+	//
+	Array<const char *> options;
+	options.PushBack( CinemaStrings::ResumeMenu_Resume.ToCStr() );
+	options.PushBack( CinemaStrings::ResumeMenu_Restart.ToCStr() );
 
-    Array<const char *> icons;
-    icons.PushBack( "assets/resume.png" );
-    icons.PushBack( "assets/restart.png" );
+	Array<const char *> icons;
+	icons.PushBack( "assets/resume.png" );
+	icons.PushBack( "assets/restart.png" );
 
-    Array<PanelPose> optionPositions;
-    optionPositions.PushBack( PanelPose( Quatf( up, 0.0f / 180.0f * Mathf::Pi ), Vector3f( -0.5f, 1.7f, -3.0f ), Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) ) );
-    optionPositions.PushBack( PanelPose( Quatf( up, 0.0f / 180.0f * Mathf::Pi ), Vector3f(  0.5f, 1.7f, -3.0f ), Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) ) );
+	Array<PanelPose> optionPositions;
+	optionPositions.PushBack( PanelPose( Quatf( up, 0.0f / 180.0f * Mathf::Pi ), Vector3f( -0.5f, 1.7f, -3.0f ), Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) ) );
+	optionPositions.PushBack( PanelPose( Quatf( up, 0.0f / 180.0f * Mathf::Pi ), Vector3f(  0.5f, 1.7f, -3.0f ), Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) ) );
 
-    int borderWidth = 0, borderHeight = 0;
-    GLuint borderTexture = LoadTextureFromApplicationPackage( "assets/resume_restart_border.png", TextureFlags_t( TEXTUREFLAG_NO_DEFAULT ), borderWidth, borderHeight );
+	int borderWidth = 0, borderHeight = 0;
+	GLuint borderTexture = LoadTextureFromApplicationPackage( "assets/resume_restart_border.png", TextureFlags_t( TEXTUREFLAG_NO_DEFAULT ), borderWidth, borderHeight );
 
 	for ( int i = 0; i < optionPositions.GetSizeI(); ++i )
 	{
@@ -190,17 +189,17 @@ void ResumeMovieView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 
 		parms.PushBack( p );
 
-		Menu->AddItems( menuMgr, font, parms, centerRootHandle, false );
+		Menu->AddItems( guiSys, parms, centerRootHandle, false );
 		DeletePointerArray( parms );
 		parms.Clear();
 
 		// add icon
-	    menuHandle_t optionHandle = centerRoot->ChildHandleForId( menuMgr, VRMenuId_t( ID_OPTIONS.Get() + i ) );
-	    VRMenuObject * optionObject = menuMgr.ToObject( optionHandle );
-	    OVR_ASSERT( optionObject != NULL );
+		menuHandle_t optionHandle = centerRoot->ChildHandleForId( guiSys.GetVRMenuMgr(), VRMenuId_t( ID_OPTIONS.Get() + i ) );
+		VRMenuObject * optionObject = guiSys.GetVRMenuMgr().ToObject( optionHandle );
+		OVR_ASSERT( optionObject != NULL );
 
-	    int iconWidth = 0, iconHeight = 0;
-	    GLuint iconTexture = LoadTextureFromApplicationPackage( icons[ i ], TextureFlags_t( TEXTUREFLAG_NO_DEFAULT ), iconWidth, iconHeight );
+		int iconWidth = 0, iconHeight = 0;
+		GLuint iconTexture = LoadTextureFromApplicationPackage( icons[ i ], TextureFlags_t( TEXTUREFLAG_NO_DEFAULT ), iconWidth, iconHeight );
 
 		VRMenuSurfaceParms iconSurfParms( "",
 				iconTexture, iconWidth, iconHeight, SURFACE_TEXTURE_DIFFUSE,
@@ -208,7 +207,7 @@ void ResumeMovieView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 				0, 0, 0, SURFACE_TEXTURE_MAX );
 
 
-		Bounds3f textBounds = optionObject->GetTextLocalBounds( font );
+		Bounds3f textBounds = optionObject->GetTextLocalBounds( guiSys.GetDefaultFont() );
 		optionObject->SetTextLocalPosition( Vector3f( iconWidth * VRMenuObject::DEFAULT_TEXEL_SCALE * 0.5f, 0.0f, 0.0f ) );
 
 		Posef iconPose( optionPositions[ i ].Orientation, optionPositions[ i ].Position + Vector3f( textBounds.GetMins().x, 0.0f, 0.01f ) );
@@ -218,15 +217,15 @@ void ResumeMovieView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 
 		parms.PushBack( p );
 
-		Menu->AddItems( menuMgr, font, parms, centerRootHandle, false );
-	    DeletePointerArray( parms );
-	    parms.Clear();
+		Menu->AddItems( guiSys, parms, centerRootHandle, false );
+		DeletePointerArray( parms );
+		parms.Clear();
 
-	    menuHandle_t iconHandle = centerRoot->ChildHandleForId( menuMgr, VRMenuId_t( ID_OPTION_ICONS.Get() + i ) );
-	    resumeMovieComponent->Icon = menuMgr.ToObject( iconHandle );
+		menuHandle_t iconHandle = centerRoot->ChildHandleForId( guiSys.GetVRMenuMgr(), VRMenuId_t( ID_OPTION_ICONS.Get() + i ) );
+		resumeMovieComponent->Icon = guiSys.GetVRMenuMgr().ToObject( iconHandle );
 	}
 
-    Cinema.app->GetGuiSys().AddMenu( Menu );
+	Cinema.GetGuiSys().AddMenu( Menu );
 }
 
 void ResumeMovieView::ResumeChoice( int itemNum )
@@ -244,9 +243,9 @@ void ResumeMovieView::ResumeChoice( int itemNum )
 Matrix4f ResumeMovieView::Frame( const VrFrame & vrFrame )
 {
 	// We want 4x MSAA in the selection screen
-	EyeParms eyeParms = Cinema.app->GetEyeParms();
-	eyeParms.multisamples = 4;
-	Cinema.app->SetEyeParms( eyeParms );
+	ovrEyeBufferParms eyeBufferParms = Cinema.app->GetEyeBufferParms();
+	eyeBufferParms.multisamples = 4;
+	Cinema.app->SetEyeBufferParms( eyeBufferParms );
 
 	if ( Menu->IsClosedOrClosing() && !Menu->IsOpenOrOpening() )
 	{

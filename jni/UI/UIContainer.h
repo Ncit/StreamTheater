@@ -31,7 +31,7 @@ public:
 										UIContainer( CinemaApp &cinema );
 										~UIContainer();
 
-	void 								AddToMenu( UIMenu *menu, UIWidget *parent = NULL );
+	void 								AddToMenu( OvrGuiSys & guiSys, UIMenu *menu, UIWidget *parent = NULL );
 };
 
 } // namespace VRMatterStreamTheater

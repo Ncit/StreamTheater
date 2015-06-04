@@ -260,7 +260,7 @@ public class StreamInterface implements SurfaceHolder.Callback,
         }
 
         if (message != null) {
-            MainActivity.nativeShowError(activity.appPtr, message);
+            MainActivity.nativeShowError(activity.getAppPtr(), message);
         }
 
     }
@@ -669,7 +669,7 @@ public class StreamInterface implements SurfaceHolder.Callback,
         if (!displayedFailureDialog) {
             displayedFailureDialog = true;
             stopConnection();
-            MainActivity.nativeShowError(activity.appPtr, activity.getResources().getString(R.string.conn_error_title)
+            MainActivity.nativeShowError(activity.getAppPtr(), activity.getResources().getString(R.string.conn_error_title)
             		+ " - " + activity.getResources().getString(R.string.conn_error_msg)+" "+stage.getName());
         }
     }
@@ -681,7 +681,7 @@ public class StreamInterface implements SurfaceHolder.Callback,
             e.printStackTrace();
 
             stopConnection();
-            MainActivity.nativeShowError(activity.appPtr, activity.getResources().getString(R.string.conn_terminated_title)
+            MainActivity.nativeShowError(activity.getAppPtr(), activity.getResources().getString(R.string.conn_terminated_title)
             		+ " - " + activity.getResources().getString(R.string.conn_terminated_msg));
         }
     }
@@ -704,7 +704,7 @@ public class StreamInterface implements SurfaceHolder.Callback,
     	activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                MainActivity.nativeShowError(activity.appPtr, message);
+                MainActivity.nativeShowError(activity.getAppPtr(), message);
             }
         });
     }

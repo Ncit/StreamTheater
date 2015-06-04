@@ -30,7 +30,7 @@ UIContainer::~UIContainer()
 {
 }
 
-void UIContainer::AddToMenu( UIMenu *menu, UIWidget *parent )
+void UIContainer::AddToMenu( OvrGuiSys & guiSys, UIMenu *menu, UIWidget *parent )
 {
 	const Posef pose( Quatf( Vector3f( 0.0f, 1.0f, 0.0f ), 0.0f ), Vector3f( 0.0f, 0.0f, 0.0f ) );
 
@@ -41,7 +41,7 @@ void UIContainer::AddToMenu( UIMenu *menu, UIWidget *parent )
 			"Container", pose, defaultScale, fontParms, menu->AllocId(),
 			VRMenuObjectFlags_t(), VRMenuObjectInitFlags_t( VRMENUOBJECT_INIT_FORCE_POSITION ) );
 
-	AddToMenuWithParms( menu, parent, parms );
+	AddToMenuWithParms( guiSys, menu, parent, parms );
 }
 
 } // namespace VRMatterStreamTheater

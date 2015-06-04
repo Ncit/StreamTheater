@@ -17,6 +17,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "CinemaApp.h"
 #include "Native.h"
 #include "VRMenu/VRMenuMgr.h"
+#include "VRMenu/GuiSys.h"
 #include "Kernel/OVR_String_Utils.h"
 
 #include "CinemaStrings.h"
@@ -106,13 +107,13 @@ void MoviePlayerView::OneTimeInit( const char * launchIntent )
 {
 	LOG( "MoviePlayerView::OneTimeInit" );
 
-	const double start = ovr_GetTimeInSeconds();
+	const double start = vrapi_GetTimeInSeconds();
 
-	GazeUserId = Cinema.app->GetGazeCursor().GenerateUserId();
+	GazeUserId = Cinema.GetGuiSys().GetGazeCursor().GenerateUserId();
 
-	CreateMenu( Cinema.app, Cinema.app->GetVRMenuMgr(), Cinema.app->GetDefaultFont() );
+	CreateMenu( Cinema.GetGuiSys() );
 
-	LOG( "MoviePlayerView::OneTimeInit: %3.1f seconds", ovr_GetTimeInSeconds() - start );
+	LOG( "MoviePlayerView::OneTimeInit: %3.1f seconds", vrapi_GetTimeInSeconds() - start );
 }
 
 void MoviePlayerView::OneTimeShutdown()
@@ -155,7 +156,7 @@ void ScrubBarCallback( ScrubBarComponent *scrubbar, void *object, const float pr
 	( ( MoviePlayerView * )object )->ScrubBarClicked( progress );
 }
 
-void MoviePlayerView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont const & font )
+void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
 {
 	BackgroundTintTexture.LoadTextureFromApplicationPackage( "assets/backgroundTint.png" );
 
@@ -204,7 +205,7 @@ void MoviePlayerView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 	MoveScreenMenu->Create( "MoviePlayerMenu" );
 	MoveScreenMenu->SetFlags( VRMenuFlags_t( VRMENU_FLAG_TRACK_GAZE ) | VRMenuFlags_t( VRMENU_FLAG_BACK_KEY_DOESNT_EXIT ) );
 
-	MoveScreenLabel.AddToMenu( MoveScreenMenu, NULL );
+	MoveScreenLabel.AddToMenu( guiSys, MoveScreenMenu, NULL );
     MoveScreenLabel.SetLocalPose( Quatf( Vector3f( 0.0f, 1.0f, 0.0f ), 0.0f ), Vector3f( 0.0f, 0.0f, -1.8f ) );
     MoveScreenLabel.GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
     MoveScreenLabel.SetFontScale( 0.5f );
@@ -220,8 +221,8 @@ void MoviePlayerView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
     PlaybackControlsMenu->Create( "PlaybackControlsMenu" );
     PlaybackControlsMenu->SetFlags( VRMenuFlags_t( VRMENU_FLAG_BACK_KEY_DOESNT_EXIT ) );
 
-    PlaybackControlsPosition.AddToMenu( PlaybackControlsMenu );
-    PlaybackControlsScale.AddToMenu( PlaybackControlsMenu, &PlaybackControlsPosition );
+    PlaybackControlsPosition.AddToMenu( guiSys, PlaybackControlsMenu );
+    PlaybackControlsScale.AddToMenu( guiSys, PlaybackControlsMenu, &PlaybackControlsPosition );
     PlaybackControlsScale.SetLocalPosition( Vector3f( 0.0f, 0.0f, 0.05f ) );
     PlaybackControlsScale.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 1080, 1080 );
 
@@ -229,7 +230,7 @@ void MoviePlayerView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
     //
     // movie title
     //
-    MovieTitleLabel.AddToMenu( PlaybackControlsMenu, &PlaybackControlsScale );
+    MovieTitleLabel.AddToMenu( guiSys, PlaybackControlsMenu, &PlaybackControlsScale );
     MovieTitleLabel.SetLocalPosition( PixelPos( 0, 266, 0 ) );
     MovieTitleLabel.SetFontScale( 1.4f );
     MovieTitleLabel.SetText( "" );
@@ -240,7 +241,7 @@ void MoviePlayerView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
     //
     // seek icon
     //
-    SeekIcon.AddToMenu( PlaybackControlsMenu, &PlaybackControlsScale );
+    SeekIcon.AddToMenu( guiSys, PlaybackControlsMenu, &PlaybackControlsScale );
     SeekIcon.SetLocalPosition( PixelPos( 0, 0, 0 ) );
     SeekIcon.SetLocalScale( Vector3f( 2.0f ) );
     SetSeekIcon( 0 );
@@ -249,18 +250,18 @@ void MoviePlayerView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
     //
     // controls
     //
-    ControlsBackground.AddToMenuFlags( PlaybackControlsMenu, &PlaybackControlsScale, VRMenuObjectFlags_t( VRMENUOBJECT_RENDER_HIERARCHY_ORDER ) );
+    ControlsBackground.AddToMenuFlags( guiSys, PlaybackControlsMenu, &PlaybackControlsScale, VRMenuObjectFlags_t( VRMENUOBJECT_RENDER_HIERARCHY_ORDER ) );
     ControlsBackground.SetLocalPosition( PixelPos( 0, -288, 0 ) );
     ControlsBackground.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 1004, 168 );
     ControlsBackground.AddComponent( &GazeTimer );
 
-    RewindButton.AddToMenu( PlaybackControlsMenu, &ControlsBackground );
+    RewindButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
     RewindButton.SetLocalPosition( PixelPos( -448, 0, 1 ) );
     RewindButton.SetLocalScale( Vector3f( 2.0f ) );
     RewindButton.SetButtonImages( RWTexture, RWHoverTexture, RWPressedTexture );
     RewindButton.SetOnClick( RewindPressedCallback, this );
 
-	FastForwardButton.AddToMenu( PlaybackControlsMenu, &ControlsBackground );
+	FastForwardButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
 	FastForwardButton.SetLocalPosition( PixelPos( -234, 0, 1 ) );
 	FastForwardButton.SetLocalScale( Vector3f( 2.0f ) );
 	FastForwardButton.SetButtonImages( FFTexture, FFHoverTexture, FFPressedTexture );
@@ -268,31 +269,31 @@ void MoviePlayerView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 	FastForwardButton.GetMenuObject()->SetLocalBoundsExpand( Vector3f::ZERO, PixelPos( -20, 0, 0 ) );
 
 	// playbutton created after fast forward button to fix z issues
-    PlayButton.AddToMenu( PlaybackControlsMenu, &ControlsBackground );
+    PlayButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
     PlayButton.SetLocalPosition( PixelPos( -341, 0, 2 ) );
     PlayButton.SetLocalScale( Vector3f( 2.0f ) );
     PlayButton.SetButtonImages( PauseTexture, PauseHoverTexture, PausePressedTexture );
     PlayButton.SetOnClick( PlayPressedCallback, this );
 
-	CarouselButton.AddToMenu( PlaybackControlsMenu, &ControlsBackground );
+	CarouselButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
 	CarouselButton.SetLocalPosition( PixelPos( 418, 0, 1 ) );
 	CarouselButton.SetLocalScale( Vector3f( 2.0f ) );
 	CarouselButton.SetButtonImages( CarouselTexture, CarouselHoverTexture, CarouselPressedTexture );
 	CarouselButton.SetOnClick( CarouselPressedCallback, this );
 	CarouselButton.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
 
-	SeekbarBackground.AddToMenu( PlaybackControlsMenu, &ControlsBackground );
+	SeekbarBackground.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
 	SeekbarBackground.SetLocalPosition( PixelPos( 78, 0, 2 ) );
 	SeekbarBackground.SetColor( Vector4f( 0.5333f, 0.5333f, 0.5333f, 1.0f ) );
 	SeekbarBackground.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, SeekbarBackgroundTexture, ScrubBarWidth + 6, 46 );
 	SeekbarBackground.AddComponent( &ScrubBar );
 
-	SeekbarProgress.AddToMenu( PlaybackControlsMenu, &SeekbarBackground );
+	SeekbarProgress.AddToMenu( guiSys, PlaybackControlsMenu, &SeekbarBackground );
 	SeekbarProgress.SetLocalPosition( PixelPos( 0, 0, 1 ) );
 	SeekbarProgress.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, SeekbarProgressTexture, ScrubBarWidth, 40 );
 	SeekbarProgress.GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
 
-	CurrentTime.AddToMenu( PlaybackControlsMenu, &SeekbarBackground );
+	CurrentTime.AddToMenu( guiSys, PlaybackControlsMenu, &SeekbarBackground );
 	CurrentTime.SetLocalPosition( PixelPos( -234, 52, 2 ) );
 	CurrentTime.SetLocalScale( Vector3f( 1.0f ) );
 	CurrentTime.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, SeekPosition );
@@ -303,7 +304,7 @@ void MoviePlayerView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 	CurrentTime.SetTextColor( Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) );
 	CurrentTime.GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
 
-	SeekTime.AddToMenu( PlaybackControlsMenu, &SeekbarBackground );
+	SeekTime.AddToMenu( guiSys, PlaybackControlsMenu, &SeekbarBackground );
 	SeekTime.SetLocalPosition( PixelPos( -34, 52, 4 ) );
 	SeekTime.SetLocalScale( Vector3f( 1.0f ) );
 	SeekTime.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, SeekPosition );
@@ -371,7 +372,7 @@ void MoviePlayerView::OnOpen()
 	Cinema.StartMoviePlayback();
 
 	MovieTitleLabel.SetText( Cinema.GetCurrentMovie()->Name );
-	Bounds3f titleBounds = MovieTitleLabel.GetTextLocalBounds( Cinema.app->GetDefaultFont() ) * VRMenuObject::TEXELS_PER_METER;
+	Bounds3f titleBounds = MovieTitleLabel.GetTextLocalBounds( Cinema.GetGuiSys().GetDefaultFont() ) * VRMenuObject::TEXELS_PER_METER;
 	MovieTitleLabel.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, titleBounds.GetSize().x + 88, titleBounds.GetSize().y + 32 );
 
 	PlayButton.SetButtonImages( PauseTexture, PauseHoverTexture, PausePressedTexture );
@@ -382,7 +383,7 @@ void MoviePlayerView::OnClose()
 	LOG( "OnClose" );
 	CurViewState = VIEWSTATE_CLOSED;
 	HideUI();
-	Cinema.app->GetGazeCursor().ShowCursor();
+	Cinema.GetGuiSys().GetGazeCursor().ShowCursor();
 
 	if ( MoveScreenMenu->IsOpen() )
 	{
@@ -452,7 +453,7 @@ void MoviePlayerView::BackPressed()
 	}
 }
 
-bool MoviePlayerView::OnKeyEvent( const int keyCode, const KeyState::eKeyEventType eventType )
+bool MoviePlayerView::OnKeyEvent( const int keyCode, const int repeatCount, const KeyEventType eventType )
 {
 	switch ( keyCode )
 	{
@@ -460,7 +461,7 @@ bool MoviePlayerView::OnKeyEvent( const int keyCode, const KeyState::eKeyEventTy
 		{
 			switch ( eventType )
 			{
-				case KeyState::KEY_EVENT_SHORT_PRESS:
+				case KEY_EVENT_SHORT_PRESS:
 				LOG( "KEY_EVENT_SHORT_PRESS" );
 				BackPressed();
 				return true;
@@ -472,14 +473,14 @@ bool MoviePlayerView::OnKeyEvent( const int keyCode, const KeyState::eKeyEventTy
 		}
 		break;
 		case AKEYCODE_MEDIA_NEXT:
-			if ( eventType == KeyState::KEY_EVENT_UP )
+			if ( eventType == KEY_EVENT_UP )
 			{
 				Cinema.SetMovie( Cinema.GetNextMovie() );
 				Cinema.ResumeOrRestartMovie();
 			}
 			break;
 		case AKEYCODE_MEDIA_PREVIOUS:
-			if ( eventType == KeyState::KEY_EVENT_UP )
+			if ( eventType == KEY_EVENT_UP )
 			{
 				Cinema.SetMovie( Cinema.GetPreviousMovie() );
 				Cinema.ResumeOrRestartMovie();
@@ -501,7 +502,7 @@ void MoviePlayerView::ShowUI()
 {
 	LOG( "ShowUI" );
 	Cinema.SceneMgr.ForceMono = true;
-	Cinema.app->GetGazeCursor().ShowCursor();
+	Cinema.GetGuiSys().GetGazeCursor().ShowCursor();
 
 	PlaybackControlsMenu->Open();
 	GazeTimer.SetGazeTime();
@@ -517,7 +518,7 @@ void MoviePlayerView::HideUI()
 	LOG( "HideUI" );
 	PlaybackControlsMenu->Close();
 
-	Cinema.app->GetGazeCursor().HideCursor();
+	Cinema.GetGuiSys().GetGazeCursor().HideCursor();
 	Cinema.SceneMgr.ForceMono = false;
 	uiActive = false;
 
@@ -690,7 +691,7 @@ void MoviePlayerView::CheckInput( const VrFrame & vrFrame )
 	}
 
 	if ( onscreen && ( vrFrame.Input.buttonPressed & BUTTON_TOUCH ) ) {
-		clickStartTime = ovr_GetTimeInSeconds();
+		clickStartTime = vrapi_GetTimeInSeconds();
 		allowDrag = true;
 	}
 
@@ -698,7 +699,7 @@ void MoviePlayerView::CheckInput( const VrFrame & vrFrame )
 		allowDrag = false;
 	}
 
-	if ( onscreen && allowDrag && !mouseDownLeft && (clickStartTime + 0.5 < ovr_GetTimeInSeconds()) &&
+	if ( onscreen && allowDrag && !mouseDownLeft && (clickStartTime + 0.5 < vrapi_GetTimeInSeconds()) &&
 			( vrFrame.Input.buttonState & BUTTON_TOUCH ) && !( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) )
 	{
 		Native::MouseClick(Cinema.app,1,true);
@@ -779,7 +780,7 @@ void MoviePlayerView::CheckInput( const VrFrame & vrFrame )
 		if ( !onscreen )
 		{
 			// outside of screen, so show reposition message
-			const double now = ovr_GetTimeInSeconds();
+			const double now = vrapi_GetTimeInSeconds();
 			float alpha = MoveScreenAlpha.Value( now );
 			if ( alpha > 0.0f )
 			{
@@ -795,7 +796,7 @@ void MoviePlayerView::CheckInput( const VrFrame & vrFrame )
 		else
 		{
 			// onscreen, so hide message
-			const double now = ovr_GetTimeInSeconds();
+			const double now = vrapi_GetTimeInSeconds();
 			MoveScreenAlpha.Set( now, -1.0f, now + 1.0f, 1.0f );
 			MoveScreenLabel.SetVisible( false );
 		}
@@ -826,7 +827,7 @@ void MoviePlayerView::UpdateUI( const VrFrame & vrFrame )
 {
 	if ( uiActive )
 	{
-		double timeSinceLastGaze = ovr_GetTimeInSeconds() - GazeTimer.GetLastGazeTime();
+		double timeSinceLastGaze = vrapi_GetTimeInSeconds() - GazeTimer.GetLastGazeTime();
 		if ( !ScrubBar.IsScrubbing() && ( timeSinceLastGaze > GazeTimeTimeout ) )
 		{
 			LOG( "Gaze timeout" );
@@ -845,7 +846,7 @@ void MoviePlayerView::UpdateUI( const VrFrame & vrFrame )
 			if ( !GazeTimer.IsFocused() && BackgroundClicked )
 			{
 				LOG( "Clicked outside playback controls" );
-				Cinema.app->PlaySound( "touch_up" );
+				Cinema.GetGuiSys().GetApp()->PlaySound( "touch_up" );
 				HideUI();
 			}
 			BackgroundClicked = false;
@@ -880,9 +881,9 @@ Matrix4f MoviePlayerView::Frame( const VrFrame & vrFrame )
 {
 	// Drop to 2x MSAA during playback, people should be focused
 	// on the high quality screen.
-	EyeParms eyeParms = Cinema.app->GetEyeParms();
-	eyeParms.multisamples = 2;
-	Cinema.app->SetEyeParms( eyeParms );
+	ovrEyeBufferParms eyeBufferParms = Cinema.app->GetEyeBufferParms();
+	eyeBufferParms.multisamples = 2;
+	Cinema.app->SetEyeBufferParms( eyeBufferParms );
 
 	if ( Native::HadPlaybackError( Cinema.app ) )
 	{
@@ -925,10 +926,10 @@ ControlsGazeTimer::ControlsGazeTimer() :
 
 void ControlsGazeTimer::SetGazeTime()
 {
-	LastGazeTime = ovr_GetTimeInSeconds();
+	LastGazeTime = vrapi_GetTimeInSeconds();
 }
 
-eMsgStatus ControlsGazeTimer::OnEvent_Impl( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus ControlsGazeTimer::OnEvent_Impl( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
     switch( event.EventType )
@@ -936,12 +937,12 @@ eMsgStatus ControlsGazeTimer::OnEvent_Impl( App * app, VrFrame const & vrFrame, 
     	case VRMENU_EVENT_FRAME_UPDATE:
     		if ( HasFocus )
     		{
-    			LastGazeTime = ovr_GetTimeInSeconds();
+    			LastGazeTime = vrapi_GetTimeInSeconds();
     		}
     		return MSG_STATUS_ALIVE;
         case VRMENU_EVENT_FOCUS_GAINED:
         	HasFocus = true;
-        	LastGazeTime = ovr_GetTimeInSeconds();
+        	LastGazeTime = vrapi_GetTimeInSeconds();
     		return MSG_STATUS_ALIVE;
         case VRMENU_EVENT_FOCUS_LOST:
         	HasFocus = false;
@@ -1037,7 +1038,7 @@ void ScrubBarComponent::SetTimeText( UILabel *label, const int time )
 	}
 }
 
-eMsgStatus ScrubBarComponent::OnEvent_Impl( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus ScrubBarComponent::OnEvent_Impl( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
     switch( event.EventType )
@@ -1052,11 +1053,11 @@ eMsgStatus ScrubBarComponent::OnEvent_Impl( App * app, VrFrame const & vrFrame, 
 
     	case VRMENU_EVENT_TOUCH_DOWN:
     		TouchDown = true;
-    		OnClick( app, vrFrame, event );
+    		OnClick( guiSys, vrFrame, event );
     		return MSG_STATUS_ALIVE;
 
     	case VRMENU_EVENT_FRAME_UPDATE:
-    		return OnFrame( app, vrFrame, menuMgr, self, event );
+    		return OnFrame( guiSys, vrFrame, self, event );
 
         default:
             OVR_ASSERT( !"Event flags mismatch!" );
@@ -1064,14 +1065,14 @@ eMsgStatus ScrubBarComponent::OnEvent_Impl( App * app, VrFrame const & vrFrame, 
     }
 }
 
-eMsgStatus ScrubBarComponent::OnFrame( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus ScrubBarComponent::OnFrame( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
 	if ( TouchDown )
 	{
 		if ( ( vrFrame.Input.buttonState & ( BUTTON_A | BUTTON_TOUCH ) ) != 0 )
 		{
-			OnClick( app, vrFrame, event );
+			OnClick( guiSys, vrFrame, event );
 		}
 		else
 		{
@@ -1088,7 +1089,7 @@ eMsgStatus ScrubBarComponent::OnFrame( App * app, VrFrame const & vrFrame, OvrVR
 		const Posef modelPose = Background->GetWorldPose();
 		Vector3f localHit = modelPose.Orientation.Inverted().Rotate( hitPos - modelPose.Position );
 
-		Bounds3f bounds = Background->GetMenuObject()->GetLocalBounds( app->GetDefaultFont() ) * Background->GetParent()->GetWorldScale();
+		Bounds3f bounds = Background->GetMenuObject()->GetLocalBounds(guiSys.GetDefaultFont() ) * Background->GetParent()->GetWorldScale();
 		const float progress = ( localHit.x - bounds.GetMins().x ) / bounds.GetSize().x;
 
 		if ( ( progress >= 0.0f ) && ( progress <= 1.0f ) )
@@ -1105,7 +1106,7 @@ eMsgStatus ScrubBarComponent::OnFrame( App * app, VrFrame const & vrFrame, OvrVR
 	return MSG_STATUS_ALIVE;
 }
 
-void ScrubBarComponent::OnClick( App * app, VrFrame const & vrFrame, VRMenuEvent const & event )
+void ScrubBarComponent::OnClick( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuEvent const & event )
 {
 	if ( OnClickFunction == NULL )
 	{
@@ -1118,7 +1119,7 @@ void ScrubBarComponent::OnClick( App * app, VrFrame const & vrFrame, VRMenuEvent
 	const Posef modelPose = Background->GetWorldPose();
 	Vector3f localHit = modelPose.Orientation.Inverted().Rotate( hitPos - modelPose.Position );
 
-	Bounds3f bounds = Background->GetMenuObject()->GetLocalBounds( app->GetDefaultFont() ) * Background->GetParent()->GetWorldScale();
+	Bounds3f bounds = Background->GetMenuObject()->GetLocalBounds( guiSys.GetDefaultFont() ) * Background->GetParent()->GetWorldScale();
 	const float progress = ( localHit.x - bounds.GetMins().x ) / bounds.GetSize().x;
 	if ( ( progress >= 0.0f ) && ( progress <= 1.0f ) )
 	{

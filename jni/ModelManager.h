@@ -17,8 +17,10 @@ of patent rights can be found in the PATENTS file in the same directory.
 #define ModelManager_h
 
 #include "ModelFile.h"
-#include "LibOVR/Src/Kernel/OVR_String.h"
-#include "LibOVR/Src/Kernel/OVR_Array.h"
+#include "Kernel/OVR_String.h"
+#include "Kernel/OVR_Array.h"
+
+using namespace OVR;
 
 namespace VRMatterStreamTheater {
 

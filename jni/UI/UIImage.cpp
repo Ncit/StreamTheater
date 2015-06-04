@@ -30,12 +30,12 @@ UIImage::~UIImage()
 {
 }
 
-void UIImage::AddToMenu( UIMenu *menu, UIWidget *parent )
+void UIImage::AddToMenu( OvrGuiSys & guiSys, UIMenu *menu, UIWidget *parent )
 {
-	AddToMenuFlags( menu, parent, VRMenuObjectFlags_t() );
+	AddToMenuFlags( guiSys, menu, parent, VRMenuObjectFlags_t() );
 }
 
-void UIImage::AddToMenuFlags( UIMenu *menu, UIWidget *parent, VRMenuObjectFlags_t const flags )
+void UIImage::AddToMenuFlags( OvrGuiSys & guiSys, UIMenu *menu, UIWidget *parent, VRMenuObjectFlags_t const flags )
 {
 	const Posef pose( Quatf( Vector3f( 0.0f, 1.0f, 0.0f ), 0.0f ), Vector3f( 0.0f, 0.0f, 0.0f ) );
 
@@ -46,7 +46,7 @@ void UIImage::AddToMenuFlags( UIMenu *menu, UIWidget *parent, VRMenuObjectFlags_
 			"", pose, defaultScale, fontParms, menu->AllocId(),
 			flags, VRMenuObjectInitFlags_t( VRMENUOBJECT_INIT_FORCE_POSITION ) );
 
-	AddToMenuWithParms( menu, parent, parms );
+	AddToMenuWithParms( guiSys, menu, parent, parms );
 }
 
 } // namespace VRMatterStreamTheater

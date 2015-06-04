@@ -16,7 +16,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "ResumeMovieComponent.h"
 #include "ResumeMovieView.h"
 #include "CinemaApp.h"
-
+#include "VRMenu/GuiSys.h"
 
 namespace VRMatterStreamTheater {
 
@@ -55,28 +55,28 @@ void ResumeMovieComponent::UpdateColor( VRMenuObject * self )
 
 //==============================
 //  ResumeMovieComponent::OnEvent_Impl
-eMsgStatus ResumeMovieComponent::OnEvent_Impl( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus ResumeMovieComponent::OnEvent_Impl( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
     switch( event.EventType )
     {
         case VRMENU_EVENT_FRAME_UPDATE:
-            return Frame( app, vrFrame, menuMgr, self, event );
+            return Frame( guiSys, vrFrame, self, event );
         case VRMENU_EVENT_FOCUS_GAINED:
-            return FocusGained( app, vrFrame, menuMgr, self, event );
+            return FocusGained( guiSys, vrFrame, self, event );
         case VRMENU_EVENT_FOCUS_LOST:
-            return FocusLost( app, vrFrame, menuMgr, self, event );
+            return FocusLost( guiSys, vrFrame, self, event );
         case VRMENU_EVENT_TOUCH_DOWN:
         	if ( CallbackView != NULL )
         	{
-        		Sound.PlaySound( app, "touch_down", 0.1 );
+        		Sound.PlaySound( guiSys.GetApp(), "touch_down", 0.1 );
         		return MSG_STATUS_CONSUMED;
         	}
         	return MSG_STATUS_ALIVE;
         case VRMENU_EVENT_TOUCH_UP:
         	if ( !( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) && ( CallbackView != NULL ) )
         	{
-                Sound.PlaySound( app, "touch_up", 0.1 );
+                Sound.PlaySound( guiSys.GetApp(), "touch_up", 0.1 );
                	CallbackView->ResumeChoice( ItemNum );
         		return MSG_STATUS_CONSUMED;
         	}
@@ -89,7 +89,7 @@ eMsgStatus ResumeMovieComponent::OnEvent_Impl( App * app, VrFrame const & vrFram
 
 //==============================
 //  ResumeMovieComponent::Frame
-eMsgStatus ResumeMovieComponent::Frame( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus ResumeMovieComponent::Frame( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
 	UpdateColor( self );
@@ -99,12 +99,12 @@ eMsgStatus ResumeMovieComponent::Frame( App * app, VrFrame const & vrFrame, OvrV
 
 //==============================
 //  ResumeMovieComponent::FocusGained
-eMsgStatus ResumeMovieComponent::FocusGained( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus ResumeMovieComponent::FocusGained( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
 	//LOG( "FocusGained" );
 	HasFocus = true;
-	Sound.PlaySound( app, "gaze_on", 0.1 );
+	Sound.PlaySound( guiSys.GetApp(), "gaze_on", 0.1 );
 
 	self->SetHilighted( true );
 	self->SetTextColor( HighlightColor );
@@ -118,13 +118,13 @@ eMsgStatus ResumeMovieComponent::FocusGained( App * app, VrFrame const & vrFrame
 
 //==============================
 //  ResumeMovieComponent::FocusLost
-eMsgStatus ResumeMovieComponent::FocusLost( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus ResumeMovieComponent::FocusLost( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
 	//LOG( "FocusLost" );
 
 	HasFocus = false;
-	Sound.PlaySound( app, "gaze_off", 0.1 );
+	Sound.PlaySound( guiSys.GetApp(), "gaze_off", 0.1 );
 
 	self->SetHilighted( false );
 	self->SetTextColor( self->IsHilighted() ? HighlightColor : NormalColor );

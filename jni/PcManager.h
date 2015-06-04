@@ -16,8 +16,8 @@ of patent rights can be found in the PATENTS file in the same directory.
 #if !defined( PcManager_h )
 #define PcManager_h
 
-#include "LibOVR/Src/Kernel/OVR_String.h"
-#include "LibOVR/Src/Kernel/OVR_Array.h"
+#include "Kernel/OVR_String.h"
+#include "Kernel/OVR_Array.h"
 #include "GlTexture.h"
 #include "Native.h"
 
@@ -67,7 +67,7 @@ public:
 	Array<const PcDef *>	GetPcList( PcCategory category ) const;
 
 public:
-    Array<PcDef *> 			Movies;
+    Array<PcDef *>			Movies;
 
     static const int 		PosterWidth;
     static const int 		PosterHeight;

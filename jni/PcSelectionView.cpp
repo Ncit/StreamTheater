@@ -14,11 +14,12 @@ of patent rights can be found in the PATENTS file in the same directory.
 *************************************************************************************/
 
 #include <android/keycodes.h>
-#include "LibOVR/Src/Kernel/OVR_String_Utils.h"
+#include "Kernel/OVR_String_Utils.h"
 #include "App.h"
 #include "PcSelectionView.h"
 #include "CinemaApp.h"
 #include "VRMenu/VRMenuMgr.h"
+#include "VRMenu/GuiSys.h"
 #include "PcCategoryComponent.h"
 #include "MoviePosterComponent.h"
 #include "MovieSelectionComponent.h"
@@ -45,23 +46,23 @@ static const int NumSwipeTrails = 3;
 PcSelectionView::PcSelectionView( CinemaApp &cinema ) :
 	SelectionView( "PcSelectionView" ),
 	Cinema( cinema ),
-    SelectionTexture(),
-    Is3DIconTexture(),
-    ShadowTexture(),
-    BorderTexture(),
-    SwipeIconLeftTexture(),
-    SwipeIconRightTexture(),
-    ResumeIconTexture(),
-    ErrorIconTexture(),
-    SDCardTexture(),
+	SelectionTexture(),
+	Is3DIconTexture(),
+	ShadowTexture(),
+	BorderTexture(),
+	SwipeIconLeftTexture(),
+	SwipeIconRightTexture(),
+	ResumeIconTexture(),
+	ErrorIconTexture(),
+	SDCardTexture(),
 	Menu( NULL ),
 	CenterRoot( NULL ),
 	ErrorMessage( NULL ),
 	SDCardMessage( NULL ),
 	PlainErrorMessage( NULL ),
 	ErrorMessageClicked( false ),
-    MovieRoot( NULL ),
-    CategoryRoot( NULL ),
+	MovieRoot( NULL ),
+	CategoryRoot( NULL ),
 	TitleRoot( NULL ),
 	MovieTitle( NULL ),
 	SelectionFrame( NULL ),
@@ -81,9 +82,9 @@ PcSelectionView::PcSelectionView( CinemaApp &cinema ) :
 	SelectionFader(),
 	MovieBrowser( NULL ),
 	MoviePanelPositions(),
-    MoviePosterComponents(),
-    Categories(),
-    CurrentCategory( CATEGORY_LIMELIGHT ),
+	MoviePosterComponents(),
+	Categories(),
+	CurrentCategory( CATEGORY_LIMELIGHT ),
 	MovieList(),
 	MoviesIndex( 0 ),
 	LastMovieDisplayed( NULL ),
@@ -104,15 +105,15 @@ void PcSelectionView::OneTimeInit( const char * launchIntent )
 {
 	LOG( "PcSelectionView::OneTimeInit" );
 
-	const double start = ovr_GetTimeInSeconds();
+	const double start = vrapi_GetTimeInSeconds();
 
-	CreateMenu( Cinema.app, Cinema.app->GetVRMenuMgr(), Cinema.app->GetDefaultFont() );
+	CreateMenu( Cinema.GetGuiSys() );
 
 	SetCategory( CATEGORY_LIMELIGHT );
 
 	Native::InitPcSelector( Cinema.app );
 
-	LOG( "PcSelectionView::OneTimeInit %3.1f seconds", ovr_GetTimeInSeconds() - start );
+	LOG( "PcSelectionView::OneTimeInit %3.1f seconds", vrapi_GetTimeInSeconds() - start );
 }
 
 void PcSelectionView::OneTimeShutdown()
@@ -141,7 +142,7 @@ void PcSelectionView::OnOpen()
 
 	Cinema.SceneMgr.LightsOn( 1.5f );
 
-	const double now = ovr_GetTimeInSeconds();
+	const double now = vrapi_GetTimeInSeconds();
 	SelectionFader.Set( now, 0, now + 0.1, 1.0f );
 
 	if ( Cinema.InLobby ) //TODO: Have this do stuff conditionally for whether we're in app selection
@@ -172,8 +173,6 @@ void PcSelectionView::OnOpen()
 	MoviePosterComponent::ShowShadows = Cinema.InLobby;
 
 	SwipeHintComponent::ShowSwipeHints = true;
-
-	Cinema.app->GetSwapParms().WarpProgram = WP_CHROMATIC;
 }
 
 void PcSelectionView::OnClose()
@@ -191,7 +190,7 @@ bool PcSelectionView::Command( const char * msg )
 	return false;
 }
 
-bool PcSelectionView::OnKeyEvent( const int keyCode, const KeyState::eKeyEventType eventType )
+bool PcSelectionView::OnKeyEvent( const int keyCode, const int repeatCount, const KeyEventType eventType )
 {
 	switch ( keyCode )
 	{
@@ -199,14 +198,13 @@ bool PcSelectionView::OnKeyEvent( const int keyCode, const KeyState::eKeyEventTy
 		{
 			switch ( eventType )
 			{
-				case KeyState::KEY_EVENT_DOUBLE_TAP:
+				case KEY_EVENT_DOUBLE_TAP:
 					LOG( "KEY_EVENT_DOUBLE_TAP" );
 					return true;
 					break;
 				default:
 					break;
 			}
-			break;
 		}
 	}
 	return false;
@@ -214,53 +212,53 @@ bool PcSelectionView::OnKeyEvent( const int keyCode, const KeyState::eKeyEventTy
 
 //=======================================================================================
 
-void PcSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont const & font )
+void PcSelectionView::CreateMenu( OvrGuiSys & guiSys )
 {
 	const Quatf forward( Vector3f( 0.0f, 1.0f, 0.0f ), 0.0f );
 
-    // ==============================================================================
-    //
+	// ==============================================================================
+	//
 	// load textures
 	//
 	SelectionTexture.LoadTextureFromApplicationPackage( "assets/selection.png" );
 	Is3DIconTexture.LoadTextureFromApplicationPackage( "assets/3D_icon.png" );
 	ShadowTexture.LoadTextureFromApplicationPackage( "assets/shadow.png" );
-    BorderTexture.LoadTextureFromApplicationPackage( "assets/category_border.png" );
+	BorderTexture.LoadTextureFromApplicationPackage( "assets/category_border.png" );
 	SwipeIconLeftTexture.LoadTextureFromApplicationPackage( "assets/SwipeSuggestionArrowLeft.png" );
 	SwipeIconRightTexture.LoadTextureFromApplicationPackage( "assets/SwipeSuggestionArrowRight.png" );
 	ResumeIconTexture.LoadTextureFromApplicationPackage( "assets/resume.png" );
 	ErrorIconTexture.LoadTextureFromApplicationPackage( "assets/error.png" );
 	SDCardTexture.LoadTextureFromApplicationPackage( "assets/sdcard.png" );
 
-    // ==============================================================================
-    //
+ 	// ==============================================================================
+	//
 	// create menu
 	//
 	Menu = new UIMenu( Cinema );
 	Menu->Create( "PcBrowser" );
 
 	CenterRoot = new UIContainer( Cinema );
-	CenterRoot->AddToMenu( Menu );
+	CenterRoot->AddToMenu( guiSys, Menu );
 	CenterRoot->SetLocalPose( forward, Vector3f( 0.0f, 0.0f, 0.0f ) );
 
 	MovieRoot = new UIContainer( Cinema );
-	MovieRoot->AddToMenu( Menu, CenterRoot );
+	MovieRoot->AddToMenu( guiSys, Menu, CenterRoot );
 	MovieRoot->SetLocalPose( forward, Vector3f( 0.0f, 0.0f, 0.0f ) );
 
 	CategoryRoot = new UIContainer( Cinema );
-	CategoryRoot->AddToMenu( Menu, CenterRoot );
+	CategoryRoot->AddToMenu( guiSys, Menu, CenterRoot );
 	CategoryRoot->SetLocalPose( forward, Vector3f( 0.0f, 0.0f, 0.0f ) );
 
 	TitleRoot = new UIContainer( Cinema );
-	TitleRoot->AddToMenu( Menu, CenterRoot );
+	TitleRoot->AddToMenu( guiSys, Menu, CenterRoot );
 	TitleRoot->SetLocalPose( forward, Vector3f( 0.0f, 0.0f, 0.0f ) );
 
 	// ==============================================================================
-    //
+	//
 	// error message
 	//
 	ErrorMessage = new UILabel( Cinema );
-	ErrorMessage->AddToMenu( Menu, CenterRoot );
+	ErrorMessage->AddToMenu( guiSys, Menu, CenterRoot );
 	ErrorMessage->SetLocalPose( forward, Vector3f( 0.00f, 1.76f, -7.39f + 0.5f ) );
 	ErrorMessage->SetLocalScale( Vector3f( 5.0f ) );
 	ErrorMessage->SetFontScale( 0.5f );
@@ -268,12 +266,12 @@ void PcSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 	ErrorMessage->SetImage( 0, SURFACE_TEXTURE_DIFFUSE, ErrorIconTexture );
 	ErrorMessage->SetVisible( false );
 
-    // ==============================================================================
-    //
+	// ==============================================================================
+	//
 	// sdcard icon
 	//
 	SDCardMessage = new UILabel( Cinema );
-	SDCardMessage->AddToMenu( Menu, CenterRoot );
+	SDCardMessage->AddToMenu( guiSys, Menu, CenterRoot );
 	SDCardMessage->SetLocalPose( forward, Vector3f( 0.00f, 1.76f + 330.0f * VRMenuObject::DEFAULT_TEXEL_SCALE, -7.39f + 0.5f ) );
 	SDCardMessage->SetLocalScale( Vector3f( 5.0f ) );
 	SDCardMessage->SetFontScale( 0.5f );
@@ -281,18 +279,18 @@ void PcSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 	SDCardMessage->SetVisible( false );
 	SDCardMessage->SetImage( 0, SURFACE_TEXTURE_DIFFUSE, SDCardTexture );
 
-    // ==============================================================================
-    //
+	// ==============================================================================
+	//
 	// error without icon
 	//
 	PlainErrorMessage = new UILabel( Cinema );
-	PlainErrorMessage->AddToMenu( Menu, CenterRoot );
+	PlainErrorMessage->AddToMenu( guiSys, Menu, CenterRoot );
 	PlainErrorMessage->SetLocalPose( forward, Vector3f( 0.00f, 1.76f + ( 330.0f - 48 ) * VRMenuObject::DEFAULT_TEXEL_SCALE, -7.39f + 0.5f ) );
 	PlainErrorMessage->SetLocalScale( Vector3f( 5.0f ) );
 	PlainErrorMessage->SetFontScale( 0.5f );
 	PlainErrorMessage->SetVisible( false );
 
-    // ==============================================================================
+	// ==============================================================================
 	//
 	// movie browser
 	//
@@ -307,33 +305,33 @@ void PcSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 	CenterIndex = MoviePanelPositions.GetSize() / 2;
 	CenterPosition = MoviePanelPositions[ CenterIndex ].Position;
 
-    MovieBrowser = new CarouselBrowserComponent( MovieBrowserItems, MoviePanelPositions );
-    MovieRoot->AddComponent( MovieBrowser );
+	MovieBrowser = new CarouselBrowserComponent( MovieBrowserItems, MoviePanelPositions );
+	MovieRoot->AddComponent( MovieBrowser );
 
-    // ==============================================================================
-    //
-    // selection rectangle
+	// ==============================================================================
 	//
-    SelectionFrame = new UIImage( Cinema );
-    SelectionFrame->AddToMenu( Menu, MovieRoot );
-    SelectionFrame->SetLocalPose( forward, CenterPosition + Vector3f( 0.0f, 0.0f, 0.1f ) );
-    SelectionFrame->SetLocalScale( PosterScale );
-    SelectionFrame->SetImage( 0, SURFACE_TEXTURE_DIFFUSE, SelectionTexture );
-    SelectionFrame->AddComponent( new MovieSelectionComponent( this ) );
+	// selection rectangle
+	//
+	SelectionFrame = new UIImage( Cinema );
+	SelectionFrame->AddToMenu( guiSys, Menu, MovieRoot );
+	SelectionFrame->SetLocalPose( forward, CenterPosition + Vector3f( 0.0f, 0.0f, 0.1f ) );
+	SelectionFrame->SetLocalScale( PosterScale );
+	SelectionFrame->SetImage( 0, SURFACE_TEXTURE_DIFFUSE, SelectionTexture );
+	SelectionFrame->AddComponent( new MovieSelectionComponent( this ) );
 
 	const Vector3f selectionBoundsExpandMin = Vector3f( 0.0f );
 	const Vector3f selectionBoundsExpandMax = Vector3f( 0.0f, -0.13f, 0.0f );
-    SelectionFrame->GetMenuObject()->SetLocalBoundsExpand( selectionBoundsExpandMin, selectionBoundsExpandMax );
+	SelectionFrame->GetMenuObject()->SetLocalBoundsExpand( selectionBoundsExpandMin, selectionBoundsExpandMax );
 
-    // ==============================================================================
-    //
-    // add shadow and 3D icon to movie poster panels
-    //
+	// ==============================================================================
+	//
+	// add shadow and 3D icon to movie poster panels
+	//
 	Array<VRMenuObject *> menuObjs;
 	for ( UPInt i = 0; i < MoviePanelPositions.GetSize(); ++i )
 	{
 		UIContainer *posterContainer = new UIContainer( Cinema );
-		posterContainer->AddToMenu( Menu, MovieRoot );
+		posterContainer->AddToMenu( guiSys, Menu, MovieRoot );
 		posterContainer->SetLocalPose( MoviePanelPositions[ i ].Orientation, MoviePanelPositions[ i ].Position );
 		posterContainer->GetMenuObject()->AddFlags( VRMENUOBJECT_FLAG_NO_FOCUS_GAINED );
 
@@ -341,7 +339,7 @@ void PcSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 		// posters
 		//
 		UIImage * posterImage = new UIImage( Cinema );
-		posterImage->AddToMenu( Menu, posterContainer );
+		posterImage->AddToMenu( guiSys, Menu, posterContainer );
 		posterImage->SetLocalPose( forward, Vector3f( 0.0f, 0.0f, 0.0f ) );
 		posterImage->SetImage( 0, SURFACE_TEXTURE_DIFFUSE, SelectionTexture.Texture, PosterWidth, PosterHeight );
 		posterImage->SetLocalScale( PosterScale );
@@ -357,7 +355,7 @@ void PcSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 		// 3D icon
 		//
 		UIImage * is3DIcon = new UIImage( Cinema );
-		is3DIcon->AddToMenu( Menu, posterContainer );
+		is3DIcon->AddToMenu( guiSys, Menu, posterContainer );
 		is3DIcon->SetLocalPose( forward, Vector3f( 0.75f, 1.3f, 0.02f ) );
 		is3DIcon->SetImage( 0, SURFACE_TEXTURE_DIFFUSE, Is3DIconTexture );
 		is3DIcon->SetLocalScale( PosterScale );
@@ -367,7 +365,7 @@ void PcSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 		// shadow
 		//
 		UIImage * shadow = new UIImage( Cinema );
-		shadow->AddToMenu( Menu, posterContainer );
+		shadow->AddToMenu( guiSys, Menu, posterContainer );
 		shadow->SetLocalPose( forward, Vector3f( 0.0f, -1.97f, 0.00f ) );
 		shadow->SetImage( 0, SURFACE_TEXTURE_DIFFUSE, ShadowTexture );
 		shadow->SetLocalScale( PosterScale );
@@ -386,24 +384,24 @@ void PcSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 
 	MovieBrowser->SetMenuObjects( menuObjs, MoviePosterComponents );
 
-    // ==============================================================================
-    //
-    // category browser
-    //
-    Categories.PushBack( PcCategoryButton( CATEGORY_LIMELIGHT, CinemaStrings::Category_LimeLight ) );
+	// ==============================================================================
+	//
+	// category browser
+	//
+	Categories.PushBack( PcCategoryButton( CATEGORY_LIMELIGHT, CinemaStrings::Category_LimeLight ) );
 
-    // create the buttons and calculate their size
-    const float itemWidth = 1.10f;
-    float categoryBarWidth = 0.0f;
+	// create the buttons and calculate their size
+	const float itemWidth = 1.10f;
+	float categoryBarWidth = 0.0f;
 	for ( UPInt i = 0; i < Categories.GetSize(); ++i )
 	{
 		Categories[ i ].Button = new UILabel( Cinema );
-		Categories[ i ].Button->AddToMenu( Menu, CategoryRoot );
+		Categories[ i ].Button->AddToMenu( guiSys, Menu, CategoryRoot );
 		Categories[ i ].Button->SetFontScale( 2.2f );
 		Categories[ i ].Button->SetText( Categories[ i ].Text.ToCStr() );
 		Categories[ i ].Button->AddComponent( new PcCategoryComponent( this, Categories[ i ].Category ) );
 
-		const Bounds3f & bounds = Categories[ i ].Button->GetTextLocalBounds( Cinema.app->GetDefaultFont() );
+		const Bounds3f & bounds = Categories[ i ].Button->GetTextLocalBounds( Cinema.GetGuiSys().GetDefaultFont() );
 		Categories[ i ].Width = OVR::Alg::Max( bounds.GetSize().x, itemWidth ) + 80.0f * VRMenuObject::DEFAULT_TEXEL_SCALE;
 		Categories[ i ].Height = bounds.GetSize().y + 108.0f * VRMenuObject::DEFAULT_TEXEL_SCALE;
 		categoryBarWidth += Categories[ i ].Width;
@@ -429,19 +427,19 @@ void PcSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 	}
 
 	// ==============================================================================
-    //
-    // movie title
-    //
+	//
+	// movie title
+	//
 	MovieTitle = new UILabel( Cinema );
-	MovieTitle->AddToMenu( Menu, TitleRoot );
+	MovieTitle->AddToMenu( guiSys, Menu, TitleRoot );
 	MovieTitle->SetLocalPose( forward, Vector3f( 0.0f, 0.045f, -7.37f ) );
 	MovieTitle->GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
 	MovieTitle->SetFontScale( 2.5f );
 
 	// ==============================================================================
-    //
-    // swipe icons
-    //
+	//
+	// swipe icons
+	//
 	float yPos = 1.76f - ( PosterHeight - SwipeIconLeftTexture.Height ) * 0.5f * VRMenuObject::DEFAULT_TEXEL_SCALE * PosterScale.y;
 
 	for( int i = 0; i < NumSwipeTrails; i++ )
@@ -449,7 +447,7 @@ void PcSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 		Vector3f swipeIconPos = Vector3f( 0.0f, yPos, -7.17f + 0.01f * ( float )i );
 
 		LeftSwipes[ i ] = new UIImage( Cinema );
-		LeftSwipes[ i ]->AddToMenu( Menu, CenterRoot );
+		LeftSwipes[ i ]->AddToMenu( guiSys, Menu, CenterRoot );
 		LeftSwipes[ i ]->SetImage( 0, SURFACE_TEXTURE_DIFFUSE, SwipeIconLeftTexture );
 		LeftSwipes[ i ]->SetLocalScale( PosterScale );
 		LeftSwipes[ i ]->GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_FLAG_NO_DEPTH ) | VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
@@ -459,7 +457,7 @@ void PcSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 		LeftSwipes[ i ]->SetLocalPosition( swipeIconPos );
 
 		RightSwipes[ i ] = new UIImage( Cinema );
-		RightSwipes[ i ]->AddToMenu( Menu, CenterRoot );
+		RightSwipes[ i ]->AddToMenu( guiSys, Menu, CenterRoot );
 		RightSwipes[ i ]->SetImage( 0, SURFACE_TEXTURE_DIFFUSE, SwipeIconRightTexture );
 		RightSwipes[ i ]->SetLocalScale( PosterScale );
 		RightSwipes[ i ]->GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_FLAG_NO_DEPTH ) | VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
@@ -470,11 +468,11 @@ void PcSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
     }
 
 	// ==============================================================================
-    //
-    // resume icon
-    //
+	//
+	// resume icon
+	//
 	ResumeIcon = new UILabel( Cinema );
-	ResumeIcon->AddToMenu( Menu, MovieRoot );
+	ResumeIcon->AddToMenu( guiSys, Menu, MovieRoot );
 	ResumeIcon->SetLocalPose( forward, CenterPosition + Vector3f( 0.0f, 0.0f, 0.5f ) );
 	ResumeIcon->SetImage( 0, SURFACE_TEXTURE_DIFFUSE, ResumeIconTexture );
 	ResumeIcon->GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
@@ -484,12 +482,12 @@ void PcSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 	ResumeIcon->SetTextOffset( Vector3f( 0.0f, -ResumeIconTexture.Height * VRMenuObject::DEFAULT_TEXEL_SCALE * 0.5f, 0.0f ) );
 	ResumeIcon->SetVisible( false );
 
-    // ==============================================================================
-    //
-    // timer
-    //
+	// ==============================================================================
+	//
+	// timer
+	//
 	TimerIcon = new UILabel( Cinema );
-	TimerIcon->AddToMenu( Menu, MovieRoot );
+	TimerIcon->AddToMenu( guiSys, Menu, MovieRoot );
 	TimerIcon->SetLocalPose( forward, CenterPosition + Vector3f( 0.0f, 0.0f, 0.5f ) );
 	TimerIcon->GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
 	TimerIcon->SetFontScale( 1.0f );
@@ -506,35 +504,35 @@ void PcSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont 
 
 	// text
 	TimerText = new UILabel( Cinema );
-	TimerText->AddToMenu( Menu, TimerIcon );
+	TimerText->AddToMenu( guiSys, Menu, TimerIcon );
 	TimerText->SetLocalPose( forward, Vector3f( 0.0f, -0.3f, 0.0f ) );
 	TimerText->GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
 	TimerText->SetFontScale( 1.0f );
 	TimerText->SetText( CinemaStrings::MovieSelection_Next );
 
-    // ==============================================================================
-    //
-    // reorient message
-    //
-    MoveScreenLabel = new UILabel( Cinema );
-    MoveScreenLabel->AddToMenu( Menu, NULL );
-    MoveScreenLabel->SetLocalPose( forward, Vector3f( 0.0f, 0.0f, -1.8f ) );
-    MoveScreenLabel->GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
-    MoveScreenLabel->SetFontScale( 0.5f );
-    MoveScreenLabel->SetText( CinemaStrings::MoviePlayer_Reorient );
-    MoveScreenLabel->SetTextOffset( Vector3f( 0.0f, -24 * VRMenuObject::DEFAULT_TEXEL_SCALE, 0.0f ) );  // offset to be below gaze cursor
-    MoveScreenLabel->SetVisible( false );
+	// ==============================================================================
+	//
+	// reorient message
+	//
+	MoveScreenLabel = new UILabel( Cinema );
+	MoveScreenLabel->AddToMenu( guiSys, Menu, NULL );
+	MoveScreenLabel->SetLocalPose( forward, Vector3f( 0.0f, 0.0f, -1.8f ) );
+	MoveScreenLabel->GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
+	MoveScreenLabel->SetFontScale( 0.5f );
+	MoveScreenLabel->SetText( CinemaStrings::MoviePlayer_Reorient );
+	MoveScreenLabel->SetTextOffset( Vector3f( 0.0f, -24 * VRMenuObject::DEFAULT_TEXEL_SCALE, 0.0f ) );  // offset to be below gaze cursor
+	MoveScreenLabel->SetVisible( false );
 }
 
 Vector3f PcSelectionView::ScalePosition( const Vector3f &startPos, const float scale, const float menuOffset ) const
 {
-	const float eyeHieght = Cinema.SceneMgr.Scene.ViewParms.EyeHeight;
+	const float eyeHieght = Cinema.SceneMgr.Scene.GetHeadModelParms().EyeHeight;
 
 	Vector3f pos = startPos;
 	pos.x *= scale;
 	pos.y = ( pos.y - eyeHieght ) * scale + eyeHieght + menuOffset;
 	pos.z *= scale;
-	pos += Cinema.SceneMgr.Scene.FootPos;
+	pos += Cinema.SceneMgr.Scene.GetFootPos();
 
 	return pos;
 }
@@ -550,9 +548,9 @@ void PcSelectionView::UpdateMenuPosition()
 
 	if ( !Cinema.InLobby && Cinema.SceneMgr.SceneInfo.UseFreeScreen )
 	{
-		Quatf orientation = Quatf( Cinema.SceneMgr.FreeScreenOrientation );
+		Quatf orientation = Quatf( Cinema.SceneMgr.FreeScreenPose );
 		CenterRoot->GetMenuObject()->SetLocalRotation( orientation );
-		CenterRoot->GetMenuObject()->SetLocalPosition( Cinema.SceneMgr.FreeScreenOrientation.Transform( Vector3f( 0.0f, -1.76f * scale, 0.0f ) ) );
+		CenterRoot->GetMenuObject()->SetLocalPosition( Cinema.SceneMgr.FreeScreenPose.Transform( Vector3f( 0.0f, -1.76f * scale, 0.0f ) ) );
 	}
 	else
 	{
@@ -591,7 +589,7 @@ void PcSelectionView::Select()
 
 void PcSelectionView::StartTimer()
 {
-	const double now = ovr_GetTimeInSeconds();
+	const double now = vrapi_GetTimeInSeconds();
 	TimerStartTime = now;
 	TimerValue = -1;
 	ShowTimer = true;
@@ -732,7 +730,7 @@ void PcSelectionView::SelectionHighlighted( bool isHighlighted )
 
 void PcSelectionView::UpdateSelectionFrame( const VrFrame & vrFrame )
 {
-	const double now = ovr_GetTimeInSeconds();
+	const double now = vrapi_GetTimeInSeconds();
 	if ( !MovieBrowser->HasSelection() )
 	{
 		SelectionFader.Set( now, 0, now + 0.1, 1.0f );
@@ -745,7 +743,7 @@ void PcSelectionView::UpdateSelectionFrame( const VrFrame & vrFrame )
 	}
 	else
 	{
-		MovieBrowser->CheckGamepad( Cinema.app, vrFrame, Cinema.app->GetVRMenuMgr(), MovieRoot->GetMenuObject() );
+		MovieBrowser->CheckGamepad( Cinema.GetGuiSys(), vrFrame, MovieRoot->GetMenuObject() );
 	}
 
 	SelectionFrame->SetColor( Vector4f( SelectionFader.Value( now ) ) );
@@ -767,7 +765,6 @@ void PcSelectionView::UpdateSelectionFrame( const VrFrame & vrFrame )
 		if ( frac > 1.0f )
 		{
 			frac = 1.0f;
-//			Cinema.SetPlaylist( MovieList, MovieBrowser->GetSelection() );
 			Cinema.ResumeOrRestartMovie();
 		}
 		Vector2f offset( 0.0f, 1.0f - frac );
@@ -797,22 +794,22 @@ void PcSelectionView::SetError( const char *text, bool showSDCard, bool showErro
 	if ( showSDCard )
 	{
 		SDCardMessage->SetVisible( true );
-		SDCardMessage->SetTextWordWrapped( text, Cinema.app->GetDefaultFont(), 1.0f );
+		SDCardMessage->SetTextWordWrapped( text, Cinema.GetGuiSys().GetDefaultFont(), 1.0f );
 	}
 	else if ( showErrorIcon )
 	{
 		ErrorMessage->SetVisible( true );
-		ErrorMessage->SetTextWordWrapped( text, Cinema.app->GetDefaultFont(), 1.0f );
+		ErrorMessage->SetTextWordWrapped( text, Cinema.GetGuiSys().GetDefaultFont(), 1.0f );
 	}
 	else
 	{
 		PlainErrorMessage->SetVisible( true );
-		PlainErrorMessage->SetTextWordWrapped( text, Cinema.app->GetDefaultFont(), 1.0f );
+		PlainErrorMessage->SetTextWordWrapped( text, Cinema.GetGuiSys().GetDefaultFont(), 1.0f );
 	}
 	TitleRoot->SetVisible( false );
 	MovieRoot->SetVisible( false );
 
-    SwipeHintComponent::ShowSwipeHints = false;
+	SwipeHintComponent::ShowSwipeHints = false;
 }
 
 void PcSelectionView::ClearError()
@@ -825,7 +822,7 @@ void PcSelectionView::ClearError()
 	TitleRoot->SetVisible( true );
 	MovieRoot->SetVisible( true );
 
-    SwipeHintComponent::ShowSwipeHints = true;
+	SwipeHintComponent::ShowSwipeHints = true;
 }
 
 bool PcSelectionView::ErrorShown() const
@@ -841,9 +838,9 @@ Matrix4f PcSelectionView::DrawEyeView( const int eye, const float fovDegrees )
 Matrix4f PcSelectionView::Frame( const VrFrame & vrFrame )
 {
 	// We want 4x MSAA in the lobby
-	EyeParms eyeParms = Cinema.app->GetEyeParms();
-	eyeParms.multisamples = 4;
-	Cinema.app->SetEyeParms( eyeParms );
+	ovrEyeBufferParms eyeBufferParms = Cinema.app->GetEyeBufferParms();
+	eyeBufferParms.multisamples = 4;
+	Cinema.app->SetEyeBufferParms( eyeBufferParms );
 
 #if 0
 	if ( !Cinema.InLobby && Cinema.SceneMgr.ChangeSeats( vrFrame ) )
@@ -860,7 +857,7 @@ Matrix4f PcSelectionView::Frame( const VrFrame & vrFrame )
 		}
 		else
 		{
-			Cinema.app->GetGuiSys().CloseMenu( Cinema.app, Menu->GetVRMenu(), false );
+			Cinema.GetGuiSys().CloseMenu( Menu->GetVRMenu(), false );
 		}
 	}
 
@@ -891,11 +888,11 @@ Matrix4f PcSelectionView::Frame( const VrFrame & vrFrame )
 		SwipeHintComponent::ShowSwipeHints = false;
 		if ( vrFrame.Input.buttonPressed & ( BUTTON_TOUCH | BUTTON_A ) )
 		{
-			Cinema.app->PlaySound( "touch_down" );
+			Cinema.GetGuiSys().GetApp()->PlaySound( "touch_down" );
 		}
 		else if ( vrFrame.Input.buttonReleased & ( BUTTON_TOUCH | BUTTON_A ) )
 		{
-			Cinema.app->PlaySound( "touch_up" );
+			Cinema.GetGuiSys().GetApp()->PlaySound( "touch_up" );
 			ErrorMessageClicked = true;
 		}
 		else if ( ErrorMessageClicked && ( ( vrFrame.Input.buttonState & ( BUTTON_TOUCH | BUTTON_A ) ) == 0 ) )
@@ -909,7 +906,7 @@ Matrix4f PcSelectionView::Frame( const VrFrame & vrFrame )
 		if ( !RepositionScreen && !SelectionFrame->GetMenuObject()->IsHilighted() )
 		{
 			// outside of screen, so show reposition message
-			const double now = ovr_GetTimeInSeconds();
+			const double now = vrapi_GetTimeInSeconds();
 			float alpha = MoveScreenAlpha.Value( now );
 			if ( alpha > 0.0f )
 			{
@@ -927,7 +924,7 @@ Matrix4f PcSelectionView::Frame( const VrFrame & vrFrame )
 		else
 		{
 			// onscreen, so hide message
-			const double now = ovr_GetTimeInSeconds();
+			const double now = vrapi_GetTimeInSeconds();
 			MoveScreenAlpha.Set( now, -1.0f, now + 1.0f, 1.0f );
 			MoveScreenLabel->SetVisible( false );
 		}
@@ -953,9 +950,9 @@ Matrix4f PcSelectionView::Frame( const VrFrame & vrFrame )
 		if ( vrFrame.Input.buttonState & ( BUTTON_A | BUTTON_TOUCH ) )
 		{
 			Cinema.SceneMgr.PutScreenInFront();
-			Quatf orientation = Quatf( Cinema.SceneMgr.FreeScreenOrientation );
+			Quatf orientation = Quatf( Cinema.SceneMgr.FreeScreenPose );
 			CenterRoot->GetMenuObject()->SetLocalRotation( orientation );
-			CenterRoot->GetMenuObject()->SetLocalPosition( Cinema.SceneMgr.FreeScreenOrientation.Transform( Vector3f( 0.0f, -1.76f * 0.55f, 0.0f ) ) );
+			CenterRoot->GetMenuObject()->SetLocalPosition( Cinema.SceneMgr.FreeScreenPose.Transform( Vector3f( 0.0f, -1.76f * 0.55f, 0.0f ) ) );
 
 		}
 		else

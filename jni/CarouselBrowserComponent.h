@@ -75,20 +75,20 @@ public:
 	bool							CanSwipeBack() const;
 	bool							CanSwipeForward() const;
 
-	void 							CheckGamepad( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr, VRMenuObject * self );
+	void 							CheckGamepad( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuObject * self );
 
 private:
-    virtual eMsgStatus 				OnEvent_Impl( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr, VRMenuObject * self, VRMenuEvent const & event );
+    virtual eMsgStatus 				OnEvent_Impl( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuObject * self, VRMenuEvent const & event );
     PanelPose 						GetPosition( const float t );
     void 							UpdatePanels( OvrVRMenuMgr & menuMgr, VRMenuObject * self );
 
-    eMsgStatus 						Frame( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr, VRMenuObject * self, VRMenuEvent const & event );
-    eMsgStatus 						SwipeForward( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr, VRMenuObject * self );
-    eMsgStatus 						SwipeBack( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr, VRMenuObject * self );
-	eMsgStatus 						TouchDown( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr, VRMenuObject * self, VRMenuEvent const & event );
-	eMsgStatus 						TouchUp( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr, VRMenuObject * self, VRMenuEvent const & event );
-	eMsgStatus 						Opened( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr, VRMenuObject * self, VRMenuEvent const & event );
-	eMsgStatus 						Closed( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr, VRMenuObject * self, VRMenuEvent const & event );
+    eMsgStatus 						Frame( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuObject * self, VRMenuEvent const & event );
+    eMsgStatus 						SwipeForward( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuObject * self );
+    eMsgStatus 						SwipeBack( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuObject * self );
+	eMsgStatus 						TouchDown( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuObject * self, VRMenuEvent const & event );
+	eMsgStatus 						TouchUp( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuObject * self, VRMenuEvent const & event );
+	eMsgStatus 						Opened( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuObject * self, VRMenuEvent const & event );
+	eMsgStatus 						Closed( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuObject * self, VRMenuEvent const & event );
 
 public:
     bool							SelectPressed;

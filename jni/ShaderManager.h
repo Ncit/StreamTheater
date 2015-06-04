@@ -19,6 +19,8 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "GlProgram.h"
 #include "ModelFile.h"
 
+using namespace OVR;
+
 namespace VRMatterStreamTheater {
 
 class CinemaApp;

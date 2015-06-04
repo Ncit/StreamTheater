@@ -6,10 +6,7 @@ LOCAL_PATH := $(TOP_LOCAL_PATH)
 
 include $(CLEAR_VARS)					# clean everything up to prepare for a module
 
-include ../../VRLib/import_vrlib.mk		# import VRLib for this module.  Do NOT call $(CLEAR_VARS) until after building your module.
-										# use += instead of := when defining the following variables: LOCAL_LDLIBS, LOCAL_CFLAGS, LOCAL_C_INCLUDES, LOCAL_STATIC_LIBRARIES 
-
-include ../../VRLib/cflags.mk
+include ../../OculusSDK/cflags.mk
 
 LOCAL_MODULE    := cinema				# generate libcinema.so
 LOCAL_SRC_FILES	:= 	CinemaApp.cpp \
@@ -43,8 +40,11 @@ LOCAL_SRC_FILES	:= 	CinemaApp.cpp \
 					UI/UIImage.cpp \
 					UI/UIButton.cpp
 
-NDK_MODULE_PATH := ../../Tools/
-$(call import-add-path,$(NDK_MODULE_PATH))
+LOCAL_STATIC_LIBRARIES += vrappframework libovr
+LOCAL_SHARED_LIBRARIES += vrapi
 
 include $(BUILD_SHARED_LIBRARY)			# start building based on everything since CLEAR_VARS
 
+$(call import-module,LibOVR/Projects/Android/jni)
+$(call import-module,VrApi/Projects/AndroidPrebuilt/jni)
+$(call import-module,VrAppFramework/Projects/Android/jni)

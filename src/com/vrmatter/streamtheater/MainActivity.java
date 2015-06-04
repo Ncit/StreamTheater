@@ -25,7 +25,6 @@ import android.graphics.SurfaceTexture;
 import android.graphics.Matrix;
 import android.media.MediaMetadataRetriever;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.util.Log;
 import android.view.InputDevice;
 import android.view.MotionEvent;
@@ -33,17 +32,14 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.content.Context;
 import android.media.AudioManager;
-
+import com.oculus.vrappframework.VrActivity;
 import com.limelight.StreamInterface;
-import com.oculusvr.vrlib.VrActivity;
-import com.oculusvr.vrlib.VrLib;
 import android.content.Intent;
 
 import com.limelight.PcSelector;
 import com.limelight.AppSelector;
 import com.limelight.nvstream.http.ComputerDetails;
 import com.vrmatter.streamtheater.ModifiableSurfaceHolder;
-
 
 public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		AudioManager.OnAudioFocusChangeListener		
@@ -57,7 +53,7 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		System.loadLibrary( "cinema" );
 	}
 	
-	public static native void               nativeSetVideoSize( long appPtr, int width, int height, int rotation, int duration );
+	public static native void 			nativeSetVideoSize( long appPtr, int width, int height, int rotation, int duration );
 	public static native SurfaceTexture nativePrepareNewVideo( long appPtr );
 	public static native long nativeSetAppInterface( VrActivity act, String fromPackageNameString, String commandString, String uriString );
 	
@@ -71,7 +67,6 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 	public static native void nativeShowError(long appPtr, String message );
 	public static native void nativeClearError(long appPtr );
 	
-
 	public static final int MinimumRemainingResumeTime = 60000;	// 1 minute
 	public static final int MinimumSeekTimeForResume = 60000;	// 1 minute
 
@@ -101,11 +96,11 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		super.onCreate( savedInstanceState );
 
 		Intent intent = getIntent();
-		String commandString = VrLib.getCommandStringFromIntent( intent );
-		String fromPackageNameString = VrLib.getPackageStringFromIntent( intent );
-		String uriString = VrLib.getUriStringFromIntent( intent );
+		String commandString = VrActivity.getCommandStringFromIntent( intent );
+		String fromPackageNameString = VrActivity.getPackageStringFromIntent( intent );
+		String uriString = VrActivity.getUriStringFromIntent( intent );
 
-		appPtr = nativeSetAppInterface( this, fromPackageNameString, commandString, uriString );
+		setAppPtr( nativeSetAppInterface( this, fromPackageNameString, commandString, uriString ) );
 
 		audioManager = ( AudioManager )getSystemService( Context.AUDIO_SERVICE );
 	}
@@ -194,10 +189,7 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 	public void onVideoSizeChanged( int width, int height ) 
 	{
 		Log.v( TAG, String.format( "onVideoSizeChanged: %dx%d", width, height ) );
-		//int rotation = getRotationFromMetadata( currentAppName );
-
-		nativeSetVideoSize( appPtr, width, height, 0, 0 );
-
+		nativeSetVideoSize( getAppPtr(), width, height, 0, 0 );
 	}
 
 	private void requestAudioFocus()
@@ -220,12 +212,6 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		audioManager.abandonAudioFocus( this );
 	}
 
-	private String fileNameFromPathName( String pathname ) 
-	{ //TODO: No longer applicable since we have app names, not files
-		File f = new File( pathname );
-		return f.getName();
-	}
-	
 	private void Fail( final String message )
 	{
 		Log.e(TAG, message );
@@ -250,7 +236,7 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 	public boolean createVideoThumbnail( final String compUUID, final int appId, final String outputFilePath, final int width, final int height )
 	{
 		Log.e( TAG, "Create thumbnail output path: " + outputFilePath );
-		
+
 		ComputerDetails comp = pcSelector.findByUUID(compUUID);
 		Bitmap bmp = appSelector.createAppPoster(comp, appId);
 		
@@ -346,7 +332,6 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		{
 			Log.e( TAG, "Wrote " + outputFilePath );
 		}
-		Log.e( TAG, "Done!");
 		
 		return !failed;
 	}
@@ -356,7 +341,6 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		if ( streamInterface != null ) 
 		{
 			return streamInterface.isConnected();
-
 		}
 		return false;
 	}
@@ -407,7 +391,7 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 			// Have native code pause any playing movie,
 			// allocate a new external texture,
 			// and create a surfaceTexture with it.
-			movieTexture = nativePrepareNewVideo( appPtr );
+			movieTexture = nativePrepareNewVideo( getAppPtr() );
 			movieSurface = new Surface( movieTexture );
 	
 			if (streamInterface != null) 
@@ -426,7 +410,7 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 			streamInterface = new StreamInterface(this, uuid, currentAppName, appId, binder, surfaceHolder );
 			
 			streamInterface.surfaceCreated(surfaceHolder);
-
+	
 			// Save the current movie now that it was successfully started
 			Editor edit = getPreferences( MODE_PRIVATE ).edit();
 			edit.putString( "currentMovie", currentAppName );
@@ -455,9 +439,9 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		}
 	}
 
-/*
- *	Functions for PC selection
- */
+	/*
+	 *	Functions for PC selection
+	 */
 	public void initPcSelector()
 	{
 		if(pcSelector != null) return;		
@@ -535,13 +519,3 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 	}
 
 }
-
-
-
-
-
-
-
-
-
-

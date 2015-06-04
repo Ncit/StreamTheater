@@ -30,7 +30,7 @@ UILabel::~UILabel()
 {
 }
 
-void UILabel::AddToMenu( UIMenu *menu, UIWidget *parent )
+void UILabel::AddToMenu( OvrGuiSys & guiSys, UIMenu *menu, UIWidget *parent )
 {
 	const Posef pose( Quatf( Vector3f( 0.0f, 1.0f, 0.0f ), 0.0f ), Vector3f( 0.0f, 0.0f, 0.0f ) );
 
@@ -41,7 +41,7 @@ void UILabel::AddToMenu( UIMenu *menu, UIWidget *parent )
 			"", pose, defaultScale, fontParms, menu->AllocId(),
 			VRMenuObjectFlags_t(), VRMenuObjectInitFlags_t( VRMENUOBJECT_INIT_FORCE_POSITION ) );
 
-	AddToMenuWithParms( menu, parent, parms );
+	AddToMenuWithParms( guiSys, menu, parent, parms );
 }
 
 void UILabel::SetText( const char *text )

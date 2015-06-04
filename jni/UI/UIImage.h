@@ -31,8 +31,8 @@ public:
 										UIImage( CinemaApp &cinema );
 										~UIImage();
 
-	void 								AddToMenu( UIMenu *menu, UIWidget *parent = NULL );
-	void 								AddToMenuFlags( UIMenu *menu, UIWidget *parent, VRMenuObjectFlags_t const flags );
+	void 								AddToMenu( OvrGuiSys & guiSys, UIMenu *menu, UIWidget *parent = NULL );
+	void 								AddToMenuFlags( OvrGuiSys & guiSys, UIMenu *menu, UIWidget *parent, VRMenuObjectFlags_t const flags );
 };
 
 } // namespace VRMatterStreamTheater

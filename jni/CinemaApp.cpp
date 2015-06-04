@@ -19,11 +19,13 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "CinemaStrings.h"
 #include <sys/system_properties.h>
 
+
 //=======================================================================================
 
 namespace VRMatterStreamTheater {
 
 CinemaApp::CinemaApp() :
+	GuiSys( OvrGuiSys::Create() ),
 	StartTime( 0 ),
 	SceneMgr( *this ),
 	ShaderMgr( *this ),
@@ -38,6 +40,7 @@ CinemaApp::CinemaApp() :
 	AppSelectionMenu( *this ),
 	TheaterSelectionMenu( *this ),
 	ResumeMovieMenu( *this ),
+	MessageQueue( 100 ),
 	vrFrame(),
 	FrameCount( 0 ),
 	CurrentMovie( NULL ),
@@ -49,18 +52,47 @@ CinemaApp::CinemaApp() :
 {
 }
 
-/*
- * OneTimeInit
- *
- */
-void CinemaApp::OneTimeInit( const char * fromPackage, const char * launchIntentJSON, const char * launchIntentURI ) {
+CinemaApp::~CinemaApp()
+{
+	OvrGuiSys::Destroy( GuiSys );
+}
+
+void CinemaApp::Configure( ovrSettings & settings )
+{
+	// We need very little CPU for movie playing, but a fair amount of GPU.
+	// The CPU clock should ramp up above the minimum when necessary.
+	char model_id[PROP_VALUE_MAX]; // PROP_VALUE_MAX from <sys/system_properties.h>.
+	int len;
+	len = __system_property_get("ro.build.version.sdk", model_id);
+	if (len >= 2 && model_id[0] == '2' && model_id[1] == '1') {
+		LOG("Adjusting CPU level for Lollipop");
+		settings.ModeParms.CpuLevel = 3;
+		settings.ModeParms.GpuLevel = 1;
+	}
+	else
+	{
+		LOG("Adjusting CPU level for KitKat: %s", model_id);
+		settings.ModeParms.CpuLevel = 1;
+		settings.ModeParms.GpuLevel = 2;
+	}
+
+	// when the app is throttled, go to the platform UI and display a
+	// dismissable warning. On return to the app, force 30Hz timewarp.
+	settings.ModeParms.AllowPowerSave = true;
+
+	// Default to 2x MSAA.
+	settings.EyeBufferParms.colorFormat = COLOR_8888;
+	//settings.EyeBufferParms.depthFormat = DEPTH_16;
+	settings.EyeBufferParms.multisamples = 2;
+}
+
+void CinemaApp::OneTimeInit( const char * fromPackage, const char * launchIntentJSON, const char * launchIntentURI )
+{
 	LOG( "--------------- CinemaApp OneTimeInit ---------------");
 
-	StartTime = ovr_GetTimeInSeconds();
+	GuiSys->Init( app, &app->GetSoundMgr(), app->LoadFontForLocale(), &app->GetDebugLines() );
 
-	app->GetVrParms().colorFormat = COLOR_8888;
-	//app->GetVrParms().depthFormat = DEPTH_16;
-	app->GetVrParms().multisamples = 2;
+	StartTime = vrapi_GetTimeInSeconds();
 
 	Native::OneTimeInit( app, ActivityClass );
 	CinemaStrings::OneTimeInit( *this );
@@ -81,7 +113,7 @@ void CinemaApp::OneTimeInit( const char * fromPackage, const char * launchIntent
 
 	PcSelection( true );
 
-	LOG( "CinemaApp::OneTimeInit: %3.1f seconds", ovr_GetTimeInSeconds() - StartTime );
+	LOG( "CinemaApp::OneTimeInit: %3.1f seconds", vrapi_GetTimeInSeconds() - StartTime );
 }
 
 void CinemaApp::OneTimeShutdown()
@@ -309,46 +341,16 @@ const SceneDef & CinemaApp::GetCurrentTheater() const
 	return ModelMgr.GetTheater( TheaterSelectionMenu.GetSelectedTheater() );
 }
 
-/*
- * DrawEyeView
- */
-Matrix4f CinemaApp::DrawEyeView( const int eye, const float fovDegrees ) {
-	return ViewMgr.DrawEyeView( eye, fovDegrees );
-}
-
-void CinemaApp::ConfigureVrMode( ovrModeParms & modeParms ) {
-	// We need very little CPU for movie playing, but a fair amount of GPU.
-	// The CPU clock should ramp up above the minimum when necessary.
-	LOG( "ConfigureClocks: Cinema only needs minimal clocks" );
-
-	char model_id[PROP_VALUE_MAX]; // PROP_VALUE_MAX from <sys/system_properties.h>.
-	int len;
-	len = __system_property_get("ro.build.version.sdk", model_id);
-	if (len >= 2 && model_id[0] == '2' && model_id[1] == '1') {
-		LOG("Adjusting CPU level for Lollipop");
-		modeParms.CpuLevel = 3;
-		modeParms.GpuLevel = 1;
-	}
-	else
+bool CinemaApp::OnKeyEvent( const int keyCode, const int repeatCount, const KeyEventType eventType )
+{
+	if ( GuiSys->OnKeyEvent( keyCode, repeatCount, eventType ) )
 	{
-		LOG("Adjusting CPU level for KitKat: %s", model_id);
-		modeParms.CpuLevel = 1;
-		modeParms.GpuLevel = 2;
+		return true;
 	}
 
-	// when the app is throttled, go to the platform UI and display a
-	// dismissable warning. On return to the app, force 30hz timewarp.
-	modeParms.AllowPowerSave = true;
-
-	// Always use 2x MSAA for now
-	app->GetVrParms().multisamples = 2;
+	return ViewMgr.OnKeyEvent( keyCode, repeatCount, eventType );
 }
 
-/*
- * Command
- *
- * Actions that need to be performed on the render thread.
- */
 void CinemaApp::Command( const char * msg )
 {
 	if ( ModelMgr.Command( msg ) )
@@ -367,15 +369,22 @@ void CinemaApp::Command( const char * msg )
 	}
 }
 
-/*
- * Frame()
- *
- * App override
- */
-Matrix4f CinemaApp::Frame( const VrFrame vrFrame )
+Matrix4f CinemaApp::Frame( const VrFrame & vrFrame )
 {
-	FrameCount++;
-	this->vrFrame = vrFrame;
+	// Reset any VR menu submissions from previous frame.
+	GuiSys->BeginFrame();
+
+	// Process incoming messages until the queue is empty.
+	for ( ; ; )
+	{
+		const char * msg = MessageQueue.GetNextMessage();
+		if ( msg == NULL )
+		{
+			break;
+		}
+		Command( msg );
+		free( (void *)msg );
+	}
 
 	if(DelayedError != NULL && !ViewMgr.ChangingViews())
 	{
@@ -384,14 +393,25 @@ Matrix4f CinemaApp::Frame( const VrFrame vrFrame )
 		DelayedError = NULL;
 	}
 
-	return ViewMgr.Frame( vrFrame );
+	FrameCount++;
+	this->vrFrame = vrFrame;
+
+	CenterViewMatrix = ViewMgr.Frame( vrFrame );
+
+	// update gui systems after the app frame, but before rendering anything
+	GuiSys->Frame( vrFrame, CenterViewMatrix );
+
+	return CenterViewMatrix;
 }
 
-bool CinemaApp::OnKeyEvent( const int keyCode, const KeyState::eKeyEventType eventType )
+Matrix4f CinemaApp::DrawEyeView( const int eye, const float fovDegrees )
 {
-	return ViewMgr.OnKeyEvent( keyCode, eventType );
-}
+	Matrix4f mvpForEye = ViewMgr.DrawEyeView( eye, fovDegrees );
 
+	GuiSys->RenderEyeView( CenterViewMatrix, mvpForEye );
+
+	return mvpForEye;
+}
 
 void CinemaApp::ShowPair( const String& msg )
 {
@@ -425,6 +445,5 @@ void CinemaApp::ClearError()
 	View *view = ViewMgr.GetCurrentView();
 	if(view) view->ClearError();
 }
-
 
 } // namespace VRMatterStreamTheater

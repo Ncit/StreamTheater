@@ -16,6 +16,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "GazeCursor.h"
 #include "BitmapFont.h"
 #include "VRMenu/VRMenuMgr.h"
+#include "VRMenu/GuiSys.h"
 #include "CarouselBrowserComponent.h"
 #include "TheaterSelectionComponent.h"
 #include "TheaterSelectionView.h"
@@ -59,12 +60,12 @@ void TheaterSelectionView::OneTimeInit( const char * launchIntent )
 {
 	LOG( "TheaterSelectionView::OneTimeInit" );
 
-	const double start = ovr_GetTimeInSeconds();
+	const double start = vrapi_GetTimeInSeconds();
 
 	// Start with "Home theater" selected
 	SelectedTheater = 0;
 
-	LOG( "TheaterSelectionView::OneTimeInit: %3.1f seconds", ovr_GetTimeInSeconds() - start );
+	LOG( "TheaterSelectionView::OneTimeInit: %3.1f seconds", vrapi_GetTimeInSeconds() - start );
 }
 
 void TheaterSelectionView::OneTimeShutdown()
@@ -72,12 +73,12 @@ void TheaterSelectionView::OneTimeShutdown()
 	LOG( "TheaterSelectionView::OneTimeShutdown" );
 }
 
-void TheaterSelectionView::SelectTheater(int theater)
+void TheaterSelectionView::SelectTheater( int theater )
 {
 	SelectedTheater = theater;
 
-	Cinema.SceneMgr.SetSceneModel(Cinema.ModelMgr.GetTheater(SelectedTheater));
-	SetPosition(Cinema.app->GetVRMenuMgr(), Cinema.SceneMgr.Scene.FootPos);
+	Cinema.SceneMgr.SetSceneModel( Cinema.ModelMgr.GetTheater( SelectedTheater ) );
+	SetPosition( Cinema.GetGuiSys().GetVRMenuMgr(), Cinema.SceneMgr.Scene.GetFootPos() );
 }
 
 void TheaterSelectionView::OnOpen()
@@ -86,7 +87,7 @@ void TheaterSelectionView::OnOpen()
 
 	if ( Menu == NULL )
 	{
-		CreateMenu( Cinema.app, Cinema.app->GetVRMenuMgr(), Cinema.app->GetDefaultFont() );
+		CreateMenu( Cinema.GetGuiSys() );
 	}
 
 	SelectTheater( SelectedTheater );
@@ -94,13 +95,11 @@ void TheaterSelectionView::OnOpen()
 
 	Cinema.SceneMgr.LightsOn( 0.5f );
 
-	Cinema.app->GetSwapParms().WarpProgram = WP_CHROMATIC;
-
 	Cinema.SceneMgr.ClearGazeCursorGhosts();
-	Cinema.app->GetGuiSys().OpenMenu( Cinema.app, Cinema.app->GetGazeCursor(), "TheaterSelectionBrowser" );
+	Cinema.GetGuiSys().OpenMenu( "TheaterSelectionBrowser" );
 
 	// ignore clicks for 0.5 seconds to avoid accidentally clicking through
-	IgnoreSelectTime = ovr_GetTimeInSeconds() + 0.5;
+	IgnoreSelectTime = vrapi_GetTimeInSeconds() + 0.5;
 
 	CurViewState = VIEWSTATE_OPEN;
 }
@@ -109,7 +108,7 @@ void TheaterSelectionView::OnClose()
 {
 	LOG( "OnClose" );
 
-	Cinema.app->GetGuiSys().CloseMenu( Cinema.app, Menu, false );
+	Cinema.GetGuiSys().CloseMenu( Menu, false );
 
 	CurViewState = VIEWSTATE_CLOSED;
 }
@@ -119,7 +118,7 @@ bool TheaterSelectionView::Command( const char * msg )
 	return false;
 }
 
-bool TheaterSelectionView::OnKeyEvent( const int keyCode, const KeyState::eKeyEventType eventType )
+bool TheaterSelectionView::OnKeyEvent( const int keyCode, const int repeatCount, const KeyEventType eventType )
 {
 	return false;
 }
@@ -131,28 +130,28 @@ Matrix4f TheaterSelectionView::DrawEyeView( const int eye, const float fovDegree
 
 void TheaterSelectionView::SetPosition( OvrVRMenuMgr & menuMgr, const Vector3f &pos )
 {
-    Posef pose = CenterRoot->GetLocalPose();
-    pose.Position = pos;
-    CenterRoot->SetLocalPose( pose );
+	Posef pose = CenterRoot->GetLocalPose();
+	pose.Position = pos;
+	CenterRoot->SetLocalPose( pose );
 
-    menuHandle_t titleRootHandle = Menu->HandleForId( menuMgr, ID_TITLE_ROOT );
-    VRMenuObject * titleRoot = menuMgr.ToObject( titleRootHandle );
-    OVR_ASSERT( titleRoot != NULL );
+	menuHandle_t titleRootHandle = Menu->HandleForId( menuMgr, ID_TITLE_ROOT );
+	VRMenuObject * titleRoot = menuMgr.ToObject( titleRootHandle );
+	OVR_ASSERT( titleRoot != NULL );
 
-    pose = titleRoot->GetLocalPose();
-    pose.Position = pos;
-    titleRoot->SetLocalPose( pose );
+	pose = titleRoot->GetLocalPose();
+	pose.Position = pos;
+	titleRoot->SetLocalPose( pose );
 }
 
-void TheaterSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, BitmapFont const & font )
+void TheaterSelectionView::CreateMenu( OvrGuiSys & guiSys )
 {
 	Menu = VRMenu::Create( "TheaterSelectionBrowser" );
 
-    Vector3f fwd( 0.0f, 0.0f, 1.0f );
+	Vector3f fwd( 0.0f, 0.0f, 1.0f );
 	Vector3f up( 0.0f, 1.0f, 0.0f );
 	Vector3f defaultScale( 1.0f );
 
-    Array< VRMenuObjectParms const * > parms;
+	Array< VRMenuObjectParms const * > parms;
 
 	VRMenuFontParms fontParms( true, true, false, false, false, 1.0f );
 
@@ -162,7 +161,7 @@ void TheaterSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, Bitmap
 	VRMenuObjectParms centerRootParms( VRMENU_CONTAINER, Array< VRMenuComponent* >(), VRMenuSurfaceParms(), "CenterRoot",
 			Posef( orientation, centerPos ), Vector3f( 1.0f, 1.0f, 1.0f ), fontParms,
 			ID_CENTER_ROOT, VRMenuObjectFlags_t(), VRMenuObjectInitFlags_t( VRMENUOBJECT_INIT_FORCE_POSITION ) );
-    parms.PushBack( &centerRootParms );
+	parms.PushBack( &centerRootParms );
 
 	// title
 	const Posef titlePose( Quatf( Vector3f( 0.0f, 1.0f, 0.0f ), 0.0f ), Vector3f( 0.0f, 0.0f, 0.0f ) );
@@ -173,8 +172,8 @@ void TheaterSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, Bitmap
 
 	parms.PushBack( &titleRootParms );
 
-	Menu->InitWithItems( menuMgr, font, 0.0f, VRMenuFlags_t(), parms );
-    parms.Clear();
+	Menu->InitWithItems( guiSys, 0.0f, VRMenuFlags_t(), parms );
+	parms.Clear();
 
 	int count = Cinema.ModelMgr.GetTheaterCount();
 	for ( int i = 0 ; i < count ; i++ )
@@ -197,16 +196,16 @@ void TheaterSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, Bitmap
 	panelPoses.PushBack( PanelPose( Quatf( up, 0.0f ), Vector3f(  1.90f, 1.8f, -5.0f ), Vector4f( 0.25f, 0.25f, 0.25f, 1.0f ) ) );
 	panelPoses.PushBack( PanelPose( Quatf( up, 0.0f ), Vector3f(  2.85f, 1.8f, -5.8f ), Vector4f( 0.0f, 0.0f, 0.0f, 0.0f ) ) );
 
-    // the centerroot item will get touch relative and touch absolute events and use them to rotate the centerRoot
-    menuHandle_t centerRootHandle = Menu->HandleForId( menuMgr, ID_CENTER_ROOT );
-    CenterRoot = menuMgr.ToObject( centerRootHandle );
-    OVR_ASSERT( CenterRoot != NULL );
+	// the centerroot item will get touch relative and touch absolute events and use them to rotate the centerRoot
+	menuHandle_t centerRootHandle = Menu->HandleForId( guiSys.GetVRMenuMgr(), ID_CENTER_ROOT );
+	CenterRoot = guiSys.GetVRMenuMgr().ToObject( centerRootHandle );
+	OVR_ASSERT( CenterRoot != NULL );
 
-    TheaterBrowser = new CarouselBrowserComponent( Theaters, panelPoses );
-    CenterRoot->AddComponent( TheaterBrowser );
+	TheaterBrowser = new CarouselBrowserComponent( Theaters, panelPoses );
+	CenterRoot->AddComponent( TheaterBrowser );
 
-    int selectionWidth = 0;
-    int selectionHeight = 0;
+	int selectionWidth = 0;
+	int selectionHeight = 0;
 	GLuint selectionTexture = LoadTextureFromApplicationPackage( "assets/VoidTheater.png",
 			TextureFlags_t( TEXTUREFLAG_NO_DEFAULT ), selectionWidth, selectionHeight );
 
@@ -228,15 +227,15 @@ void TheaterSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, Bitmap
 		parms.PushBack( p );
 	}
 
-    Menu->AddItems( menuMgr, font, parms, centerRootHandle, false );
-    DeletePointerArray( parms );
-    parms.Clear();
+	Menu->AddItems( guiSys, parms, centerRootHandle, false );
+	DeletePointerArray( parms );
+	parms.Clear();
 
-	menuHandle_t selectionHandle = CenterRoot->ChildHandleForId( menuMgr, VRMenuId_t( ID_ICONS.Get() + centerIndex ) );
-	SelectionObject = menuMgr.ToObject( selectionHandle );
+	menuHandle_t selectionHandle = CenterRoot->ChildHandleForId( guiSys.GetVRMenuMgr(), VRMenuId_t( ID_ICONS.Get() + centerIndex ) );
+	SelectionObject = guiSys.GetVRMenuMgr().ToObject( selectionHandle );
 
-    Vector3f selectionBoundsExpandMin = Vector3f( 0.0f, -0.25f, 0.0f );
-    Vector3f selectionBoundsExpandMax = Vector3f( 0.0f, 0.25f, 0.0f );
+	Vector3f selectionBoundsExpandMin = Vector3f( 0.0f, -0.25f, 0.0f );
+	Vector3f selectionBoundsExpandMax = Vector3f( 0.0f, 0.25f, 0.0f );
 	SelectionObject->SetLocalBoundsExpand( selectionBoundsExpandMin, selectionBoundsExpandMax );
 	SelectionObject->AddFlags( VRMENUOBJECT_HIT_ONLY_BOUNDS );
 
@@ -244,8 +243,8 @@ void TheaterSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, Bitmap
 	Array<CarouselItemComponent *> menuComps;
 	for ( int i = 0; i < panelPoses.GetSizeI(); ++i )
 	{
-		menuHandle_t posterImageHandle = CenterRoot->ChildHandleForId( menuMgr, VRMenuId_t( ID_ICONS.Get() + i ) );
-		VRMenuObject *posterImage = menuMgr.ToObject( posterImageHandle );
+		menuHandle_t posterImageHandle = CenterRoot->ChildHandleForId( guiSys.GetVRMenuMgr(), VRMenuId_t( ID_ICONS.Get() + i ) );
+		VRMenuObject *posterImage = guiSys.GetVRMenuMgr().ToObject( posterImageHandle );
 		menuObjs.PushBack( posterImage );
 
 		CarouselItemComponent *panelComp = new TheaterSelectionComponent( i == centerIndex ? this : NULL );
@@ -254,12 +253,12 @@ void TheaterSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, Bitmap
 	}
 	TheaterBrowser->SetMenuObjects( menuObjs, menuComps );
 
-    // ==============================================================================
-    //
-    // title
-    //
-    {
-        Posef panelPose( Quatf( up, 0.0f ), Vector3f( 0.0f, 2.5f, -3.4f ) );
+	// ==============================================================================
+	//
+	// title
+	//
+	{
+		Posef panelPose( Quatf( up, 0.0f ), Vector3f( 0.0f, 2.5f, -3.4f ) );
 
 		VRMenuFontParms titleFontParms( true, true, false, false, false, 1.3f );
 
@@ -269,22 +268,22 @@ void TheaterSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, Bitmap
 
 		parms.PushBack( &p );
 
-        menuHandle_t titleRootHandle = Menu->HandleForId( menuMgr, ID_TITLE_ROOT );
-		Menu->AddItems( menuMgr, font, parms, titleRootHandle, false );
+		menuHandle_t titleRootHandle = Menu->HandleForId( guiSys.GetVRMenuMgr(), ID_TITLE_ROOT );
+		Menu->AddItems( guiSys, parms, titleRootHandle, false );
 		parms.Clear();
-    }
+	}
 
 	// ==============================================================================
-    //
-    // swipe icons
-    //
-    {
-    	int 	swipeIconLeftWidth = 0;
-    	int		swipeIconLeftHeight = 0;
-    	int 	swipeIconRightWidth = 0;
-    	int		swipeIconRightHeight = 0;
+	//
+	// swipe icons
+	//
+	{
+		int 	swipeIconLeftWidth = 0;
+		int		swipeIconLeftHeight = 0;
+		int 	swipeIconRightWidth = 0;
+		int		swipeIconRightHeight = 0;
 
-    	GLuint swipeIconLeftTexture = LoadTextureFromApplicationPackage( "assets/SwipeSuggestionArrowLeft.png",
+		GLuint swipeIconLeftTexture = LoadTextureFromApplicationPackage( "assets/SwipeSuggestionArrowLeft.png",
 				TextureFlags_t( TEXTUREFLAG_NO_DEFAULT ), swipeIconLeftWidth, swipeIconLeftHeight );
 
 		GLuint swipeIconRightTexture = LoadTextureFromApplicationPackage( "assets/SwipeSuggestionArrowRight.png",
@@ -330,17 +329,17 @@ void TheaterSelectionView::CreateMenu( App * app, OvrVRMenuMgr & menuMgr, Bitmap
 			parms.PushBack( swipeIconRightParms );
 		}
 
-		Menu->AddItems( menuMgr, font, parms, centerRootHandle, false );
+		Menu->AddItems( guiSys, parms, centerRootHandle, false );
 		DeletePointerArray( parms );
 		parms.Clear();
-    }
+	}
 
-    Cinema.app->GetGuiSys().AddMenu( Menu );
+	Cinema.GetGuiSys().AddMenu( Menu );
 }
 
 void TheaterSelectionView::SelectPressed( void )
 {
-	const double now = ovr_GetTimeInSeconds();
+	const double now = vrapi_GetTimeInSeconds();
 	if ( now < IgnoreSelectTime )
 	{
 		// ignore selection for first 0.5 seconds to reduce chances of accidentally clicking through
@@ -361,13 +360,13 @@ void TheaterSelectionView::SelectPressed( void )
 Matrix4f TheaterSelectionView::Frame( const VrFrame & vrFrame )
 {
 	// We want 4x MSAA in the selection screen
-	EyeParms eyeParms = Cinema.app->GetEyeParms();
-	eyeParms.multisamples = 4;
-	Cinema.app->SetEyeParms( eyeParms );
+	ovrEyeBufferParms eyeBufferParms = Cinema.app->GetEyeBufferParms();
+	eyeBufferParms.multisamples = 4;
+	Cinema.app->SetEyeBufferParms( eyeBufferParms );
 
 	if ( SelectionObject->IsHilighted() )
 	{
-		TheaterBrowser->CheckGamepad( Cinema.app, vrFrame, Cinema.app->GetVRMenuMgr(), CenterRoot );
+		TheaterBrowser->CheckGamepad( Cinema.GetGuiSys(), vrFrame, CenterRoot );
 	}
 
 	int selectedItem = TheaterBrowser->GetSelection();

@@ -16,6 +16,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "MovieSelectionComponent.h"
 #include "Input.h"
 #include "SelectionView.h"
+#include "VRMenu/GuiSys.h"
 
 namespace VRMatterStreamTheater {
 
@@ -34,24 +35,24 @@ MovieSelectionComponent::MovieSelectionComponent( SelectionView *view ) :
 
 //==============================
 //  MovieSelectionComponent::OnEvent_Impl
-eMsgStatus MovieSelectionComponent::OnEvent_Impl( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus MovieSelectionComponent::OnEvent_Impl( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
     switch( event.EventType )
     {
 		case VRMENU_EVENT_FRAME_UPDATE:
-			return Frame( app, vrFrame, menuMgr, self, event );
+			return Frame( guiSys, vrFrame, self, event );
         case VRMENU_EVENT_FOCUS_GAINED:
-            return FocusGained( app, vrFrame, menuMgr, self, event );
+            return FocusGained( guiSys, vrFrame, self, event );
         case VRMENU_EVENT_FOCUS_LOST:
-            return FocusLost( app, vrFrame, menuMgr, self, event );
+            return FocusLost( guiSys, vrFrame, self, event );
         case VRMENU_EVENT_TOUCH_DOWN:
-       		Sound.PlaySound( app, "touch_down", 0.1 );
+       		Sound.PlaySound( guiSys.GetApp(), "touch_down", 0.1 );
        		return MSG_STATUS_CONSUMED;
         case VRMENU_EVENT_TOUCH_UP:
         	if ( !( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) )
 			{
-        		Sound.PlaySound( app, "touch_up", 0.1 );
+        		Sound.PlaySound( guiSys.GetApp(), "touch_up", 0.1 );
         		CallbackView->Select();
         		return MSG_STATUS_CONSUMED;
         	}
@@ -64,7 +65,7 @@ eMsgStatus MovieSelectionComponent::OnEvent_Impl( App * app, VrFrame const & vrF
 
 //==============================
 //  MovieSelectionComponent::Frame
-eMsgStatus MovieSelectionComponent::Frame( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus MovieSelectionComponent::Frame( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
 	CallbackView->SelectionHighlighted( self->IsHilighted() );
@@ -74,11 +75,11 @@ eMsgStatus MovieSelectionComponent::Frame( App * app, VrFrame const & vrFrame, O
 	{
 		if ( vrFrame.Input.buttonPressed & BUTTON_A )
 		{
-			Sound.PlaySound( app, "touch_down", 0.1 );
+			Sound.PlaySound( guiSys.GetApp(), "touch_down", 0.1 );
 		}
 		if ( vrFrame.Input.buttonReleased & BUTTON_A )
 		{
-			Sound.PlaySound( app, "touch_up", 0.1 );
+			Sound.PlaySound( guiSys.GetApp(), "touch_up", 0.1 );
 			CallbackView->SelectMovie();
 		}
 	}
@@ -89,7 +90,7 @@ eMsgStatus MovieSelectionComponent::Frame( App * app, VrFrame const & vrFrame, O
 
 //==============================
 //  MovieSelectionComponent::FocusGained
-eMsgStatus MovieSelectionComponent::FocusGained( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus MovieSelectionComponent::FocusGained( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
 	LOG( "FocusGained" );
@@ -97,14 +98,14 @@ eMsgStatus MovieSelectionComponent::FocusGained( App * app, VrFrame const & vrFr
     self->SetHilighted( true );
     CallbackView->SelectionHighlighted( true );
 
-    Sound.PlaySound( app, "gaze_on", 0.1 );
+    Sound.PlaySound( guiSys.GetApp(), "gaze_on", 0.1 );
 	
     return MSG_STATUS_ALIVE;
 }
 
 //==============================
 //  MovieSelectionComponent::FocusLost
-eMsgStatus MovieSelectionComponent::FocusLost( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus MovieSelectionComponent::FocusLost( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
 	LOG( "FocusLost" );
@@ -112,7 +113,7 @@ eMsgStatus MovieSelectionComponent::FocusLost( App * app, VrFrame const & vrFram
     self->SetHilighted( false );
     CallbackView->SelectionHighlighted( false );
 
-   	Sound.PlaySound( app, "gaze_off", 0.1 );
+   	Sound.PlaySound( guiSys.GetApp(), "gaze_off", 0.1 );
 
     return MSG_STATUS_ALIVE;
 }

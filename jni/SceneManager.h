@@ -17,6 +17,8 @@ of patent rights can be found in the PATENTS file in the same directory.
 #define SceneManager_h
 
 #include "PcManager.h"
+#include "AppManager.h"
+
 #include "ModelView.h"
 #include "Lerp.h"
 
@@ -58,7 +60,7 @@ public:
 	Posef				GetScreenPose() const;
 	Vector2f			GetScreenSize() const;
 
-	void 				SetFreeScreenAngles( const Vector3f &angles );
+	void 				SetFreeScreenPose( const Matrix4f & headPose );
 	Vector3f			GetFreeScreenScale() const;
 
 	Matrix4f			FreeScreenMatrix() const;
@@ -86,8 +88,7 @@ public:
 	bool				FreeScreenActive;
 	float				FreeScreenScale;
 	float				FreeScreenDistance;
-	Matrix4f			FreeScreenOrientation;
-	Vector3f			FreeScreenAngles;
+	Matrix4f			FreeScreenPose;
 
 	// don't make these bool, or sscanf %i will trash adjacent memory!
 	int					ForceMono;			// only show the left eye of 3D movies
@@ -98,6 +99,7 @@ public:
 	int					CurrentMovieHeight;
 	int					MovieTextureWidth;
 	int					MovieTextureHeight;
+	MovieFormat			CurrentMovieFormat;
 	int					MovieRotation;
 	int					MovieDuration;
 
@@ -138,7 +140,6 @@ public:
 private:
 	GLuint 				BuildScreenVignetteTexture( const int horizontalTile ) const;
 	int 				BottomMipLevel( const int width, const int height ) const;
-	void 				ClampScreenToView();
 };
 
 } // namespace VRMatterStreamTheater

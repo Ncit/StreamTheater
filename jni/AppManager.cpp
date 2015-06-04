@@ -49,7 +49,7 @@ AppManager::~AppManager()
 void AppManager::OneTimeInit( const char * launchIntent )
 {
 	LOG( "AppManager::OneTimeInit" );
-	const double start = ovr_GetTimeInSeconds();
+	const double start = vrapi_GetTimeInSeconds();
 
 	int width, height;
 	DefaultPoster = LoadTextureFromApplicationPackage(
@@ -63,7 +63,7 @@ void AppManager::OneTimeInit( const char * launchIntent )
 
 	LoadApps();
 
-	LOG( "AppManager::OneTimeInit: %i movies loaded, %3.1f seconds", Apps.GetSizeI(), ovr_GetTimeInSeconds() - start );
+	LOG( "AppManager::OneTimeInit: %i movies loaded, %3.1f seconds", Apps.GetSizeI(), vrapi_GetTimeInSeconds() - start );
 }
 
 void AppManager::OneTimeShutdown()
@@ -75,10 +75,10 @@ void AppManager::LoadApps()
 {
 	LOG( "LoadApps" );
 
-	const double start = ovr_GetTimeInSeconds();
+	const double start = vrapi_GetTimeInSeconds();
 
 	Array<String> appNames; // TODO: Get app list from JNI AppSelector
-	LOG( "%i movies scanned, %3.1f seconds", appNames.GetSizeI(), ovr_GetTimeInSeconds() - start );
+	LOG( "%i movies scanned, %3.1f seconds", appNames.GetSizeI(), vrapi_GetTimeInSeconds() - start );
 
 	for( UPInt i = 0; i < appNames.GetSize(); i++ )
 	{
@@ -91,7 +91,7 @@ void AppManager::LoadApps()
 		LoadPoster( app );
 	}
 
-	LOG( "%i movies panels loaded, %3.1f seconds", Apps.GetSizeI(), ovr_GetTimeInSeconds() - start );
+	LOG( "%i movies panels loaded, %3.1f seconds", Apps.GetSizeI(), vrapi_GetTimeInSeconds() - start );
 }
 
 void AppManager::AddApp(const String &name, const String &posterFileName, int id)

@@ -16,8 +16,8 @@ of patent rights can be found in the PATENTS file in the same directory.
 #if !defined( AppManager_h )
 #define AppManager_h
 
-#include "LibOVR/Src/Kernel/OVR_String.h"
-#include "LibOVR/Src/Kernel/OVR_Array.h"
+#include "Kernel/OVR_String.h"
+#include "Kernel/OVR_Array.h"
 #include "GlTexture.h"
 #include "PcManager.h"
 
@@ -26,6 +26,16 @@ namespace VRMatterStreamTheater {
 class CinemaApp;
 
 using namespace OVR;
+
+enum MovieFormat
+{
+	VT_UNKNOWN,
+	VT_2D,
+	VT_LEFT_RIGHT_3D,			// Left & right are scaled horizontally by 50%.
+	VT_LEFT_RIGHT_3D_FULL,		// Left & right are unscaled.
+	VT_TOP_BOTTOM_3D,			// Top & bottom are scaled vertically by 50%.
+	VT_TOP_BOTTOM_3D_FULL,		// Top & bottom are unscaled.
+};
 
 class AppDef : public PcDef
 {
@@ -64,7 +74,6 @@ public:
 
     bool					updated;
 
-
 private:
 	CinemaApp &				Cinema;
 
@@ -72,7 +81,6 @@ private:
 
     virtual void 			ReadMetaData( PcDef *app );
     virtual void 			LoadPoster( PcDef *app );
-
 };
 
 } // namespace VRMatterStreamTheater

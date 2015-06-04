@@ -179,7 +179,7 @@ void ShaderManager::OneTimeInit( const char * launchIntent )
 {
 	LOG( "ShaderManager::OneTimeInit" );
 
-	const double start = ovr_GetTimeInSeconds();
+	const double start = vrapi_GetTimeInSeconds();
 
 	MovieExternalUiProgram 		= BuildProgram( movieUiVertexShaderSrc, movieExternalUiFragmentShaderSource );
 	CopyMovieProgram 			= BuildProgram( copyMovieVertexShaderSrc, copyMovieFragmentShaderSource );
@@ -212,7 +212,7 @@ void ShaderManager::OneTimeInit( const char * launchIntent )
 	DefaultPrograms.ProgSkinnedLightMapped		= & ProgSkinnedLightMapped;
 	DefaultPrograms.ProgSkinnedReflectionMapped	= & ProgSkinnedReflectionMapped;
 
-	LOG( "ShaderManager::OneTimeInit: %3.1f seconds", ovr_GetTimeInSeconds() - start );
+	LOG( "ShaderManager::OneTimeInit: %3.1f seconds", vrapi_GetTimeInSeconds() - start );
 }
 
 void ShaderManager::OneTimeShutdown()

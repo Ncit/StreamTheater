@@ -47,7 +47,7 @@ public:
 	virtual void 		OnClose() = 0;
 
 	virtual bool 		Command( const char * msg ) = 0;
-	virtual bool 		OnKeyEvent( const int keyCode, const KeyState::eKeyEventType eventType ) = 0;
+	virtual bool 		OnKeyEvent( const int keyCode, const int repeatCount, const KeyEventType eventType ) = 0;
 
 	virtual Matrix4f 	DrawEyeView( const int eye, const float fovDegrees ) = 0;
 	virtual Matrix4f 	Frame( const VrFrame & vrFrame ) = 0;

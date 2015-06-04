@@ -15,7 +15,6 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 #include "SwipeHintComponent.h"
 #include "CarouselBrowserComponent.h"
-#include "VrApi/Vsync.h"
 #include "Input.h"
 
 namespace VRMatterStreamTheater {
@@ -47,7 +46,7 @@ void SwipeHintComponent::Reset( VRMenuObject * self )
 {
 	IgnoreDelay = true;
 	ShouldShow = false;
-	const double now = ovr_GetTimeInSeconds();
+	const double now = vrapi_GetTimeInSeconds();
 	TotalAlpha.Set( now, TotalAlpha.Value( now ), now, 0.0f );
 	self->SetColor( Vector4f( 1.0f, 1.0f, 1.0f, 0.0f ) );
 }
@@ -84,15 +83,15 @@ void SwipeHintComponent::Hide( const double now )
 
 //==============================
 //  SwipeHintComponent::OnEvent_Impl
-eMsgStatus SwipeHintComponent::OnEvent_Impl( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr,
+eMsgStatus SwipeHintComponent::OnEvent_Impl( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
     switch( event.EventType )
     {
     	case VRMENU_EVENT_OPENING :
-    		return Opening( app, vrFrame, menuMgr, self, event );
+    		return Opening( guiSys, vrFrame, self, event );
         case VRMENU_EVENT_FRAME_UPDATE :
-        	return Frame( app, vrFrame, menuMgr, self, event );
+        	return Frame( guiSys, vrFrame, self, event );
         default:
             OVR_ASSERT( !"Event flags mismatch!" );
             return MSG_STATUS_ALIVE;
@@ -101,7 +100,7 @@ eMsgStatus SwipeHintComponent::OnEvent_Impl( App * app, VrFrame const & vrFrame,
 
 //==============================
 //  SwipeHintComponent::Opening
-eMsgStatus SwipeHintComponent::Opening( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr, VRMenuObject * self, VRMenuEvent const & event )
+eMsgStatus SwipeHintComponent::Opening( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuObject * self, VRMenuEvent const & event )
 {
 	Reset( self );
 	return MSG_STATUS_ALIVE;
@@ -109,23 +108,23 @@ eMsgStatus SwipeHintComponent::Opening( App * app, VrFrame const & vrFrame, OvrV
 
 //==============================
 //  SwipeHintComponent::Frame
-eMsgStatus SwipeHintComponent::Frame( App * app, VrFrame const & vrFrame, OvrVRMenuMgr & menuMgr, VRMenuObject * self, VRMenuEvent const & event )
+eMsgStatus SwipeHintComponent::Frame( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuObject * self, VRMenuEvent const & event )
 {
 	if ( ShowSwipeHints && Carousel->HasSelection() && CanSwipe() )
 	{
-		Show( vrFrame.PoseState.TimeInSeconds );
+		Show( vrFrame.PredictedDisplayTimeInSeconds );
 	}
 	else
 	{
-		Hide( vrFrame.PoseState.TimeInSeconds );
+		Hide( vrFrame.PredictedDisplayTimeInSeconds );
 	}
 
 	IgnoreDelay = false;
 
-	float alpha = TotalAlpha.Value( vrFrame.PoseState.TimeInSeconds );
+	float alpha = TotalAlpha.Value( vrFrame.PredictedDisplayTimeInSeconds );
 	if ( alpha > 0.0f )
 	{
-		double time = vrFrame.PoseState.TimeInSeconds - StartTime;
+		double time = vrFrame.PredictedDisplayTimeInSeconds - StartTime;
 		if ( time < 0.0f )
 		{
 			alpha = 0.0f;
