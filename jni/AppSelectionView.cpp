@@ -1004,6 +1004,7 @@ Matrix4f AppSelectionView::Frame( const VrFrame & vrFrame )
 		SelectionFrame->GetMenuObject()->RemoveFlags( VRMENUOBJECT_DONT_HIT_ALL );
 	}
 
+	UpdateAppTitle();
 	UpdateSelectionFrame( vrFrame );
 
 	if (Cinema.AppMgr.updated) {
