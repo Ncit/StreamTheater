@@ -105,11 +105,6 @@ public class StreamInterface implements SurfaceHolder.Callback,
         // Read the stream preferences
         prefConfig = PreferenceConfiguration.readPreferences(activity);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-        	prefConfig.decoder = PreferenceConfiguration.FORCE_SOFTWARE_DECODER;
-        	prefConfig.fps = 30;
-        }
-        
         switch (prefConfig.decoder) {
         case PreferenceConfiguration.FORCE_SOFTWARE_DECODER:
             drFlags |= VideoDecoderRenderer.FLAG_FORCE_SOFTWARE_DECODING;

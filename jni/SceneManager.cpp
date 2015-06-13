@@ -19,6 +19,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "Native.h"
 #include "SceneManager.h"
 #include "VRMenu/GuiSys.h"
+#include <sys/system_properties.h>
 
 
 namespace VRMatterStreamTheater
@@ -988,6 +989,14 @@ Matrix4f SceneManager::Frame( const VrFrame & vrFrame )
 		if ( MovieTexture->nanoTimeStamp != MovieTextureTimestamp )
 		{
 			MovieTextureTimestamp = MovieTexture->nanoTimeStamp;
+			FrameUpdateNeeded = true;
+		}
+
+		// Currently on lollipop the surface texture isn't getting the timestamp set, so always update the image
+		char model_id[PROP_VALUE_MAX]; // PROP_VALUE_MAX from <sys/system_properties.h>.
+		int len;
+		len = __system_property_get("ro.build.version.sdk", model_id);
+		if (len >= 2 && model_id[0] == '2' && model_id[1] == '1') {
 			FrameUpdateNeeded = true;
 		}
 	}
