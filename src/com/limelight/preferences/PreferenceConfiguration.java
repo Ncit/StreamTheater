@@ -30,7 +30,7 @@ public class PreferenceConfiguration {
     private static final boolean DEFAULT_STRETCH = false;
     private static final boolean DEFAULT_SOPS = true;
     private static final boolean DEFAULT_DISABLE_TOASTS = false;
-    private static final boolean DEFAULT_HOST_AUDIO = false;
+    private static final boolean DEFAULT_HOST_AUDIO = true;
     private static final int DEFAULT_DEADZONE = 15;
     public static final String DEFAULT_LANGUAGE = "default";
     private static final boolean DEFAULT_LIST_MODE = false;
