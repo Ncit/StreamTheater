@@ -137,6 +137,8 @@ public:
 
 	bool				VoidedScene;
 
+	bool				osLollipop;
+
 private:
 	GLuint 				BuildScreenVignetteTexture( const int horizontalTile ) const;
 	int 				BottomMipLevel( const int width, const int height ) const;

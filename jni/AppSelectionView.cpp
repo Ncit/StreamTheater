@@ -143,10 +143,11 @@ void AppSelectionView::OnOpen()
 	const double now = vrapi_GetTimeInSeconds();
 	SelectionFader.Set( now, 0, now + 0.1, 1.0f );
 
+	Menu->SetFlags( VRMENU_FLAG_SHORT_PRESS_HANDLED_BY_APP );
+
 	if ( Cinema.InLobby )
 	{
 		CategoryRoot->SetVisible( true );
-		Menu->SetFlags( VRMENU_FLAG_BACK_KEY_EXITS_APP );
 	}
 	else
 	{
@@ -187,15 +188,8 @@ void AppSelectionView::OnOpen()
 void AppSelectionView::PairSuccess() {
 	const PcDef* selectedPC = Cinema.GetCurrentPc();
 	String uuid = selectedPC->UUID;
-	Native::PairState ps = Native::GetPairState(Cinema.app, uuid.ToCStr());
-	if (ps == Native::PAIRED) {
-		LOG( "Paired");
-		Native::InitAppSelector(Cinema.app, uuid.ToCStr());
-	} else {
-		LOG( "Not Paired!");
-		Cinema.PcSelection(true);
-		Cinema.ShowError(CinemaStrings::Error_UnableToPlayMovie);
-	}
+
+	Cinema.AppSelection(true);
 }
 
 void AppSelectionView::OnClose()

@@ -254,7 +254,9 @@ public class PcSelector {
                 }
 
                 if (success == true)
+                {
                     MainActivity.nativePairSuccess( activity.getAppPtr() );
+                }
 
                 if (message != null)
                 {

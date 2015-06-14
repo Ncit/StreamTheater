@@ -244,6 +244,7 @@ private:
 
 	void 					UpdateUI( const VrFrame & vrFrame );
 	void 					CheckInput( const VrFrame & vrFrame );
+	void					HandleGazeMouse( const VrFrame & vrFrame, bool onscreen, const Vector2f screenCursor  );
 	void 					CheckDebugControls( const VrFrame & vrFrame );
 
 	void 					ShowUI();

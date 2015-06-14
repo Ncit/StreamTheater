@@ -84,6 +84,26 @@ void ModelManager::LoadModels()
 		// we want our theaters to show up first
 		Theaters.PushBack( LoadScene( "assets/scenes/home_theater.ovrscene", true, false, true ) );
 
+		int width = 0, height = 0;
+
+		// create mouse scene
+		MouseScene = new SceneDef();
+		MouseScene->SceneModel = new ModelFile( "Mouse" );
+		MouseScene->UseSeats = false;
+		MouseScene->UseDynamicProgram = false;
+		MouseScene->UseScreenGeometry = false;
+		MouseScene->UseFreeScreen = true;
+		MouseScene->UseMouse = true;
+
+		MouseScene->IconTexture = LoadTextureFromApplicationPackage( "assets/MouseTheater.png",
+				TextureFlags_t( TEXTUREFLAG_NO_DEFAULT ), width, height );
+
+		BuildTextureMipmaps( MouseScene->IconTexture );
+		MakeTextureTrilinear( MouseScene->IconTexture );
+		MakeTextureClamped( MouseScene->IconTexture );
+
+		Theaters.PushBack( MouseScene );
+
 		// create void scene
 		VoidScene = new SceneDef();
 		VoidScene->SceneModel = new ModelFile( "Void" );
@@ -92,7 +112,6 @@ void ModelManager::LoadModels()
 		VoidScene->UseScreenGeometry = false;
 		VoidScene->UseFreeScreen = true;
 
-		int width = 0, height = 0;
 		VoidScene->IconTexture = LoadTextureFromApplicationPackage( "assets/VoidTheater.png",
 				TextureFlags_t( TEXTUREFLAG_NO_DEFAULT ), width, height );
 

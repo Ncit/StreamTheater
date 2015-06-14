@@ -61,7 +61,8 @@ SceneManager::SceneManager( CinemaApp &cinema ) :
 	SceneScreenMatrix(),
 	SceneScreenBounds(),
 	AllowMove( false ),
-	VoidedScene( false )
+	VoidedScene( false ),
+	osLollipop( false )
 
 {
 	MipMappedMovieTextures[0] = MipMappedMovieTextures[1] = MipMappedMovieTextures[2] = 0;
@@ -79,6 +80,13 @@ void SceneManager::OneTimeInit( const char * launchIntent )
 
 	ScreenVignetteTexture = BuildScreenVignetteTexture( 1 );
 	ScreenVignetteSbsTexture = BuildScreenVignetteTexture( 2 );
+
+	char model_id[PROP_VALUE_MAX]; // PROP_VALUE_MAX from <sys/system_properties.h>.
+	int len;
+	len = __system_property_get("ro.build.version.sdk", model_id);
+	if (len >= 2 && ( ( model_id[0] == '2' && model_id[1] >= '1' ) || model_id[0] >= '3')) {
+		osLollipop = true;
+	}
 
 	LOG( "SceneManager::OneTimeInit: %3.1f seconds", vrapi_GetTimeInSeconds() - start );
 }
@@ -965,13 +973,12 @@ Matrix4f SceneManager::DrawEyeView( const int eye, const float fovDegrees )
 Matrix4f SceneManager::Frame( const VrFrame & vrFrame )
 {
 	// disallow player movement
-	VrFrame vrFrameWithoutMove = vrFrame;
-	if ( !AllowMove )
-	{
-		vrFrameWithoutMove.Input.sticks[0][0] = 0.0f;
-		vrFrameWithoutMove.Input.sticks[0][1] = 0.0f;
-	}
-	Scene.Frame( Cinema.app->GetHeadModelParms(), vrFrameWithoutMove, Cinema.app->GetFrameParms().ExternalVelocity );
+    VrFrame vrFrameWithoutMove = vrFrame;
+    vrFrameWithoutMove.Input.sticks[0][0] = 0.0f;
+    vrFrameWithoutMove.Input.sticks[0][1] = 0.0f;
+    vrFrameWithoutMove.Input.sticks[1][0] = 0.0f;
+    vrFrameWithoutMove.Input.sticks[1][1] = 0.0f;
+    Scene.Frame( Cinema.app->GetHeadModelParms(), vrFrameWithoutMove, Cinema.app->GetFrameParms().ExternalVelocity );
 
 	if ( ClearGhostsFrames > 0 )
 	{
@@ -993,10 +1000,8 @@ Matrix4f SceneManager::Frame( const VrFrame & vrFrame )
 		}
 
 		// Currently on lollipop the surface texture isn't getting the timestamp set, so always update the image
-		char model_id[PROP_VALUE_MAX]; // PROP_VALUE_MAX from <sys/system_properties.h>.
-		int len;
-		len = __system_property_get("ro.build.version.sdk", model_id);
-		if (len >= 2 && model_id[0] == '2' && model_id[1] == '1') {
+		if(osLollipop)
+		{
 			FrameUpdateNeeded = true;
 		}
 	}

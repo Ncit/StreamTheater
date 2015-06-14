@@ -36,6 +36,7 @@ public:
 							UseScreenGeometry( false ), 
 							LobbyScreen( false ),
 							UseFreeScreen( false ),
+							UseMouse( false ),
 							UseSeats( false ),
 							UseDynamicProgram( false ), 
 							Loaded( false ) { }
@@ -46,6 +47,7 @@ public:
 	bool				UseScreenGeometry;	// set to true to draw using the screen geoemetry (for curved screens)
 	bool				LobbyScreen;
 	bool				UseFreeScreen;
+	bool				UseMouse;
 	bool 				UseSeats;
 	bool 				UseDynamicProgram;
 	bool				Loaded;
@@ -71,6 +73,7 @@ public:
 	Array<SceneDef *>	Theaters;
 	SceneDef *			BoxOffice;
 	SceneDef *			VoidScene;
+	SceneDef *			MouseScene;
 
 	String				LaunchIntent;
 

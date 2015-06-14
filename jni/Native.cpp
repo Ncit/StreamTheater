@@ -262,22 +262,27 @@ void Native::InitAppSelector( App *app, const char* uuid)
 
 	jstring jstrUUID = app->GetVrJni()->NewStringUTF( uuid );
 	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), initAppSelectorMethodId, jstrUUID );
+	app->GetVrJni()->DeleteLocalRef( jstrUUID );
 }
 
 Native::PairState Native::GetPairState( App *app, const char* uuid)
 {
-	LOG( "GetPairState()" );
+	LOG( "GetPairState(): %s", uuid );
 
 	jstring jstrUUID = app->GetVrJni()->NewStringUTF( uuid );
-	return (PairState)app->GetVrJni()->CallIntMethod( app->GetJavaObject(), getPcPairStateMethodId, jstrUUID );
+	PairState state = (PairState)app->GetVrJni()->CallIntMethod( app->GetJavaObject(), getPcPairStateMethodId, jstrUUID );
+	app->GetVrJni()->DeleteLocalRef( jstrUUID );
+
+	return state;
 }
 
 void Native::Pair( App *app, const char* uuid)
 {
-	LOG( "Pair()" );
+	LOG( "Pair(): %s", uuid );
 
 	jstring jstrUUID = app->GetVrJni()->NewStringUTF( uuid );
 	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), pairPcMethodId, jstrUUID );
+	app->GetVrJni()->DeleteLocalRef( jstrUUID );
 }
 
 void Native::MouseMove(App *app, int deltaX, int deltaY)
