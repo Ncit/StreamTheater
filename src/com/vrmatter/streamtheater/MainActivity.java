@@ -27,6 +27,7 @@ import android.media.MediaMetadataRetriever;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.InputDevice;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -438,6 +439,34 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 			playbackFinished = true;
 		}
 	}
+	
+	@Override
+	public boolean dispatchGenericMotionEvent(MotionEvent event) {
+		if ((event.getSource() & InputDevice.SOURCE_CLASS_JOYSTICK) != 0) {
+			if(streamInterface != null && streamInterface.isConnected())
+			{
+				boolean ret = streamInterface.handleMotionEvent(event);
+				if (ret) return true;
+			}
+		}
+		return super.dispatchGenericMotionEvent(event);
+	}
+	
+	public boolean dispatchKeyEvent(KeyEvent event) {
+		Log.e("INPUT", "KeyEvent source: " + event.getSource());
+		if ((event.getSource() & ( InputDevice.SOURCE_GAMEPAD | InputDevice.SOURCE_KEYBOARD)) != 0) {
+			if(streamInterface != null && streamInterface.isConnected())
+			{
+				boolean ret = false;
+				if (event.getAction() == KeyEvent.ACTION_DOWN)
+					ret = streamInterface.onKeyDown(event.getKeyCode(), event);
+				else if (event.getAction() == KeyEvent.ACTION_UP)
+					ret = streamInterface.onKeyUp(event.getKeyCode(), event);
+				if (ret) return true;
+			}
+		}
+		return super.dispatchKeyEvent(event);
+	}
 
 	/*
 	 *	Functions for PC selection
@@ -513,20 +542,4 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		if(streamInterface == null) return;
 		streamInterface.mouseScroll(amount);
 	}
-	
-	private long lastTime = 0;
-	public void controllerState(float stick1x, float stick1y, float stick2x, float stick2y, float leftTrigger, float rightTrigger, int buttonState)
-	{
-		if(streamInterface == null) return;
-		try {
-			// Oculus's int button states have touchpad events and stuff in them, only use the first 14 bits (0x3FFF)
-			streamInterface.controllerUpdate(stick1x, stick1y, stick2x, stick2y, leftTrigger, rightTrigger, (short) (buttonState & 0x0000FFFF));
-		}
-		catch (NullPointerException e)
-		{
-			Log.e("STJNI", "Null pointer exception!", e);
-			throw(e);
-		}
-	}
-
 }

@@ -130,7 +130,6 @@ static jmethodID 	initAppSelectorMethodId = NULL;
 static jmethodID	mouseMoveMethodId = NULL;
 static jmethodID	mouseClickMethodId = NULL;
 static jmethodID	mouseScrollMethodId = NULL;
-static jmethodID	controllerStateMethodId = NULL;
 static jmethodID	stopPcUpdatesMethodId = NULL;
 static jmethodID	startPcUpdatesMethodId = NULL;
 static jmethodID	stopAppUpdatesMethodId = NULL;
@@ -170,7 +169,6 @@ void Native::OneTimeInit( App *app, jclass mainActivityClass )
 	mouseMoveMethodId 					= GetMethodID( app, mainActivityClass, "mouseMove", "(II)V" );
 	mouseClickMethodId 					= GetMethodID( app, mainActivityClass, "mouseClick", "(IZ)V" );
 	mouseScrollMethodId 				= GetMethodID( app, mainActivityClass, "mouseScroll", "(B)V" );
-	controllerStateMethodId				= GetMethodID( app, mainActivityClass, "controllerState", "(FFFFFFI)V" );
 	stopPcUpdatesMethodId				= GetMethodID( app, mainActivityClass, "stopPcUpdates", "()V" );
 	startPcUpdatesMethodId				= GetMethodID( app, mainActivityClass, "startPcUpdates", "()V" );
 	stopAppUpdatesMethodId				= GetMethodID( app, mainActivityClass, "stopAppUpdates", "()V" );
@@ -299,12 +297,6 @@ void Native::MouseScroll(App *app, signed char amount)
 {
 	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), mouseScrollMethodId, amount );
 }
-
-void Native::ControllerState(App *app, float stick1x, float stick1y, float stick2x, float stick2y, float leftTrigger, float rightTrigger, int buttons )
-{
-	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), controllerStateMethodId, stick1x, stick1y, stick2x, stick2y, leftTrigger, rightTrigger, buttons );
-}
-
 
 void Native::stopPcUpdates(App *app)
 {

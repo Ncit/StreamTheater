@@ -367,7 +367,7 @@ public class StreamInterface implements SurfaceHolder.Callback,
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         // Pass-through virtual navigation keys
         if ((event.getFlags() & KeyEvent.FLAG_VIRTUAL_HARD_KEY) != 0) {
-//            return super.onKeyDown(keyCode, event);
+            return false;
         }
 
         // Try the controller handler first
@@ -376,7 +376,7 @@ public class StreamInterface implements SurfaceHolder.Callback,
             // Try the keyboard handler
             short translated = keybTranslator.translate(event.getKeyCode());
             if (translated == 0) {
-//                return super.onKeyDown(keyCode, event);
+                return false;
             }
 
             // Let this method take duplicate key down events
@@ -391,7 +391,7 @@ public class StreamInterface implements SurfaceHolder.Callback,
 
             // Pass through keyboard input if we're not grabbing
             if (!grabbedInput) {
-//                return super.onKeyDown(keyCode, event);
+                return false;
             }
 
             keybTranslator.sendKeyDown(translated,
@@ -405,7 +405,7 @@ public class StreamInterface implements SurfaceHolder.Callback,
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         // Pass-through virtual navigation keys
         if ((event.getFlags() & KeyEvent.FLAG_VIRTUAL_HARD_KEY) != 0) {
-//            return super.onKeyUp(keyCode, event);
+        	return false;
         }
 
         // Try the controller handler first
@@ -414,7 +414,7 @@ public class StreamInterface implements SurfaceHolder.Callback,
             // Try the keyboard handler
             short translated = keybTranslator.translate(event.getKeyCode());
             if (translated == 0) {
-//                return super.onKeyUp(keyCode, event);
+            	return false;
             }
 
             if (handleSpecialKeys(translated, false)) {
@@ -423,7 +423,7 @@ public class StreamInterface implements SurfaceHolder.Callback,
 
             // Pass through keyboard input if we're not grabbing
             if (!grabbedInput) {
-//                return super.onKeyUp(keyCode, event);
+                return false;
             }
 
             keybTranslator.sendKeyUp(translated,
@@ -798,64 +798,6 @@ public class StreamInterface implements SurfaceHolder.Callback,
                 keybTranslator.sendKeyUp(keyMap, getModifierState());
             }
         }
-    }
-    
-    
-	private static final short BUTTON_A				= 1<<0;
-	private static final short BUTTON_B				= 1<<1;
-	private static final short BUTTON_X				= 1<<2;
-	private static final short BUTTON_Y				= 1<<3;
-	private static final short BUTTON_START			= 1<<4;
-	private static final short BUTTON_BACK				= 1<<5;
-	private static final short BUTTON_SELECT			= 1<<6;
-	private static final short BUTTON_MENU				= 1<<7;
-	private static final short BUTTON_RIGHT_TRIGGER	= 1<<8;
-	private static final short BUTTON_LEFT_TRIGGER		= 1<<9;
-	private static final short BUTTON_DPAD_UP			= 1<<10;
-	private static final short BUTTON_DPAD_DOWN		= 1<<11;
-	private static final short BUTTON_DPAD_LEFT		= 1<<12;
-	private static final short BUTTON_DPAD_RIGHT		= 1<<13;
-	private static final short BUTTON_THUMBL		= 1<<14;
-	private static final short BUTTON_THUMBR		= -0x8000; // Signed short, MSB means negative.
-
-	
-    public void controllerUpdate(float stick1x, float stick1y, float stick2x, float stick2y, float leftTriggerF, float rightTriggerF, short buttons)
-    {
-    	short controllerNumber = 0;
-    	short inputMap = 0;
-    	byte leftTrigger = (byte) (((float)Byte.MAX_VALUE-1) * leftTriggerF);
-    	byte rightTrigger = (byte) (((float)Byte.MAX_VALUE-1) * rightTriggerF);
-    	short leftStickX = (short) (((float)Short.MAX_VALUE-1) * stick1x);
-    	short leftStickY = (short) (((float)Short.MAX_VALUE-1) * (0-stick1y));
-    	short rightStickX = (short) (((float)Short.MAX_VALUE-1) * stick2x);
-    	short rightStickY = (short) (((float)Short.MAX_VALUE-1) * (0-stick2y));
-    	
-    	/* No stick clicks from Oculus's library.  :/
-            inputMap |= ControllerPacket.LS_CLK_FLAG;
-            inputMap |= ControllerPacket.RS_CLK_FLAG;
-    	 */    	
-    	if((buttons & BUTTON_A) != 0)				inputMap |= ControllerPacket.A_FLAG;
-    	if((buttons & BUTTON_B) != 0)				inputMap |= ControllerPacket.B_FLAG;
-    	if((buttons & BUTTON_X) != 0)				inputMap |= ControllerPacket.X_FLAG;
-    	if((buttons & BUTTON_Y) != 0)				inputMap |= ControllerPacket.Y_FLAG;
-    	if((buttons & BUTTON_START) != 0)			inputMap |= ControllerPacket.PLAY_FLAG;
-    	if((buttons & BUTTON_BACK) != 0)			inputMap |= ControllerPacket.BACK_FLAG;
-    	if((buttons & BUTTON_SELECT) != 0)			inputMap |= ControllerPacket.BACK_FLAG;
-    	if((buttons & BUTTON_MENU) != 0)			inputMap |= ControllerPacket.PLAY_FLAG;
-    	if((buttons & BUTTON_RIGHT_TRIGGER) != 0)	inputMap |= ControllerPacket.RB_FLAG;
-    	if((buttons & BUTTON_LEFT_TRIGGER) != 0)	inputMap |= ControllerPacket.LB_FLAG;
-    	if((buttons & BUTTON_DPAD_UP) != 0)			inputMap |= ControllerPacket.UP_FLAG;
-    	if((buttons & BUTTON_DPAD_DOWN) != 0)		inputMap |= ControllerPacket.DOWN_FLAG;
-    	if((buttons & BUTTON_DPAD_LEFT) != 0)		inputMap |= ControllerPacket.LEFT_FLAG;
-    	if((buttons & BUTTON_DPAD_RIGHT) != 0)		inputMap |= ControllerPacket.RIGHT_FLAG;
-    	if((buttons & BUTTON_THUMBL) != 0)			inputMap |= ControllerPacket.LS_CLK_FLAG;
-    	if((buttons & BUTTON_THUMBR) != 0)			inputMap |= ControllerPacket.RS_CLK_FLAG;
-    	
-    	// Moonlight does Start & select or select & RB = SPECIAL_BUTTON_FLAG, so let's do that also
-    	if((buttons & ( BUTTON_START 		 | BUTTON_SELECT)) != 0) inputMap |= ControllerPacket.SPECIAL_BUTTON_FLAG;
-    	if((buttons & ( BUTTON_RIGHT_TRIGGER | BUTTON_SELECT)) != 0) inputMap |= ControllerPacket.SPECIAL_BUTTON_FLAG;
-//    	Log.i("INPUT", "" + controllerNumber+" "+leftStickX+" "+leftStickY+" "+rightStickX+" "+rightStickY+" "+leftTrigger+" "+rightTrigger+" "+inputMap);
-        conn.sendControllerInput(controllerNumber, inputMap, leftTrigger, rightTrigger, leftStickX, leftStickY, rightStickX, rightStickY);
     }
 
     public boolean isConnected()
