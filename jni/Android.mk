@@ -38,7 +38,8 @@ LOCAL_SRC_FILES	:= 	CinemaApp.cpp \
 					UI/UIContainer.cpp \
 					UI/UILabel.cpp \
 					UI/UIImage.cpp \
-					UI/UIButton.cpp
+					UI/UIButton.cpp \
+					UI/UITextButton.cpp
 
 LOCAL_STATIC_LIBRARIES += vrappframework libovr
 LOCAL_SHARED_LIBRARIES += vrapi

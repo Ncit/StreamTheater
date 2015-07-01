@@ -25,6 +25,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "UI/UILabel.h"
 #include "UI/UIImage.h"
 #include "UI/UIButton.h"
+#include "UI/UITextButton.h"
 
 using namespace OVR;
 
@@ -174,18 +175,6 @@ private:
 
 	UITexture				SeekPosition;
 
-	UITexture				SeekFF2x;
-	UITexture				SeekFF4x;
-	UITexture				SeekFF8x;
-	UITexture				SeekFF16x;
-	UITexture				SeekFF32x;
-
-	UITexture				SeekRW2x;
-	UITexture				SeekRW4x;
-	UITexture				SeekRW8x;
-	UITexture				SeekRW16x;
-	UITexture				SeekRW32x;
-
 	UIMenu *				MoveScreenMenu;
 	UILabel 				MoveScreenLabel;
 	Lerp					MoveScreenAlpha;
@@ -194,8 +183,6 @@ private:
 	UIContainer 			PlaybackControlsPosition;
 	UIContainer 			PlaybackControlsScale;
 	UILabel 				MovieTitleLabel;
-
-	UIImage					SeekIcon;
 
 	UIImage					ControlsBackground;
 	ControlsGazeTimer		GazeTimer;
@@ -212,6 +199,52 @@ private:
 	UILabel 				CurrentTime;
 	UILabel 				SeekTime;
 
+	UITexture				MouseTexture;
+	UITexture				MouseHoverTexture;
+	UITexture				MousePressedTexture;
+
+	UITexture				StreamTexture;
+	UITexture				StreamHoverTexture;
+	UITexture				StreamPressedTexture;
+
+	UITexture				ScreenTexture;
+	UITexture				ScreenHoverTexture;
+	UITexture				ScreenPressedTexture;
+
+	UITexture				ControllerTexture;
+	UITexture				ControllerHoverTexture;
+	UITexture				ControllerPressedTexture;
+
+	UIButton				MouseMenuButton;
+	UIContainer *			MouseMenu;
+	UITextButton			ButtonGaze;
+	UITextButton			ButtonTrackpad;
+	UITextButton			ButtonOff;
+	UITextButton			ButtonXSensitivity;
+	UITextButton			ButtonYSensitivity;
+
+	UIButton				StreamMenuButton;
+	UIContainer *			StreamMenu;
+	UITextButton			Button1080p60;
+	UITextButton			Button1080p30;
+	UITextButton			Button720p60;
+	UITextButton			Button720p30;
+	UITextButton			ButtonHostAudio;
+
+	UIButton				ScreenMenuButton;
+	UIContainer *			ScreenMenu;
+	UITextButton			ButtonSBS;
+	UITextButton			ButtonChangeSeat;
+	UITextButton			ButtonDistance;
+	UITextButton			ButtonSize;
+
+	UIButton				ControllerMenuButton;
+	UIContainer *			ControllerMenu;
+	UITextButton			ButtonSpeed;
+	UITextButton			ButtonComfortMode;
+	UITextButton			ButtonMapKeyboard;
+
+
 	bool					BackgroundClicked;
 	bool					UIOpened;							// Used to ignore button A or touchpad until release so we don't close the UI immediately after opening it
 
@@ -225,8 +258,8 @@ private:
 	bool					mouseDownMiddle;
 
 private:
+	void					TextButtonHelper(UITextButton& button);
 	void 					CreateMenu( OvrGuiSys & guiSys );
-	void					SetSeekIcon( const int seekSpeed );
 
 	void					BackPressed();
 
@@ -239,6 +272,51 @@ private:
 	friend void 			CarouselPressedCallback( UIButton *button, void *object );
 	void					ScrubBarClicked( const float progress );
 	friend void				ScrubBarCallback( ScrubBarComponent *, void *, float );
+
+	friend void		MouseMenuButtonCallback( UIButton *button, void *object );
+	void			MouseMenuButtonPressed();
+	friend void		StreamMenuButtonCallback( UIButton *button, void *object );
+	void			StreamMenuButtonPressed();
+	friend void		ScreenMenuButtonCallback( UIButton *button, void *object );
+	void			ScreenMenuButtonPressed();
+	friend void		ControllerMenuButtonCallback( UIButton *button, void *object );
+	void			ControllerMenuButtonPressed();
+
+	friend void		GazeCallback( UITextButton *button, void *object );
+	void			GazePressed();
+	friend void		TrackpadCallback( UITextButton *button, void *object );
+	void			TrackpadPressed();
+	friend void		OffCallback( UITextButton *button, void *object );
+	void			OffPressed();
+	friend void		XSensitivityCallback( UITextButton *button, void *object );
+	void			XSensitivityPressed();
+	friend void		YSensitivityCallback( UITextButton *button, void *object );
+	void			YSensitivityPressed();
+	friend void		Button1080p60Callback( UITextButton *button, void *object );
+	void			Button1080p60Pressed();
+	friend void		Button1080p30Callback( UITextButton *button, void *object );
+	void			Button1080p30Pressed();
+	friend void		Button720p60Callback( UITextButton *button, void *object );
+	void			Button720p60Pressed();
+	friend void		Button720p30Callback( UITextButton *button, void *object );
+	void			Button720p30Pressed();
+	friend void		HostAudioCallback( UITextButton *button, void *object );
+	void			HostAudioPressed();
+	friend void		SBSCallback( UITextButton *button, void *object );
+	void			SBSPressed();
+	friend void		ChangeSeatCallback( UITextButton *button, void *object );
+	void			ChangeSeatPressed();
+	friend void		DistanceCallback( UITextButton *button, void *object );
+	void			DistancePressed();
+	friend void		SizeCallback( UITextButton *button, void *object );
+	void			SizePressed();
+	friend void		SpeedCallback( UITextButton *button, void *object );
+	void			SpeedPressed();
+	friend void		ComfortModeCallback( UITextButton *button, void *object );
+	void			ComfortModePressed();
+	friend void		MapKeyboardCallback( UITextButton *button, void *object );
+	void			MapKeyboardPressed();
+
 
 	Vector2f 				GazeCoordinatesOnScreen( const Matrix4f & viewMatrix, const Matrix4f panelMatrix ) const;
 

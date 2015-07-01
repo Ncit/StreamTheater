@@ -54,16 +54,6 @@ MoviePlayerView::MoviePlayerView( CinemaApp &cinema ) :
 	SeekbarBackgroundTexture(),
 	SeekbarProgressTexture(),
 	SeekPosition(),
-	SeekFF2x(),
-	SeekFF4x(),
-	SeekFF8x(),
-	SeekFF16x(),
-	SeekFF32x(),
-	SeekRW2x(),
-	SeekRW4x(),
-	SeekRW8x(),
-	SeekRW16x(),
-	SeekRW32x(),
 	MoveScreenMenu( NULL ),
 	MoveScreenLabel( Cinema ),
 	MoveScreenAlpha(),
@@ -71,7 +61,6 @@ MoviePlayerView::MoviePlayerView( CinemaApp &cinema ) :
 	PlaybackControlsPosition( Cinema ),
 	PlaybackControlsScale( Cinema ),
 	MovieTitleLabel( Cinema ),
-	SeekIcon( Cinema ),
 	ControlsBackground( Cinema ),
 	GazeTimer(),
 	RewindButton( Cinema ),
@@ -83,6 +72,31 @@ MoviePlayerView::MoviePlayerView( CinemaApp &cinema ) :
 	ScrubBar(),
 	CurrentTime( Cinema ),
 	SeekTime( Cinema ),
+	MouseMenuButton( Cinema ),
+	MouseMenu( NULL ),
+	ButtonGaze( Cinema ),
+	ButtonTrackpad( Cinema ),
+	ButtonOff( Cinema ),
+	ButtonXSensitivity( Cinema ),
+	ButtonYSensitivity( Cinema ),
+	StreamMenuButton( Cinema ),
+	StreamMenu( NULL ),
+	Button1080p60( Cinema ),
+	Button1080p30( Cinema ),
+	Button720p60( Cinema ),
+	Button720p30( Cinema ),
+	ButtonHostAudio( Cinema ),
+	ScreenMenuButton( Cinema ),
+	ScreenMenu( NULL ),
+	ButtonSBS( Cinema ),
+	ButtonChangeSeat( Cinema ),
+	ButtonDistance( Cinema ),
+	ButtonSize( Cinema ),
+	ControllerMenuButton( Cinema ),
+	ControllerMenu( NULL ),
+	ButtonSpeed( Cinema ),
+	ButtonComfortMode( Cinema ),
+	ButtonMapKeyboard( Cinema ),
 	BackgroundClicked( false ),
 	UIOpened( false ),
 	s00(0.0f),s01(0.0f),s10(0.0f),s11(0.0f),s20(0.0f),s21(0.0f),
@@ -156,6 +170,110 @@ void ScrubBarCallback( ScrubBarComponent *scrubbar, void *object, const float pr
 	( ( MoviePlayerView * )object )->ScrubBarClicked( progress );
 }
 
+
+void MouseMenuButtonCallback( UIButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->MouseMenuButtonPressed();
+}
+void StreamMenuButtonCallback( UIButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->StreamMenuButtonPressed();
+}
+void ScreenMenuButtonCallback( UIButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->ScreenMenuButtonPressed();
+}
+void ControllerMenuButtonCallback( UIButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->ControllerMenuButtonPressed();
+}
+
+void GazeCallback( UITextButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->GazePressed();
+}
+void TrackpadCallback( UITextButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->TrackpadPressed();
+}
+void OffCallback( UITextButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->OffPressed();
+}
+void XSensitivityCallback( UITextButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->XSensitivityPressed();
+}
+void YSensitivityCallback( UITextButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->YSensitivityPressed();
+}
+void Button1080p60Callback( UITextButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->Button1080p60Pressed();
+}
+void Button1080p30Callback( UITextButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->Button1080p30Pressed();
+}
+void Button720p60Callback( UITextButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->Button720p60Pressed();
+}
+void Button720p30Callback( UITextButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->Button720p30Pressed();
+}
+void HostAudioCallback( UITextButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->HostAudioPressed();
+}
+void SBSCallback( UITextButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->SBSPressed();
+}
+void ChangeSeatCallback( UITextButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->ChangeSeatPressed();
+}
+void DistanceCallback( UITextButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->DistancePressed();
+}
+void SizeCallback( UITextButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->SizePressed();
+}
+void SpeedCallback( UITextButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->SpeedPressed();
+}
+void ComfortModeCallback( UITextButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->ComfortModePressed();
+}
+void MapKeyboardCallback( UITextButton *button, void *object )
+{
+	( ( MoviePlayerView * )object )->MapKeyboardPressed();
+}
+
+bool DisableButton( UITextButton *button, void *object )
+{
+	return false;
+}
+
+
+void MoviePlayerView::TextButtonHelper(UITextButton& button)
+{
+	button.SetLocalScale( Vector3f( 1.0f ) );
+	button.SetFontScale( 1.0f );
+	button.SetColor( Vector4f( 0.0f, 0.0f, 0.0f, 1.0f ) );
+	button.SetTextColor( Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) );
+	button.GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
+	button.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 320, 120 );
+	button.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
+
+}
 void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
 {
 	BackgroundTintTexture.LoadTextureFromApplicationPackage( "assets/backgroundTint.png" );
@@ -185,17 +303,21 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
 
 	SeekPosition.LoadTextureFromApplicationPackage( "assets/img_seek_position.png" );
 
-	SeekFF2x.LoadTextureFromApplicationPackage( "assets/img_seek_ff2x.png" );
-	SeekFF4x.LoadTextureFromApplicationPackage( "assets/img_seek_ff4x.png" );
-	SeekFF8x.LoadTextureFromApplicationPackage( "assets/img_seek_ff8x.png" );
-	SeekFF16x.LoadTextureFromApplicationPackage( "assets/img_seek_ff16x.png" );
-	SeekFF32x.LoadTextureFromApplicationPackage( "assets/img_seek_ff32x.png" );
+	MouseTexture.LoadTextureFromApplicationPackage( "assets/mousebutton.png" );
+	MouseHoverTexture.LoadTextureFromApplicationPackage( "assets/mousebutton.png" );
+	MousePressedTexture.LoadTextureFromApplicationPackage( "assets/mousebutton.png" );
 
-	SeekRW2x.LoadTextureFromApplicationPackage( "assets/img_seek_rw2x.png" );
-	SeekRW4x.LoadTextureFromApplicationPackage( "assets/img_seek_rw4x.png" );
-	SeekRW8x.LoadTextureFromApplicationPackage( "assets/img_seek_rw8x.png" );
-	SeekRW16x.LoadTextureFromApplicationPackage( "assets/img_seek_rw16x.png" );
-	SeekRW32x.LoadTextureFromApplicationPackage( "assets/img_seek_rw32x.png" );
+	StreamTexture.LoadTextureFromApplicationPackage( "assets/streambutton.png" );
+	StreamHoverTexture.LoadTextureFromApplicationPackage( "assets/streambutton.png" );
+	StreamPressedTexture.LoadTextureFromApplicationPackage( "assets/streambutton.png" );
+
+	ScreenTexture.LoadTextureFromApplicationPackage( "assets/screenbutton.png" );
+	ScreenHoverTexture.LoadTextureFromApplicationPackage( "assets/screenbutton.png" );
+	ScreenPressedTexture.LoadTextureFromApplicationPackage( "assets/screenbutton.png" );
+
+	ControllerTexture.LoadTextureFromApplicationPackage( "assets/controllerbutton.png" );
+	ControllerHoverTexture.LoadTextureFromApplicationPackage( "assets/controllerbutton.png" );
+	ControllerPressedTexture.LoadTextureFromApplicationPackage( "assets/controllerbutton.png" );
 
     // ==============================================================================
     //
@@ -237,50 +359,14 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
     MovieTitleLabel.SetTextOffset( Vector3f( 0.0f, 0.0f, 0.01f ) );
     MovieTitleLabel.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 320, 120 );
 
-	// ==============================================================================
-    //
-    // seek icon
-    //
-    SeekIcon.AddToMenu( guiSys, PlaybackControlsMenu, &PlaybackControlsScale );
-    SeekIcon.SetLocalPosition( PixelPos( 0, 0, 0 ) );
-    SeekIcon.SetLocalScale( Vector3f( 2.0f ) );
-    SetSeekIcon( 0 );
-
     // ==============================================================================
     //
     // controls
     //
     ControlsBackground.AddToMenuFlags( guiSys, PlaybackControlsMenu, &PlaybackControlsScale, VRMenuObjectFlags_t( VRMENUOBJECT_RENDER_HIERARCHY_ORDER ) );
-    ControlsBackground.SetLocalPosition( PixelPos( 0, -288, 0 ) );
+    ControlsBackground.SetLocalPosition( PixelPos( 0, 550, 0 ) );
     ControlsBackground.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 1004, 168 );
     ControlsBackground.AddComponent( &GazeTimer );
-
-    RewindButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
-    RewindButton.SetLocalPosition( PixelPos( -448, 0, 1 ) );
-    RewindButton.SetLocalScale( Vector3f( 2.0f ) );
-    RewindButton.SetButtonImages( RWTexture, RWHoverTexture, RWPressedTexture );
-    RewindButton.SetOnClick( RewindPressedCallback, this );
-
-	FastForwardButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
-	FastForwardButton.SetLocalPosition( PixelPos( -234, 0, 1 ) );
-	FastForwardButton.SetLocalScale( Vector3f( 2.0f ) );
-	FastForwardButton.SetButtonImages( FFTexture, FFHoverTexture, FFPressedTexture );
-	FastForwardButton.SetOnClick( FastForwardPressedCallback, this );
-	FastForwardButton.GetMenuObject()->SetLocalBoundsExpand( Vector3f::ZERO, PixelPos( -20, 0, 0 ) );
-
-	// playbutton created after fast forward button to fix z issues
-    PlayButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
-    PlayButton.SetLocalPosition( PixelPos( -341, 0, 2 ) );
-    PlayButton.SetLocalScale( Vector3f( 2.0f ) );
-    PlayButton.SetButtonImages( PauseTexture, PauseHoverTexture, PausePressedTexture );
-    PlayButton.SetOnClick( PlayPressedCallback, this );
-
-	CarouselButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
-	CarouselButton.SetLocalPosition( PixelPos( 418, 0, 1 ) );
-	CarouselButton.SetLocalScale( Vector3f( 2.0f ) );
-	CarouselButton.SetButtonImages( CarouselTexture, CarouselHoverTexture, CarouselPressedTexture );
-	CarouselButton.SetOnClick( CarouselPressedCallback, this );
-	CarouselButton.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
 
 	SeekbarBackground.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
 	SeekbarBackground.SetLocalPosition( PixelPos( 78, 0, 2 ) );
@@ -317,39 +403,166 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
 
 	ScrubBar.SetWidgets( &SeekbarBackground, &SeekbarProgress, &CurrentTime, &SeekTime, ScrubBarWidth );
 	ScrubBar.SetOnClick( ScrubBarCallback, this );
-}
 
-void MoviePlayerView::SetSeekIcon( const int seekSpeed )
-{
-	const UITexture * texture = NULL;
+	SeekbarBackground.SetVisible(false);
+//*/
 
-	switch( seekSpeed )
-	{
-		case -5 : texture = &SeekRW32x; break;
-		case -4 : texture = &SeekRW16x; break;
-		case -3 : texture = &SeekRW8x; break;
-		case -2 : texture = &SeekRW4x; break;
-		case -1 : texture = &SeekRW2x; break;
 
-		default:
-		case 0 : texture = NULL; break;
+ 	MouseMenuButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
+ 	MouseMenuButton.SetLocalPosition( PixelPos( -450, 0, 1 ) );
+ 	MouseMenuButton.SetLocalScale( Vector3f( 2.0f ) );
+ 	MouseMenuButton.SetButtonImages( MouseTexture, MouseHoverTexture, MousePressedTexture );
+ 	MouseMenuButton.SetOnClick( MouseMenuButtonCallback, this );
+ 	MouseMenuButton.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
 
-		case 1 : texture = &SeekFF2x; break;
-		case 2 : texture = &SeekFF4x; break;
-		case 3 : texture = &SeekFF8x; break;
-		case 4 : texture = &SeekFF16x; break;
-		case 5 : texture = &SeekFF32x; break;
-	}
+ 	StreamMenuButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
+ 	StreamMenuButton.SetLocalPosition( PixelPos( -150, 0, 1 ) );
+ 	StreamMenuButton.SetLocalScale( Vector3f( 2.0f ) );
+ 	StreamMenuButton.SetButtonImages( StreamTexture, StreamHoverTexture, StreamPressedTexture );
+ 	StreamMenuButton.SetOnClick( StreamMenuButtonCallback, this );
+ 	StreamMenuButton.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
 
-	if ( texture == NULL )
-	{
-	    SeekIcon.SetVisible( false );
-	}
-	else
-	{
-	    SeekIcon.SetVisible( true );
-	    SeekIcon.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, *texture );
-	}
+ 	ScreenMenuButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
+	ScreenMenuButton.SetLocalPosition( PixelPos( 150, 0, 1 ) );
+ 	ScreenMenuButton.SetLocalScale( Vector3f( 2.0f ) );
+ 	ScreenMenuButton.SetButtonImages( ScreenTexture, ScreenHoverTexture, ScreenPressedTexture );
+ 	ScreenMenuButton.SetOnClick( ScreenMenuButtonCallback, this );
+ 	ScreenMenuButton.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
+
+	ControllerMenuButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
+	ControllerMenuButton.SetLocalPosition( PixelPos( 450, 0, 1 ) );
+	ControllerMenuButton.SetLocalScale( Vector3f( 2.0f ) );
+	ControllerMenuButton.SetButtonImages( ControllerTexture, ControllerHoverTexture, ControllerPressedTexture );
+	ControllerMenuButton.SetOnClick( ControllerMenuButtonCallback, this );
+	ControllerMenuButton.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
+
+	const static int MENU_X = 200;
+	const static int MENU_Y = -150;
+	const static int MENU_TOP = 200;
+
+	MouseMenu = new UIContainer( Cinema );
+	MouseMenu->AddToMenu( guiSys, PlaybackControlsMenu, &PlaybackControlsScale );
+	MouseMenu->SetLocalPosition( PixelPos( 0, MENU_TOP, 1 ) );
+	MouseMenu->SetVisible(false);
+
+	ButtonGaze.AddToMenu( guiSys, PlaybackControlsMenu, MouseMenu );
+	ButtonGaze.SetLocalPosition( PixelPos( MENU_X * -1.8, MENU_Y * 1, 1 ) );
+	ButtonGaze.SetText( CinemaStrings::ButtonText_ButtonGaze );
+	TextButtonHelper(ButtonGaze);
+	ButtonGaze.SetOnClick( GazeCallback, this);
+
+	ButtonTrackpad.AddToMenu( guiSys, PlaybackControlsMenu, MouseMenu );
+	ButtonTrackpad.SetLocalPosition( PixelPos( MENU_X * 0, MENU_Y * 1, 1 ) );
+	ButtonTrackpad.SetText( CinemaStrings::ButtonText_ButtonTrackpad );
+	TextButtonHelper(ButtonTrackpad);
+	ButtonTrackpad.SetOnClick( TrackpadCallback, this);
+
+	ButtonOff.AddToMenu( guiSys, PlaybackControlsMenu, MouseMenu );
+	ButtonOff.SetLocalPosition( PixelPos( MENU_X * 1.8, MENU_Y * 1, 1 ) );
+	ButtonOff.SetText( CinemaStrings::ButtonText_ButtonOff );
+	TextButtonHelper(ButtonOff);
+	ButtonOff.SetOnClick( OffCallback, this);
+
+	ButtonXSensitivity.AddToMenu( guiSys, PlaybackControlsMenu, MouseMenu );
+	ButtonXSensitivity.SetLocalPosition( PixelPos( MENU_X * -1, MENU_Y * 2, 1 ) );
+	ButtonXSensitivity.SetText( CinemaStrings::ButtonText_ButtonXSensitivity );
+	TextButtonHelper(ButtonXSensitivity);
+	ButtonXSensitivity.SetOnClick( XSensitivityCallback, this);
+
+	ButtonYSensitivity.AddToMenu( guiSys, PlaybackControlsMenu, MouseMenu );
+	ButtonYSensitivity.SetLocalPosition( PixelPos( MENU_X * 1, MENU_Y * 2, 1 ) );
+	ButtonYSensitivity.SetText( CinemaStrings::ButtonText_ButtonYSensitivity );
+	TextButtonHelper(ButtonYSensitivity);
+	ButtonYSensitivity.SetOnClick( YSensitivityCallback, this);
+
+	StreamMenu = new UIContainer( Cinema );
+	StreamMenu->AddToMenu( guiSys, PlaybackControlsMenu, &PlaybackControlsScale );
+	StreamMenu->SetLocalPosition( PixelPos( 0, MENU_TOP, 1 ) );
+	StreamMenu->SetVisible(false);
+
+	Button1080p60.AddToMenu( guiSys, PlaybackControlsMenu, StreamMenu );
+	Button1080p60.SetLocalPosition( PixelPos( MENU_X * -1, MENU_Y * 1, 1 ) );
+	Button1080p60.SetText( CinemaStrings::ButtonText_Button1080p60 );
+	TextButtonHelper(Button1080p60);
+	Button1080p60.SetOnClick( Button1080p60Callback, this);
+
+	Button1080p30.AddToMenu( guiSys, PlaybackControlsMenu, StreamMenu );
+	Button1080p30.SetLocalPosition( PixelPos( MENU_X * 1, MENU_Y * 1, 1 ) );
+	Button1080p30.SetText( CinemaStrings::ButtonText_Button1080p30 );
+	TextButtonHelper(Button1080p30);
+	Button1080p30.SetOnClick( Button1080p30Callback, this);
+
+	Button720p60.AddToMenu( guiSys, PlaybackControlsMenu, StreamMenu );
+	Button720p60.SetLocalPosition( PixelPos( MENU_X * -1, MENU_Y * 2, 1 ) );
+	Button720p60.SetText( CinemaStrings::ButtonText_Button720p60 );
+	TextButtonHelper(Button720p60);
+	Button720p60.SetOnClick( Button720p60Callback, this);
+
+	Button720p30.AddToMenu( guiSys, PlaybackControlsMenu, StreamMenu );
+	Button720p30.SetLocalPosition( PixelPos( MENU_X * 1, MENU_Y * 2, 1 ) );
+	Button720p30.SetText( CinemaStrings::ButtonText_Button720p30 );
+	TextButtonHelper(Button720p30);
+	Button720p30.SetOnClick( Button720p30Callback, this);
+
+	ButtonHostAudio.AddToMenu( guiSys, PlaybackControlsMenu, StreamMenu );
+	ButtonHostAudio.SetLocalPosition( PixelPos( MENU_X * -1, MENU_Y * 3, 1 ) );
+	ButtonHostAudio.SetText( CinemaStrings::ButtonText_ButtonHostAudio );
+	TextButtonHelper(ButtonHostAudio);
+	ButtonHostAudio.SetOnClick( HostAudioCallback, this);
+
+	ScreenMenu = new UIContainer( Cinema );
+	ScreenMenu->AddToMenu( guiSys, PlaybackControlsMenu, &PlaybackControlsScale );
+	ScreenMenu->SetLocalPosition( PixelPos( 0, MENU_TOP, 1 ) );
+	ScreenMenu->SetVisible(false);
+
+	ButtonSBS.AddToMenu( guiSys, PlaybackControlsMenu, ScreenMenu );
+	ButtonSBS.SetLocalPosition( PixelPos( MENU_X * -1, MENU_Y * 1, 1 ) );
+	ButtonSBS.SetText( CinemaStrings::ButtonText_ButtonSBS );
+	TextButtonHelper(ButtonSBS);
+	ButtonSBS.SetOnClick( SBSCallback, this);
+
+	ButtonChangeSeat.AddToMenu( guiSys, PlaybackControlsMenu, ScreenMenu );
+	ButtonChangeSeat.SetLocalPosition( PixelPos( MENU_X * 1, MENU_Y * 1, 1 ) );
+	ButtonChangeSeat.SetText( CinemaStrings::ButtonText_ButtonChangeSeat );
+	TextButtonHelper(ButtonChangeSeat);
+	ButtonChangeSeat.SetOnClick( ChangeSeatCallback, this);
+
+	ButtonDistance.AddToMenu( guiSys, PlaybackControlsMenu, ScreenMenu );
+	ButtonDistance.SetLocalPosition( PixelPos( MENU_X * -1, MENU_Y * 2, 1 ) );
+	ButtonDistance.SetText( CinemaStrings::ButtonText_ButtonDistance );
+	TextButtonHelper(ButtonDistance);
+	ButtonDistance.SetOnClick( DistanceCallback, this);
+
+	ButtonSize.AddToMenu( guiSys, PlaybackControlsMenu, ScreenMenu );
+	ButtonSize.SetLocalPosition( PixelPos( MENU_X * 1, MENU_Y * 2, 1 ) );
+	ButtonSize.SetText( CinemaStrings::ButtonText_ButtonSize );
+	TextButtonHelper(ButtonSize);
+	ButtonSize.SetOnClick( SizeCallback, this);
+
+	ControllerMenu = new UIContainer( Cinema );
+	ControllerMenu->AddToMenu( guiSys, PlaybackControlsMenu, &PlaybackControlsScale );
+	ControllerMenu->SetLocalPosition( PixelPos( 0, MENU_TOP, 1 ) );
+	ControllerMenu->SetVisible(false);
+
+	ButtonSpeed.AddToMenu( guiSys, PlaybackControlsMenu, ControllerMenu );
+	ButtonSpeed.SetLocalPosition( PixelPos( MENU_X * -1, MENU_Y * 1, 1 ) );
+	ButtonSpeed.SetText( CinemaStrings::ButtonText_ButtonSpeed );
+	TextButtonHelper(ButtonSpeed);
+	ButtonSpeed.SetOnClick( SpeedCallback, this);
+
+	ButtonComfortMode.AddToMenu( guiSys, PlaybackControlsMenu, ControllerMenu );
+	ButtonComfortMode.SetLocalPosition( PixelPos( MENU_X * 1, MENU_Y * 1, 1 ) );
+	ButtonComfortMode.SetText( CinemaStrings::ButtonText_ButtonComfortMode );
+	TextButtonHelper(ButtonComfortMode);
+	ButtonComfortMode.SetOnClick( ComfortModeCallback, this);
+
+	ButtonMapKeyboard.AddToMenu( guiSys, PlaybackControlsMenu, ControllerMenu );
+	ButtonMapKeyboard.SetLocalPosition( PixelPos( MENU_X * -1, MENU_Y * 2, 1 ) );
+	ButtonMapKeyboard.SetText( CinemaStrings::ButtonText_ButtonMapKeyboard );
+	TextButtonHelper(ButtonMapKeyboard);
+	ButtonMapKeyboard.SetOnClick( MapKeyboardCallback, this);
+
+//*/
 }
 
 void MoviePlayerView::OnOpen()
@@ -358,8 +571,6 @@ void MoviePlayerView::OnOpen()
 	CurViewState = VIEWSTATE_OPEN;
 
 	Cinema.SceneMgr.ClearMovie();
-
-	SetSeekIcon( 1 );
 
 	ScrubBar.SetProgress( 0.0f );
 
@@ -374,8 +585,6 @@ void MoviePlayerView::OnOpen()
 	MovieTitleLabel.SetText( Cinema.GetCurrentMovie()->Name );
 	Bounds3f titleBounds = MovieTitleLabel.GetTextLocalBounds( Cinema.GetGuiSys().GetDefaultFont() ) * VRMenuObject::TEXELS_PER_METER;
 	MovieTitleLabel.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, titleBounds.GetSize().x + 88, titleBounds.GetSize().y + 32 );
-
-	PlayButton.SetButtonImages( PauseTexture, PauseHoverTexture, PausePressedTexture );
 }
 
 void MoviePlayerView::OnClose()
@@ -523,8 +732,6 @@ void MoviePlayerView::HideUI()
 	uiActive = false;
 
 	BackgroundClicked = false;
-
-	SetSeekIcon( 1 );
 }
 
 void MoviePlayerView::CheckDebugControls( const VrFrame & vrFrame )
@@ -647,10 +854,11 @@ void MoviePlayerView::HandleGazeMouse( const VrFrame & vrFrame, bool onscreen, c
 			Cinema.app->PlaySound( "touch_up" );
 			mouseDownLeft = false;
 		} else		// open ui if it's not visible
+		{
 			ShowUI();
-
-		// ignore button A or touchpad until release so we don't close the UI immediately after opening it
-		UIOpened = true;
+			// ignore button A or touchpad until release so we don't close the UI immediately after opening it
+			UIOpened = true;
+		}
 	}
 
 	if ( onscreen && ( vrFrame.Input.buttonPressed & BUTTON_TOUCH ) ) {
@@ -764,6 +972,16 @@ void MoviePlayerView::CheckInput( const VrFrame & vrFrame )
 	{
 		HandleGazeMouse(vrFrame, onscreen, screenCursor);
 	}
+	else
+	{
+		// Left click
+		if ( ( vrFrame.Input.buttonReleased & BUTTON_TOUCH ) && !( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) )
+		{
+			ShowUI();
+			// ignore button A or touchpad until release so we don't close the UI immediately after opening it
+			UIOpened = true;
+		}
+	}
 
 	if ( Cinema.SceneMgr.FreeScreenActive )
 	{
@@ -812,6 +1030,78 @@ void MoviePlayerView::ScrubBarClicked( const float progress )
 {
 
 }
+
+void MoviePlayerView::MouseMenuButtonPressed()
+{
+
+	Cinema.app->PlaySound( "touch_up" );
+	MouseMenu->SetVisible(!MouseMenu->GetVisible());
+	StreamMenu->SetVisible(false);
+	ScreenMenu->SetVisible(false);
+	ControllerMenu->SetVisible(false);
+}
+void MoviePlayerView::StreamMenuButtonPressed()
+{
+
+	Cinema.app->PlaySound( "touch_up" );
+	MouseMenu->SetVisible(false);
+	StreamMenu->SetVisible(!StreamMenu->GetVisible());
+	ScreenMenu->SetVisible(false);
+	ControllerMenu->SetVisible(false);
+}
+void MoviePlayerView::ScreenMenuButtonPressed()
+{
+
+	Cinema.app->PlaySound( "touch_up" );
+	MouseMenu->SetVisible(false);
+	StreamMenu->SetVisible(false);
+	ScreenMenu->SetVisible(!ScreenMenu->GetVisible());
+	ControllerMenu->SetVisible(false);
+}
+void MoviePlayerView::ControllerMenuButtonPressed()
+{
+
+	Cinema.app->PlaySound( "touch_up" );
+	MouseMenu->SetVisible(false);
+	StreamMenu->SetVisible(false);
+	ScreenMenu->SetVisible(false);
+	ControllerMenu->SetVisible(!ControllerMenu->GetVisible());
+}
+
+void MoviePlayerView::GazePressed()
+{}
+void MoviePlayerView::TrackpadPressed()
+{}
+void MoviePlayerView::OffPressed()
+{}
+void MoviePlayerView::XSensitivityPressed()
+{}
+void MoviePlayerView::YSensitivityPressed()
+{}
+void MoviePlayerView::Button1080p60Pressed()
+{}
+void MoviePlayerView::Button1080p30Pressed()
+{}
+void MoviePlayerView::Button720p60Pressed()
+{}
+void MoviePlayerView::Button720p30Pressed()
+{}
+void MoviePlayerView::HostAudioPressed()
+{}
+void MoviePlayerView::SBSPressed()
+{}
+void MoviePlayerView::ChangeSeatPressed()
+{}
+void MoviePlayerView::DistancePressed()
+{}
+void MoviePlayerView::SizePressed()
+{}
+void MoviePlayerView::SpeedPressed()
+{}
+void MoviePlayerView::ComfortModePressed()
+{}
+void MoviePlayerView::MapKeyboardPressed()
+{}
 
 void MoviePlayerView::UpdateUI( const VrFrame & vrFrame )
 {

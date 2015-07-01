@@ -93,6 +93,25 @@
       description="Text displayed when user looks away from the screen in the Void theater to indicate that they can reorient the screen by tapping the touchpad."
       >Tap the touchpad to reorient screen</string>
 
+	<string name="ButtonText_ButtonGaze">Gaze</string>
+	<string name="ButtonText_ButtonTrackpad">Trackpad</string>
+	<string name="ButtonText_ButtonOff">Off</string>
+	<string name="ButtonText_ButtonXSensitivity">X Sensitivity</string>
+	<string name="ButtonText_ButtonYSensitivity">Y Sensitivity</string>
+	<string name="ButtonText_Button1080p60">1080p60</string>
+	<string name="ButtonText_Button1080p30">1080p30</string>
+	<string name="ButtonText_Button720p60">720p60</string>
+	<string name="ButtonText_Button720p30">720p30</string>
+	<string name="ButtonText_ButtonHostAudio">Host Audio</string>
+	<string name="ButtonText_ButtonSBS">SBS</string>
+	<string name="ButtonText_ButtonChangeSeat">Change Seat</string>
+	<string name="ButtonText_ButtonDistance">Distance</string>
+	<string name="ButtonText_ButtonSize">Size</string>
+	<string name="ButtonText_ButtonSpeed">Speed</string>
+	<string name="ButtonText_ButtonComfortMode">Comfort Mode</string>
+	<string name="ButtonText_ButtonMapKeyboard">Map Keyboard</string>
+  
+
     <!-- From Limelight -->
 
     <!-- PC view menu entries -->

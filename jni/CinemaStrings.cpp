@@ -43,6 +43,24 @@ String CinemaStrings::Error_UnableToPlayMovie;
 
 String CinemaStrings::MoviePlayer_Reorient;
 
+String CinemaStrings::ButtonText_ButtonMapKeyboard;
+String CinemaStrings::ButtonText_ButtonSpeed;
+String CinemaStrings::ButtonText_ButtonComfortMode;
+String CinemaStrings::ButtonText_Button720p30;
+String CinemaStrings::ButtonText_ButtonHostAudio;
+String CinemaStrings::ButtonText_Button1080p30;
+String CinemaStrings::ButtonText_Button720p60;
+String CinemaStrings::ButtonText_ButtonDistance;
+String CinemaStrings::ButtonText_ButtonSize;
+String CinemaStrings::ButtonText_ButtonSBS;
+String CinemaStrings::ButtonText_ButtonChangeSeat;
+String CinemaStrings::ButtonText_ButtonGaze;
+String CinemaStrings::ButtonText_ButtonTrackpad;
+String CinemaStrings::ButtonText_ButtonYSensitivity;
+String CinemaStrings::ButtonText_Button1080p60;
+String CinemaStrings::ButtonText_ButtonOff;
+String CinemaStrings::ButtonText_ButtonXSensitivity;
+
 void CinemaStrings::OneTimeInit( CinemaApp &cinema )
 {
 	LOG( "CinemaStrings::OneTimeInit" );
@@ -69,6 +87,25 @@ void CinemaStrings::OneTimeInit( CinemaApp &cinema )
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/Error_UnableToPlayMovie", 	"@string/Error_UnableToPlayMovie",	Error_UnableToPlayMovie );
 
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/MoviePlayer_Reorient", 	"@string/MoviePlayer_Reorient", 	MoviePlayer_Reorient );
+
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonMapKeyboard", "@string/ButtonText_ButtonMapKeyboard", 	ButtonText_ButtonMapKeyboard );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonSpeed", 		"@string/ButtonText_ButtonSpeed", 			ButtonText_ButtonSpeed );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonComfortMode", "@string/ButtonText_ButtonComfortMode", 	ButtonText_ButtonComfortMode );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_Button720p30", 		"@string/ButtonText_Button720p30", 			ButtonText_Button720p30 );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonHostAudio", 	"@string/ButtonText_ButtonHostAudio", 		ButtonText_ButtonHostAudio );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_Button1080p30", 	"@string/ButtonText_Button1080p30", 		ButtonText_Button1080p30 );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_Button720p60", 		"@string/ButtonText_Button720p60", 			ButtonText_Button720p60 );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonDistance", 	"@string/ButtonText_ButtonDistance", 		ButtonText_ButtonDistance );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonSize", 		"@string/ButtonText_ButtonSize", 			ButtonText_ButtonSize );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonSBS", 		"@string/ButtonText_ButtonSBS", 			ButtonText_ButtonSBS );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonChangeSeat", 	"@string/ButtonText_ButtonChangeSeat", 		ButtonText_ButtonChangeSeat );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonGaze",	 	"@string/ButtonText_ButtonGaze", 			ButtonText_ButtonGaze );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonTrackpad", 	"@string/ButtonText_ButtonTrackpad", 		ButtonText_ButtonTrackpad );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonYSensitivity","@string/ButtonText_ButtonYSensitivity", 	ButtonText_ButtonYSensitivity );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_Button1080p60", 	"@string/ButtonText_Button1080p60", 		ButtonText_Button1080p60 );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonOff", 		"@string/ButtonText_ButtonOff", 			ButtonText_ButtonOff );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonXSensitivity","@string/ButtonText_ButtonXSensitivity", 	ButtonText_ButtonXSensitivity );
+
 }
 
 } // namespace VRMatterStreamTheater

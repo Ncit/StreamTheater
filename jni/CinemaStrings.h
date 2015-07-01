@@ -50,6 +50,24 @@ public:
 	static String	Error_UnableToPlayMovie;
 
 	static String	MoviePlayer_Reorient;
+
+	static String	ButtonText_ButtonMapKeyboard;
+	static String	ButtonText_ButtonSpeed;
+	static String	ButtonText_ButtonComfortMode;
+	static String	ButtonText_Button720p30;
+	static String	ButtonText_ButtonHostAudio;
+	static String	ButtonText_Button1080p30;
+	static String	ButtonText_Button720p60;
+	static String	ButtonText_ButtonDistance;
+	static String	ButtonText_ButtonSize;
+	static String	ButtonText_ButtonSBS;
+	static String	ButtonText_ButtonChangeSeat;
+	static String	ButtonText_ButtonGaze;
+	static String	ButtonText_ButtonTrackpad;
+	static String	ButtonText_ButtonYSensitivity;
+	static String	ButtonText_Button1080p60;
+	static String	ButtonText_ButtonOff;
+	static String	ButtonText_ButtonXSensitivity;
 };
 
 } // namespace VRMatterStreamTheater
