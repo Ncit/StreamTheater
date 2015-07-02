@@ -269,7 +269,7 @@ void MoviePlayerView::TextButtonHelper(UITextButton& button)
 	button.SetFontScale( 1.0f );
 	button.SetColor( Vector4f( 0.0f, 0.0f, 0.0f, 1.0f ) );
 	button.SetTextColor( Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) );
-	button.GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
+//	button.GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
 	button.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 320, 120 );
 	button.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
 
