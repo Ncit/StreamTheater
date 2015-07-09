@@ -101,13 +101,18 @@ MoviePlayerView::MoviePlayerView( CinemaApp &cinema ) :
 	UIOpened( false ),
 	s00(0.0f),s01(0.0f),s10(0.0f),s11(0.0f),s20(0.0f),s21(0.0f),
 	allowDrag(false),
+	mouseMoving(false),
 	clickStartTime(0.0),
 	lastScroll(0),
 	lastMouse(0.0,0.0),
 	mouseDownLeft(false),
 	mouseDownRight(false),
-	mouseDownMiddle(false)
-
+	mouseDownMiddle(false),
+	mouseMode(MOUSE_GAZE),
+	streamWidth(1280),
+	streamHeight(720),
+	streamFPS(60),
+	streamHostAudio(true)
 {
 }
 
@@ -257,6 +262,43 @@ void MapKeyboardCallback( UITextButton *button, void *object )
 	( ( MoviePlayerView * )object )->MapKeyboardPressed();
 }
 
+
+
+bool GazeActiveCallback( UITextButton *button, void *object )
+{
+	return ( ( MoviePlayerView * )object )->GazeActive();
+}
+bool TrackpadActiveCallback( UITextButton *button, void *object )
+{
+	return ( ( MoviePlayerView * )object )->TrackpadActive();
+}
+bool OffActiveCallback( UITextButton *button, void *object )
+{
+	return ( ( MoviePlayerView * )object )->OffActive();
+}
+
+bool Button1080p60IsSelectedCallback( UITextButton *button, void *object )
+{
+	return ( ( MoviePlayerView * )object )->Button1080p60IsSelected();
+}
+bool Button1080p30IsSelectedCallback( UITextButton *button, void *object )
+{
+	return ( ( MoviePlayerView * )object )->Button1080p30IsSelected();
+}
+bool Button720p60IsSelectedCallback( UITextButton *button, void *object )
+{
+	return ( ( MoviePlayerView * )object )->Button720p60IsSelected();
+}
+bool Button720p30IsSelectedCallback( UITextButton *button, void *object )
+{
+	return ( ( MoviePlayerView * )object )->Button720p30IsSelected();
+}
+bool HostAudioIsSelectedCallback( UITextButton *button, void *object )
+{
+	return ( ( MoviePlayerView * )object )->HostAudioIsSelected();
+}
+
+
 bool DisableButton( UITextButton *button, void *object )
 {
 	return false;
@@ -269,7 +311,6 @@ void MoviePlayerView::TextButtonHelper(UITextButton& button)
 	button.SetFontScale( 1.0f );
 	button.SetColor( Vector4f( 0.0f, 0.0f, 0.0f, 1.0f ) );
 	button.SetTextColor( Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) );
-//	button.GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
 	button.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 320, 120 );
 	button.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
 
@@ -450,18 +491,21 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
 	ButtonGaze.SetText( CinemaStrings::ButtonText_ButtonGaze );
 	TextButtonHelper(ButtonGaze);
 	ButtonGaze.SetOnClick( GazeCallback, this);
+	ButtonGaze.SetIsSelected( GazeActiveCallback, this);
 
 	ButtonTrackpad.AddToMenu( guiSys, PlaybackControlsMenu, MouseMenu );
 	ButtonTrackpad.SetLocalPosition( PixelPos( MENU_X * 0, MENU_Y * 1, 1 ) );
 	ButtonTrackpad.SetText( CinemaStrings::ButtonText_ButtonTrackpad );
 	TextButtonHelper(ButtonTrackpad);
 	ButtonTrackpad.SetOnClick( TrackpadCallback, this);
+	ButtonTrackpad.SetIsSelected( TrackpadActiveCallback, this);
 
 	ButtonOff.AddToMenu( guiSys, PlaybackControlsMenu, MouseMenu );
 	ButtonOff.SetLocalPosition( PixelPos( MENU_X * 1.8, MENU_Y * 1, 1 ) );
 	ButtonOff.SetText( CinemaStrings::ButtonText_ButtonOff );
 	TextButtonHelper(ButtonOff);
 	ButtonOff.SetOnClick( OffCallback, this);
+	ButtonOff.SetIsSelected( OffActiveCallback, this);
 
 	ButtonXSensitivity.AddToMenu( guiSys, PlaybackControlsMenu, MouseMenu );
 	ButtonXSensitivity.SetLocalPosition( PixelPos( MENU_X * -1, MENU_Y * 2, 1 ) );
@@ -485,30 +529,35 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
 	Button1080p60.SetText( CinemaStrings::ButtonText_Button1080p60 );
 	TextButtonHelper(Button1080p60);
 	Button1080p60.SetOnClick( Button1080p60Callback, this);
+	Button1080p60.SetIsSelected( Button1080p60IsSelectedCallback, this);
 
 	Button1080p30.AddToMenu( guiSys, PlaybackControlsMenu, StreamMenu );
 	Button1080p30.SetLocalPosition( PixelPos( MENU_X * 1, MENU_Y * 1, 1 ) );
 	Button1080p30.SetText( CinemaStrings::ButtonText_Button1080p30 );
 	TextButtonHelper(Button1080p30);
 	Button1080p30.SetOnClick( Button1080p30Callback, this);
+	Button1080p30.SetIsSelected( Button1080p30IsSelectedCallback, this);
 
 	Button720p60.AddToMenu( guiSys, PlaybackControlsMenu, StreamMenu );
 	Button720p60.SetLocalPosition( PixelPos( MENU_X * -1, MENU_Y * 2, 1 ) );
 	Button720p60.SetText( CinemaStrings::ButtonText_Button720p60 );
 	TextButtonHelper(Button720p60);
 	Button720p60.SetOnClick( Button720p60Callback, this);
+	Button720p60.SetIsSelected( Button720p60IsSelectedCallback, this);
 
 	Button720p30.AddToMenu( guiSys, PlaybackControlsMenu, StreamMenu );
 	Button720p30.SetLocalPosition( PixelPos( MENU_X * 1, MENU_Y * 2, 1 ) );
 	Button720p30.SetText( CinemaStrings::ButtonText_Button720p30 );
 	TextButtonHelper(Button720p30);
 	Button720p30.SetOnClick( Button720p30Callback, this);
+	Button720p30.SetIsSelected( Button720p30IsSelectedCallback, this);
 
 	ButtonHostAudio.AddToMenu( guiSys, PlaybackControlsMenu, StreamMenu );
 	ButtonHostAudio.SetLocalPosition( PixelPos( MENU_X * -1, MENU_Y * 3, 1 ) );
 	ButtonHostAudio.SetText( CinemaStrings::ButtonText_ButtonHostAudio );
 	TextButtonHelper(ButtonHostAudio);
 	ButtonHostAudio.SetOnClick( HostAudioCallback, this);
+	ButtonHostAudio.SetIsSelected( HostAudioIsSelectedCallback, this);
 
 	ScreenMenu = new UIContainer( Cinema );
 	ScreenMenu->AddToMenu( guiSys, PlaybackControlsMenu, &PlaybackControlsScale );
@@ -580,7 +629,7 @@ void MoviePlayerView::OnOpen()
 	HideUI();
 	Cinema.SceneMgr.LightsOff( 1.5f );
 
-	Cinema.StartMoviePlayback();
+	Cinema.StartMoviePlayback(streamWidth, streamHeight, streamFPS, streamHostAudio);
 
 	MovieTitleLabel.SetText( Cinema.GetCurrentMovie()->Name );
 	Bounds3f titleBounds = MovieTitleLabel.GetTextLocalBounds( Cinema.GetGuiSys().GetDefaultFont() ) * VRMenuObject::TEXELS_PER_METER;
@@ -649,6 +698,21 @@ void MoviePlayerView::SetError( const char *text, bool showSDCard, bool showErro
 void MoviePlayerView::BackPressed()
 {
 	LOG( "BackPressed" );
+
+	if(uiActive)
+	{
+		HideUI();
+	}
+	else
+	{
+		ShowUI();
+	}
+}
+
+void MoviePlayerView::BackPressedDouble()
+{
+	LOG( "BackPressed" );
+
 	HideUI();
 	if ( Cinema.AllowTheaterSelection() )
 	{
@@ -671,13 +735,17 @@ bool MoviePlayerView::OnKeyEvent( const int keyCode, const int repeatCount, cons
 			switch ( eventType )
 			{
 				case KEY_EVENT_SHORT_PRESS:
-				LOG( "KEY_EVENT_SHORT_PRESS" );
-				BackPressed();
-				return true;
-				break;
+					LOG( "KEY_EVENT_SHORT_PRESS" );
+					BackPressed();
+					return true;
+					break;
+				case KEY_EVENT_DOUBLE_TAP:
+					BackPressedDouble();
+					return true;
+					break;
 				default:
-				//LOG( "unexpected back key state %i", eventType );
-				break;
+					//LOG( "unexpected back key state %i", eventType );
+					break;
 			}
 		}
 		break;
@@ -725,6 +793,10 @@ void MoviePlayerView::ShowUI()
 void MoviePlayerView::HideUI()
 {
 	LOG( "HideUI" );
+	MouseMenu->SetVisible(false);
+	ScreenMenu->SetVisible(false);
+	StreamMenu->SetVisible(false);
+	ControllerMenu->SetVisible(false);
 	PlaybackControlsMenu->Close();
 
 	Cinema.GetGuiSys().GetGazeCursor().HideCursor();
@@ -740,13 +812,6 @@ void MoviePlayerView::CheckDebugControls( const VrFrame & vrFrame )
 	{
 		return;
 	}
-
-#if 0
-	if ( !( vrFrame.Input.buttonState & BUTTON_Y ) )
-	{
-		Cinema.SceneMgr.ChangeSeats( vrFrame );
-	}
-#endif
 
 	if ( vrFrame.Input.buttonPressed & BUTTON_X )
 	{
@@ -799,7 +864,7 @@ Vector2f MoviePlayerView::GazeCoordinatesOnScreen( const Matrix4f & viewMatrix, 
 	Vector3f screenForward;
 	if ( Cinema.SceneMgr.FreeScreenActive )
 	{
-		// FIXME: free screen matrix is inverted compared to bounds screen matrix.
+		// FIXME: free screen matrix is inverted compared to bounds screen matrix.  (MGH: No, everything's backwards!)
 		screenForward = -Vector3f( screenMatrix.M[0][2], screenMatrix.M[1][2], screenMatrix.M[2][2] ).Normalized();
 	}
 	else
@@ -946,6 +1011,56 @@ void MoviePlayerView::HandleGazeMouse( const VrFrame & vrFrame, bool onscreen, c
 	}
 }
 
+void MoviePlayerView::HandleTrackpadMouse( const VrFrame & vrFrame )
+{
+	if ( vrFrame.Input.buttonPressed & BUTTON_TOUCH ) {
+		clickStartTime = vrapi_GetTimeInSeconds();
+	}
+
+	if( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) {
+		if(mouseMoving)
+		{
+			Vector2f travel = vrFrame.Input.touchRelative - lastMouse;
+			lastMouse = vrFrame.Input.touchRelative;
+			Native::MouseMove(Cinema.app, travel.x, travel.y );
+		}
+		else
+		{
+			lastMouse = vrFrame.Input.touchRelative;
+			mouseMoving = true;
+		}
+	}
+
+	if ( !mouseMoving && (clickStartTime + 0.5 < vrapi_GetTimeInSeconds()) &&
+			( vrFrame.Input.buttonState & BUTTON_TOUCH ) && !( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) )
+	{
+		Native::MouseClick(Cinema.app,3,true);
+		Cinema.app->PlaySound( "touch_down" );
+		mouseDownRight = true;
+	}
+
+	if ( vrFrame.Input.buttonReleased & BUTTON_TOUCH )
+	{
+		if( !mouseDownLeft && !mouseDownRight && !( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) )
+		{
+			Native::MouseClick(Cinema.app,1,true); // fast click!
+			Native::MouseClick(Cinema.app,1,false);
+		}
+		if( mouseDownRight )
+		{
+			Native::MouseClick(Cinema.app,3,false);
+		}
+		if(mouseDownLeft)
+		{
+			Native::MouseClick(Cinema.app,1,false);
+		}
+		Cinema.app->PlaySound( "touch_up" );
+		mouseDownLeft = false;
+		mouseDownRight = false;
+		mouseMoving = false;
+	}
+}
+
 void MoviePlayerView::CheckInput( const VrFrame & vrFrame )
 {
 	// while we're holding down the button or touchpad, reposition screen
@@ -968,9 +1083,16 @@ void MoviePlayerView::CheckInput( const VrFrame & vrFrame )
 		onscreen = GazeTimer.IsFocused();
 	}
 
-	if( ( !RepositionScreen ) && Cinema.SceneMgr.SceneInfo.UseMouse)
+	if( ( !RepositionScreen ) && ( !uiActive ) && mouseMode != MOUSE_OFF )
 	{
-		HandleGazeMouse(vrFrame, onscreen, screenCursor);
+		if( mouseMode == MOUSE_GAZE)
+		{
+			HandleGazeMouse(vrFrame, onscreen, screenCursor);
+		}
+		else if( mouseMode == MOUSE_TRACKPAD)
+		{
+			HandleTrackpadMouse(vrFrame);
+		}
 	}
 	else
 	{
@@ -1035,6 +1157,7 @@ void MoviePlayerView::MouseMenuButtonPressed()
 {
 
 	Cinema.app->PlaySound( "touch_up" );
+	UpdateMenus();
 	MouseMenu->SetVisible(!MouseMenu->GetVisible());
 	StreamMenu->SetVisible(false);
 	ScreenMenu->SetVisible(false);
@@ -1044,6 +1167,7 @@ void MoviePlayerView::StreamMenuButtonPressed()
 {
 
 	Cinema.app->PlaySound( "touch_up" );
+	UpdateMenus();
 	MouseMenu->SetVisible(false);
 	StreamMenu->SetVisible(!StreamMenu->GetVisible());
 	ScreenMenu->SetVisible(false);
@@ -1053,6 +1177,7 @@ void MoviePlayerView::ScreenMenuButtonPressed()
 {
 
 	Cinema.app->PlaySound( "touch_up" );
+	UpdateMenus();
 	MouseMenu->SetVisible(false);
 	StreamMenu->SetVisible(false);
 	ScreenMenu->SetVisible(!ScreenMenu->GetVisible());
@@ -1062,40 +1187,128 @@ void MoviePlayerView::ControllerMenuButtonPressed()
 {
 
 	Cinema.app->PlaySound( "touch_up" );
+	UpdateMenus();
 	MouseMenu->SetVisible(false);
 	StreamMenu->SetVisible(false);
 	ScreenMenu->SetVisible(false);
 	ControllerMenu->SetVisible(!ControllerMenu->GetVisible());
 }
 
+// Mouse controls
 void MoviePlayerView::GazePressed()
-{}
+{
+	mouseMode = MOUSE_GAZE;
+	UpdateMenus();
+}
 void MoviePlayerView::TrackpadPressed()
-{}
+{
+	mouseMode = MOUSE_TRACKPAD;
+	UpdateMenus();
+}
 void MoviePlayerView::OffPressed()
-{}
+{
+	mouseMode = MOUSE_OFF;
+	UpdateMenus();
+}
+bool MoviePlayerView::GazeActive()
+{
+	return mouseMode == MOUSE_GAZE;
+}
+bool MoviePlayerView::TrackpadActive()
+{
+	return mouseMode == MOUSE_TRACKPAD;
+}
+bool MoviePlayerView::OffActive()
+{
+	return mouseMode == MOUSE_OFF;
+}
+
 void MoviePlayerView::XSensitivityPressed()
 {}
 void MoviePlayerView::YSensitivityPressed()
 {}
+
+// Stream controls
 void MoviePlayerView::Button1080p60Pressed()
-{}
+{
+	Cinema.SceneMgr.ClearMovie();
+	//TODO: This all needs to be saved in prefs
+	streamWidth = 1920;
+	streamHeight = 1080;
+	streamFPS = 60;
+	UpdateMenus();
+	Cinema.StartMoviePlayback(streamWidth, streamHeight, streamFPS, streamHostAudio);
+}
 void MoviePlayerView::Button1080p30Pressed()
-{}
+{
+	Cinema.SceneMgr.ClearMovie();
+	streamWidth = 1920;
+	streamHeight = 1080;
+	streamFPS = 30;
+	UpdateMenus();
+	Cinema.StartMoviePlayback(streamWidth, streamHeight, streamFPS, streamHostAudio);
+}
 void MoviePlayerView::Button720p60Pressed()
-{}
+{
+	Cinema.SceneMgr.ClearMovie();
+	streamWidth = 1280;
+	streamHeight = 720;
+	streamFPS = 60;
+	UpdateMenus();
+	Cinema.StartMoviePlayback(streamWidth, streamHeight, streamFPS, streamHostAudio);
+}
 void MoviePlayerView::Button720p30Pressed()
-{}
+{
+	Cinema.SceneMgr.ClearMovie();
+	streamWidth = 1280;
+	streamHeight = 720;
+	streamFPS = 30;
+	UpdateMenus();
+	Cinema.StartMoviePlayback(streamWidth, streamHeight, streamFPS, streamHostAudio);
+}
 void MoviePlayerView::HostAudioPressed()
-{}
+{
+	Cinema.SceneMgr.ClearMovie();
+	streamHostAudio = !streamHostAudio;
+	UpdateMenus();
+	Cinema.StartMoviePlayback(streamWidth, streamHeight, streamFPS, streamHostAudio);
+}
 void MoviePlayerView::SBSPressed()
 {}
+
+bool MoviePlayerView::Button1080p60IsSelected()
+{
+	return streamWidth == 1920 && streamHeight == 1080 && streamFPS == 60;
+}
+bool MoviePlayerView::Button1080p30IsSelected()
+{
+	return streamWidth == 1920 && streamHeight == 1080 && streamFPS == 30;
+}
+bool MoviePlayerView::Button720p60IsSelected()
+{
+	return streamWidth == 1280 && streamHeight == 720 && streamFPS == 60;
+}
+bool MoviePlayerView::Button720p30IsSelected()
+{
+	return streamWidth == 1280 && streamHeight == 720 && streamFPS == 30;
+}
+bool MoviePlayerView::HostAudioIsSelected()
+{
+	return streamHostAudio;
+}
+
+
+// Screen controls
 void MoviePlayerView::ChangeSeatPressed()
-{}
+{
+	Cinema.SceneMgr.NextSeat();
+}
 void MoviePlayerView::DistancePressed()
 {}
 void MoviePlayerView::SizePressed()
 {}
+
+// Controller... controls?
 void MoviePlayerView::SpeedPressed()
 {}
 void MoviePlayerView::ComfortModePressed()
@@ -1103,34 +1316,61 @@ void MoviePlayerView::ComfortModePressed()
 void MoviePlayerView::MapKeyboardPressed()
 {}
 
+void MoviePlayerView::UpdateMenus()
+{
+	ButtonGaze.UpdateButtonState();
+	ButtonTrackpad.UpdateButtonState();
+	ButtonOff.UpdateButtonState();
+	ButtonXSensitivity.UpdateButtonState();
+	ButtonYSensitivity.UpdateButtonState();
+
+	Button1080p60.UpdateButtonState();
+	Button1080p30.UpdateButtonState();
+	Button720p60.UpdateButtonState();
+	Button720p30.UpdateButtonState();
+	ButtonHostAudio.UpdateButtonState();
+
+	ButtonSBS.UpdateButtonState();
+	ButtonChangeSeat.UpdateButtonState();
+	ButtonDistance.UpdateButtonState();
+	ButtonSize.UpdateButtonState();
+
+	ButtonSpeed.UpdateButtonState();
+	ButtonComfortMode.UpdateButtonState();
+	ButtonMapKeyboard.UpdateButtonState();
+}
+
 void MoviePlayerView::UpdateUI( const VrFrame & vrFrame )
 {
 	if ( uiActive )
 	{
-		double timeSinceLastGaze = vrapi_GetTimeInSeconds() - GazeTimer.GetLastGazeTime();
-		if ( !ScrubBar.IsScrubbing() && ( timeSinceLastGaze > GazeTimeTimeout ) )
-		{
-			LOG( "Gaze timeout" );
-			HideUI();
-		}
+////TODO: Commenting this out for now until I have a better idea of how to handle UI interaction.
+//// The GazeTimer is currently only attached to the main menu buttons, so this code breaks the submenu options
+//// Either it gazetimer needs to cover everything, it needs to be refactored to a function call, or deleted
+//		double timeSinceLastGaze = vrapi_GetTimeInSeconds() - GazeTimer.GetLastGazeTime();
+//		if ( !ScrubBar.IsScrubbing() && ( timeSinceLastGaze > GazeTimeTimeout ) )
+//		{
+//			LOG( "Gaze timeout" );
+//			HideUI();
+//		}
 
 		// if we press the touchpad or a button outside of the playback controls, then close the UI
-		if ( ( vrFrame.Input.buttonPressed & BUTTON_TOUCH ) != 0 )
-		{
+//		if ( ( vrFrame.Input.buttonPressed & BUTTON_TOUCH ) != 0 )
+//		{
 			// ignore touchpad until release so we don't close the UI immediately after opening it
-			BackgroundClicked = !GazeTimer.IsFocused() && !UIOpened;
-		}
+//			BackgroundClicked = !GazeTimer.IsFocused() && !UIOpened;
+//		}
 
-		if ( ( ( ( vrFrame.Input.buttonReleased & BUTTON_TOUCH ) != 0 ) && ( ( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) == 0 ) )	)
-		{
-			if ( !GazeTimer.IsFocused() && BackgroundClicked )
-			{
-				LOG( "Clicked outside playback controls" );
-				Cinema.GetGuiSys().GetApp()->PlaySound( "touch_up" );
-				HideUI();
-			}
-			BackgroundClicked = false;
-		}
+//		if ( ( ( ( vrFrame.Input.buttonReleased & BUTTON_TOUCH ) != 0 ) && ( ( vrFrame.Input.buttonState & BUTTON_TOUCH_WAS_SWIPE ) == 0 ) )	)
+//		{
+//			if ( !GazeTimer.IsFocused() && BackgroundClicked )
+//			{
+//				LOG( "Clicked outside playback controls" );
+//				Cinema.GetGuiSys().GetApp()->PlaySound( "touch_up" );
+//				HideUI();
+//			}
+//			BackgroundClicked = false;
+//		}
 
 		if ( Cinema.SceneMgr.FreeScreenActive )
 		{

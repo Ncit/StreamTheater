@@ -25,7 +25,7 @@ UITextButton::UITextButton( CinemaApp &cinema ) :
 	ButtonComponent( *this ),
 	SelectedColor(1.0f,1.0f,1.0f,1.0f),
 	HoverColor(1.0f, 1.0f, 0.5f, 1.0f),
-	EnabledColor(0.8f,0.8f,0.8f,1.0f),
+	EnabledColor(0.6f,0.6f,0.6f,1.0f),
 	DisabledColor(0.4f,0.4f,0.4f,0.4f),
 	OnClickFunction( NULL ),
 	OnClickObject( NULL ),
@@ -264,7 +264,6 @@ eMsgStatus UITextButtonComponent::OnEvent_Impl( OvrGuiSys & guiSys, VrFrame cons
         VRMenuObject * self, VRMenuEvent const & event )
 {
 
-	GazeOverSoundLimiter.PlaySound( guiSys.GetApp(), "gaze_on", 0.1 );
     switch( event.EventType )
     {
         case VRMENU_EVENT_FOCUS_GAINED:
@@ -273,6 +272,7 @@ eMsgStatus UITextButtonComponent::OnEvent_Impl( OvrGuiSys & guiSys, VrFrame cons
             return FocusLost( guiSys, vrFrame, self, event );
         case VRMENU_EVENT_TOUCH_DOWN:
         	TouchDown = true;
+        	Button.SetSelected( true );
         	Button.UpdateButtonState();
             DownSoundLimiter.PlaySound( guiSys.GetApp(), "touch_down", 0.1 );
             return MSG_STATUS_ALIVE;

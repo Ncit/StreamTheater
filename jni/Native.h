@@ -34,7 +34,7 @@ public:
 	static bool 		HadPlaybackError( App *app );
 
 
-	static void 		StartMovie( App *app, const char * uuid, const char * appName, int id, const char * binder );
+	static void 		StartMovie( App *app, const char * uuid, const char * appName, int id, const char * binder, int width, int height, int fps, bool hostAudio );
 	static void 		StopMovie( App *app );
 
 	enum PairState {

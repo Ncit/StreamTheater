@@ -90,7 +90,7 @@ public class StreamInterface implements SurfaceHolder.Callback,
     public static final String EXTRA_UNIQUEID = "UniqueId";
     public static final String EXTRA_STREAMING_REMOTE = "Remote";
 
-	public StreamInterface(MainActivity creatingActivity, String compUUID, String appName, int appId, String uniqueId, SurfaceHolder sh) {
+	public StreamInterface(MainActivity creatingActivity, String compUUID, String appName, int appId, String uniqueId, SurfaceHolder sh, int width, int height, int fps, boolean hostAudio) {
 		activity = creatingActivity;
 		
 		ComputerDetails computer = activity.pcSelector.findByUUID(compUUID);
@@ -104,6 +104,12 @@ public class StreamInterface implements SurfaceHolder.Callback,
 
         // Read the stream preferences
         prefConfig = PreferenceConfiguration.readPreferences(activity);
+        
+        // Overrid prefs with our settings
+        prefConfig.width = width;
+        prefConfig.height = height;
+        prefConfig.fps = fps;
+        prefConfig.playHostAudio = hostAudio;
 
         switch (prefConfig.decoder) {
         case PreferenceConfiguration.FORCE_SOFTWARE_DECODER:
@@ -141,14 +147,14 @@ public class StreamInterface implements SurfaceHolder.Callback,
         decoderRenderer.initializeWithFlags(drFlags);
         
         StreamConfiguration config = new StreamConfiguration.Builder()
-                .setResolution(prefConfig.width, prefConfig.height)
-                .setRefreshRate(prefConfig.fps)
+                .setResolution(width, height)
+                .setRefreshRate(fps)
                 .setApp(new NvApp(appName, appId))
                 .setBitrate(prefConfig.bitrate * 1000)
                 .setEnableSops(prefConfig.enableSops)
                 .enableAdaptiveResolution((decoderRenderer.getCapabilities() &
                         VideoDecoderRenderer.CAPABILITY_ADAPTIVE_RESOLUTION) != 0)
-                .enableLocalAudioPlayback(prefConfig.playHostAudio)
+                .enableLocalAudioPlayback(hostAudio)
                 .setMaxPacketSize(remote ? 1024 : 1292)
                 .setRemote(remote)
                 .build();
@@ -255,7 +261,8 @@ public class StreamInterface implements SurfaceHolder.Callback,
         }
 
         if (message != null) {
-            MainActivity.nativeShowError(activity.getAppPtr(), message);
+        	// TODO: Need a non-error message passing.  Doesn't display right now anyway, so commenting out to stop crashes
+            // MainActivity.nativeShowError(activity.getAppPtr(), message);
         }
 
     }

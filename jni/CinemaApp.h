@@ -59,7 +59,7 @@ public:
 
 	const SceneDef & 		GetCurrentTheater() const;
 
-	void 					StartMoviePlayback();
+	void 					StartMoviePlayback(int width, int height, int fps, bool hostAudio);
 	void 					ResumeMovieFromSavedLocation();
 	void					PlayMovieFromBeginning();
 	void 					ResumeOrRestartMovie();

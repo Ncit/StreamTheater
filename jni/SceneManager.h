@@ -44,6 +44,7 @@ public:
 
 	void 				SetSeat( int newSeat );
 	bool 				ChangeSeats( const VrFrame & vrFrame );
+	void				NextSeat();
 
 	void 				ClearMovie();
 	void 				PutScreenInFront();

@@ -86,24 +86,6 @@ void ModelManager::LoadModels()
 
 		int width = 0, height = 0;
 
-		// create mouse scene
-		MouseScene = new SceneDef();
-		MouseScene->SceneModel = new ModelFile( "Mouse" );
-		MouseScene->UseSeats = false;
-		MouseScene->UseDynamicProgram = false;
-		MouseScene->UseScreenGeometry = false;
-		MouseScene->UseFreeScreen = true;
-		MouseScene->UseMouse = true;
-
-		MouseScene->IconTexture = LoadTextureFromApplicationPackage( "assets/MouseTheater.png",
-				TextureFlags_t( TEXTUREFLAG_NO_DEFAULT ), width, height );
-
-		BuildTextureMipmaps( MouseScene->IconTexture );
-		MakeTextureTrilinear( MouseScene->IconTexture );
-		MakeTextureClamped( MouseScene->IconTexture );
-
-		Theaters.PushBack( MouseScene );
-
 		// create void scene
 		VoidScene = new SceneDef();
 		VoidScene->SceneModel = new ModelFile( "Void" );

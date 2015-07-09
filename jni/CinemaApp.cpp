@@ -247,12 +247,12 @@ const PcDef *CinemaApp::GetPreviousMovie() const
 	return previous;
 }
 
-void CinemaApp::StartMoviePlayback()
+void CinemaApp::StartMoviePlayback(int width, int height, int fps, bool hostAudio)
 {
 	if ( CurrentMovie != NULL )
 	{
 		MovieFinishedPlaying = false;
-		Native::StartMovie( app, CurrentPc->UUID.ToCStr(), CurrentMovie->Name.ToCStr(), CurrentMovie->Id, CurrentPc->Binding.ToCStr() );
+		Native::StartMovie( app, CurrentPc->UUID.ToCStr(), CurrentMovie->Name.ToCStr(), CurrentMovie->Id, CurrentPc->Binding.ToCStr(), width, height, fps, hostAudio );
 		ShouldResumeMovie = false;
 	}
 }

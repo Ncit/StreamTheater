@@ -598,6 +598,27 @@ bool SceneManager::ChangeSeats( const VrFrame & vrFrame )
 	return changed;
 }
 
+void SceneManager::NextSeat()
+{
+	// Find the next seat after the current one
+	float closestSeatDistance = Math<float>::MaxValue;
+	int closestSeat = -1;
+	for ( int i = 0; i < SceneSeatCount; i++ )
+	{
+		const float d = SceneSeatPositions[i].Distance(Scene.GetFootPos());
+		if ( d < closestSeatDistance )
+		{
+			closestSeatDistance = d;
+			closestSeat = i;
+		}
+	}
+	if ( closestSeat != -1 )
+	{
+		closestSeat = ( closestSeat + 1 ) % SceneSeatCount;
+		SetSeat( closestSeat );
+	}
+}
+
 /*
  * Command
  *

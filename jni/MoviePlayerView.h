@@ -43,6 +43,13 @@ enum ePlaybackControlsEvent
 	UI_SEEK_PRESSED = 7
 };
 
+enum MouseMode
+{
+	MOUSE_OFF = 0,
+	MOUSE_GAZE,
+	MOUSE_TRACKPAD
+};
+
 class CinemaApp;
 
 class ControlsGazeTimer : public VRMenuComponent
@@ -250,6 +257,7 @@ private:
 
 	float 					s00,s01,s10,s11,s20,s21;		// Last stick positions so we don't have to make network traffic when not changing
 	bool					allowDrag;
+	bool					mouseMoving;
 	double					clickStartTime;
 	signed char				lastScroll;
 	Vector2f 				lastMouse;
@@ -257,11 +265,19 @@ private:
 	bool					mouseDownRight;
 	bool					mouseDownMiddle;
 
+	MouseMode				mouseMode;
+
+	int						streamWidth;
+	int 					streamHeight;
+	int						streamFPS;
+	bool					streamHostAudio;
+
 private:
 	void					TextButtonHelper(UITextButton& button);
 	void 					CreateMenu( OvrGuiSys & guiSys );
 
 	void					BackPressed();
+	void					BackPressedDouble();
 
 	friend void 			PlayPressedCallback( UIButton *button, void *object );
 	void					RewindPressed();
@@ -292,6 +308,15 @@ private:
 	void			XSensitivityPressed();
 	friend void		YSensitivityCallback( UITextButton *button, void *object );
 	void			YSensitivityPressed();
+
+	friend bool		GazeActiveCallback( UITextButton *button, void *object );
+	bool			GazeActive();
+	friend bool		TrackpadActiveCallback( UITextButton *button, void *object );
+	bool			TrackpadActive();
+	friend bool		OffActiveCallback( UITextButton *button, void *object );
+	bool			OffActive();
+
+
 	friend void		Button1080p60Callback( UITextButton *button, void *object );
 	void			Button1080p60Pressed();
 	friend void		Button1080p30Callback( UITextButton *button, void *object );
@@ -304,12 +329,27 @@ private:
 	void			HostAudioPressed();
 	friend void		SBSCallback( UITextButton *button, void *object );
 	void			SBSPressed();
+
+	friend bool		Button1080p60IsSelectedCallback( UITextButton *button, void *object );
+	bool			Button1080p60IsSelected();
+	friend bool		Button1080p30IsSelectedCallback( UITextButton *button, void *object );
+	bool			Button1080p30IsSelected();
+	friend bool		Button720p60IsSelectedCallback( UITextButton *button, void *object );
+	bool			Button720p60IsSelected();
+	friend bool		Button720p30IsSelectedCallback( UITextButton *button, void *object );
+	bool			Button720p30IsSelected();
+	friend bool		HostAudioIsSelectedCallback( UITextButton *button, void *object );
+	bool			HostAudioIsSelected();
+
+
 	friend void		ChangeSeatCallback( UITextButton *button, void *object );
 	void			ChangeSeatPressed();
 	friend void		DistanceCallback( UITextButton *button, void *object );
 	void			DistancePressed();
 	friend void		SizeCallback( UITextButton *button, void *object );
 	void			SizePressed();
+
+
 	friend void		SpeedCallback( UITextButton *button, void *object );
 	void			SpeedPressed();
 	friend void		ComfortModeCallback( UITextButton *button, void *object );
@@ -320,9 +360,12 @@ private:
 
 	Vector2f 				GazeCoordinatesOnScreen( const Matrix4f & viewMatrix, const Matrix4f panelMatrix ) const;
 
+	void					UpdateMenus();
+
 	void 					UpdateUI( const VrFrame & vrFrame );
 	void 					CheckInput( const VrFrame & vrFrame );
-	void					HandleGazeMouse( const VrFrame & vrFrame, bool onscreen, const Vector2f screenCursor  );
+	void					HandleGazeMouse( const VrFrame & vrFrame, bool onscreen, const Vector2f screenCursor );
+	void					HandleTrackpadMouse( const VrFrame & vrFrame );
 	void 					CheckDebugControls( const VrFrame & vrFrame );
 
 	void 					ShowUI();
