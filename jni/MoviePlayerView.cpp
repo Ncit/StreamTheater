@@ -25,9 +25,6 @@ of patent rights can be found in the PATENTS file in the same directory.
 namespace VRMatterStreamTheater
 {
 
-const int MoviePlayerView::MaxSeekSpeed = 5;
-const int MoviePlayerView::ScrubBarWidth = 516;
-
 const double MoviePlayerView::GazeTimeTimeout = 4;
 
 MoviePlayerView::MoviePlayerView( CinemaApp &cinema ) :
@@ -67,18 +64,23 @@ MoviePlayerView::MoviePlayerView( CinemaApp &cinema ) :
 	PlayButton( Cinema ),
 	FastForwardButton( Cinema ),
 	CarouselButton( Cinema ),
-	SeekbarBackground( Cinema ),
-	SeekbarProgress( Cinema ),
-	ScrubBar(),
-	CurrentTime( Cinema ),
-	SeekTime( Cinema ),
 	MouseMenuButton( Cinema ),
 	MouseMenu( NULL ),
 	ButtonGaze( Cinema ),
 	ButtonTrackpad( Cinema ),
 	ButtonOff( Cinema ),
-	ButtonXSensitivity( Cinema ),
-	ButtonYSensitivity( Cinema ),
+	GazeScale( Cinema ),
+	GazeSliderBackground( Cinema ),
+	GazeSliderIndicator( Cinema ),
+	GazeCurrentSetting( Cinema ),
+	GazeNewSetting( Cinema ),
+	GazeSlider(),
+	TrackpadScale( Cinema ),
+	TrackpadSliderBackground( Cinema ),
+	TrackpadSliderIndicator( Cinema ),
+	TrackpadCurrentSetting( Cinema ),
+	TrackpadNewSetting( Cinema ),
+	TrackpadSlider(),
 	StreamMenuButton( Cinema ),
 	StreamMenu( NULL ),
 	Button1080p60( Cinema ),
@@ -90,8 +92,18 @@ MoviePlayerView::MoviePlayerView( CinemaApp &cinema ) :
 	ScreenMenu( NULL ),
 	ButtonSBS( Cinema ),
 	ButtonChangeSeat( Cinema ),
-	ButtonDistance( Cinema ),
-	ButtonSize( Cinema ),
+	ScreenDistance( Cinema ),
+	DistanceSliderBackground( Cinema ),
+	DistanceSliderIndicator( Cinema ),
+	DistanceCurrentSetting( Cinema ),
+	DistanceNewSetting( Cinema ),
+	DistanceSlider(),
+	ScreenSize( Cinema ),
+	SizeSliderBackground( Cinema ),
+	SizeSliderIndicator( Cinema ),
+	SizeCurrentSetting( Cinema ),
+	SizeNewSetting( Cinema ),
+	SizeSlider(),
 	ControllerMenuButton( Cinema ),
 	ControllerMenu( NULL ),
 	ButtonSpeed( Cinema ),
@@ -109,6 +121,8 @@ MoviePlayerView::MoviePlayerView( CinemaApp &cinema ) :
 	mouseDownRight(false),
 	mouseDownMiddle(false),
 	mouseMode(MOUSE_GAZE),
+	gazeScaleValue(1.05),
+	trackpadScaleValue(2.0),
 	streamWidth(1280),
 	streamHeight(720),
 	streamFPS(60),
@@ -170,11 +184,6 @@ void CarouselPressedCallback( UIButton *button, void *object )
 	( ( MoviePlayerView * )object )->CarouselPressed();
 }
 
-void ScrubBarCallback( ScrubBarComponent *scrubbar, void *object, const float progress )
-{
-	( ( MoviePlayerView * )object )->ScrubBarClicked( progress );
-}
-
 
 void MouseMenuButtonCallback( UIButton *button, void *object )
 {
@@ -205,13 +214,13 @@ void OffCallback( UITextButton *button, void *object )
 {
 	( ( MoviePlayerView * )object )->OffPressed();
 }
-void XSensitivityCallback( UITextButton *button, void *object )
+void GazeScaleCallback( SliderComponent *button, void *object, const float value )
 {
-	( ( MoviePlayerView * )object )->XSensitivityPressed();
+	( ( MoviePlayerView * )object )->GazeScalePressed( value );
 }
-void YSensitivityCallback( UITextButton *button, void *object )
+void TrackpadScaleCallback( SliderComponent *button, void *object, const float value )
 {
-	( ( MoviePlayerView * )object )->YSensitivityPressed();
+	( ( MoviePlayerView * )object )->TrackpadScalePressed( value );
 }
 void Button1080p60Callback( UITextButton *button, void *object )
 {
@@ -241,13 +250,13 @@ void ChangeSeatCallback( UITextButton *button, void *object )
 {
 	( ( MoviePlayerView * )object )->ChangeSeatPressed();
 }
-void DistanceCallback( UITextButton *button, void *object )
+void DistanceCallback( SliderComponent *button, void *object, const float value )
 {
-	( ( MoviePlayerView * )object )->DistancePressed();
+	( ( MoviePlayerView * )object )->DistancePressed( value );
 }
-void SizeCallback( UITextButton *button, void *object )
+void SizeCallback( SliderComponent *button, void *object, const float value )
 {
-	( ( MoviePlayerView * )object )->SizePressed();
+	( ( MoviePlayerView * )object )->SizePressed( value );
 }
 void SpeedCallback( UITextButton *button, void *object )
 {
@@ -299,6 +308,11 @@ bool HostAudioIsSelectedCallback( UITextButton *button, void *object )
 }
 
 
+bool IsChangeSeatsEnabledCallback( UITextButton *button, void *object )
+{
+	return ( ( MoviePlayerView * )object )->IsChangeSeatsEnabled();
+}
+
 bool DisableButton( UITextButton *button, void *object )
 {
 	return false;
@@ -313,6 +327,44 @@ void MoviePlayerView::TextButtonHelper(UITextButton& button)
 	button.SetTextColor( Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) );
 	button.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 320, 120 );
 	button.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
+
+}
+void MoviePlayerView::SetUpSlider(OvrGuiSys & guiSys, UIWidget *parent, SliderComponent& scrub, UIImage& bg, UIImage& ind, UILabel& cur, UILabel& set, int slideWidth, int xoff, int yoff)
+{
+	bg.AddToMenu( guiSys, PlaybackControlsMenu, parent );
+	bg.SetLocalPosition( PixelPos( xoff, yoff, 2 ) );
+	bg.SetColor( Vector4f( 0.5333f, 0.5333f, 0.5333f, 1.0f ) );
+	bg.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, SeekbarBackgroundTexture, slideWidth + 6, 46 );
+	bg.AddComponent( &scrub );
+
+	ind.AddToMenu( guiSys, PlaybackControlsMenu, &bg );
+	ind.SetLocalPosition( PixelPos( 0, 0, 1 ) );
+	ind.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, SeekbarProgressTexture, slideWidth, 40 );
+	ind.GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
+
+	cur.AddToMenu( guiSys, PlaybackControlsMenu, &bg );
+	cur.SetLocalPosition( PixelPos( 0, 52, 2 ) );
+	cur.SetLocalScale( Vector3f( 1.0f ) );
+	cur.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, SeekPosition );
+	cur.SetText( "1.0" );
+	cur.SetTextOffset( PixelPos( 0, 6, 1 ) );
+	cur.SetFontScale( 0.71f );
+	cur.SetColor( Vector4f( 0 / 255.0f, 93 / 255.0f, 219 / 255.0f, 1.0f ) );
+	cur.SetTextColor( Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) );
+	cur.GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
+
+	set.AddToMenu( guiSys, PlaybackControlsMenu, &bg );
+	set.SetLocalPosition( PixelPos( 0, 52, 4 ) );
+	set.SetLocalScale( Vector3f( 1.0f ) );
+	set.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, SeekPosition );
+	set.SetText( "1.0" );
+	set.SetTextOffset( PixelPos( 0, 6, 1 ) );
+	set.SetFontScale( 0.71f );
+	set.SetColor( Vector4f( 47.0f / 255.0f, 70 / 255.0f, 89 / 255.0f, 1.0f ) );
+	set.SetTextColor( Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) );
+	set.GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
+
+	scrub.SetWidgets( &bg, &ind, &cur, &set, slideWidth );
 
 }
 void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
@@ -386,7 +438,7 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
 
     PlaybackControlsPosition.AddToMenu( guiSys, PlaybackControlsMenu );
     PlaybackControlsScale.AddToMenu( guiSys, PlaybackControlsMenu, &PlaybackControlsPosition );
-    PlaybackControlsScale.SetLocalPosition( Vector3f( 0.0f, 0.0f, 0.05f ) );
+    PlaybackControlsScale.SetLocalPosition( Vector3f( 0.0f, 0.0f, 0.01f ) );
     PlaybackControlsScale.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 1080, 1080 );
 
 	// ==============================================================================
@@ -408,46 +460,6 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
     ControlsBackground.SetLocalPosition( PixelPos( 0, 550, 0 ) );
     ControlsBackground.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 1004, 168 );
     ControlsBackground.AddComponent( &GazeTimer );
-
-	SeekbarBackground.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
-	SeekbarBackground.SetLocalPosition( PixelPos( 78, 0, 2 ) );
-	SeekbarBackground.SetColor( Vector4f( 0.5333f, 0.5333f, 0.5333f, 1.0f ) );
-	SeekbarBackground.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, SeekbarBackgroundTexture, ScrubBarWidth + 6, 46 );
-	SeekbarBackground.AddComponent( &ScrubBar );
-
-	SeekbarProgress.AddToMenu( guiSys, PlaybackControlsMenu, &SeekbarBackground );
-	SeekbarProgress.SetLocalPosition( PixelPos( 0, 0, 1 ) );
-	SeekbarProgress.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, SeekbarProgressTexture, ScrubBarWidth, 40 );
-	SeekbarProgress.GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
-
-	CurrentTime.AddToMenu( guiSys, PlaybackControlsMenu, &SeekbarBackground );
-	CurrentTime.SetLocalPosition( PixelPos( -234, 52, 2 ) );
-	CurrentTime.SetLocalScale( Vector3f( 1.0f ) );
-	CurrentTime.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, SeekPosition );
-	CurrentTime.SetText( "2:33:33" );
-	CurrentTime.SetTextOffset( PixelPos( 0, 6, 1 ) );
-	CurrentTime.SetFontScale( 0.71f );
-	CurrentTime.SetColor( Vector4f( 0 / 255.0f, 93 / 255.0f, 219 / 255.0f, 1.0f ) );
-	CurrentTime.SetTextColor( Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) );
-	CurrentTime.GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
-
-	SeekTime.AddToMenu( guiSys, PlaybackControlsMenu, &SeekbarBackground );
-	SeekTime.SetLocalPosition( PixelPos( -34, 52, 4 ) );
-	SeekTime.SetLocalScale( Vector3f( 1.0f ) );
-	SeekTime.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, SeekPosition );
-	SeekTime.SetText( "2:33:33" );
-	SeekTime.SetTextOffset( PixelPos( 0, 6, 1 ) );
-	SeekTime.SetFontScale( 0.71f );
-	SeekTime.SetColor( Vector4f( 47.0f / 255.0f, 70 / 255.0f, 89 / 255.0f, 1.0f ) );
-	SeekTime.SetTextColor( Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) );
-	SeekTime.GetMenuObject()->AddFlags( VRMenuObjectFlags_t( VRMENUOBJECT_DONT_HIT_ALL ) );
-
-	ScrubBar.SetWidgets( &SeekbarBackground, &SeekbarProgress, &CurrentTime, &SeekTime, ScrubBarWidth );
-	ScrubBar.SetOnClick( ScrubBarCallback, this );
-
-	SeekbarBackground.SetVisible(false);
-//*/
-
 
  	MouseMenuButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
  	MouseMenuButton.SetLocalPosition( PixelPos( -450, 0, 1 ) );
@@ -507,17 +519,31 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
 	ButtonOff.SetOnClick( OffCallback, this);
 	ButtonOff.SetIsSelected( OffActiveCallback, this);
 
-	ButtonXSensitivity.AddToMenu( guiSys, PlaybackControlsMenu, MouseMenu );
-	ButtonXSensitivity.SetLocalPosition( PixelPos( MENU_X * -1, MENU_Y * 2, 1 ) );
-	ButtonXSensitivity.SetText( CinemaStrings::ButtonText_ButtonXSensitivity );
-	TextButtonHelper(ButtonXSensitivity);
-	ButtonXSensitivity.SetOnClick( XSensitivityCallback, this);
+	GazeScale.AddToMenu( guiSys, PlaybackControlsMenu, MouseMenu );
+	GazeScale.SetLocalPosition( PixelPos( MENU_X * -1, MENU_Y * 2, 1 ) );
+	GazeScale.SetText( CinemaStrings::ButtonText_LabelGazeScale );
+	GazeScale.SetLocalScale( Vector3f( 1.0f ) );
+	GazeScale.SetFontScale( 1.0f );
+	GazeScale.SetColor( Vector4f( 0.0f, 0.0f, 0.0f, 1.0f ) );
+	GazeScale.SetTextColor( Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) );
+	GazeScale.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 300, 80 );
+	SetUpSlider(guiSys, MouseMenu, GazeSlider, GazeSliderBackground, GazeSliderIndicator, GazeCurrentSetting, GazeNewSetting, 300, MENU_X * -1, MENU_Y * 3);
+	GazeSlider.SetOnClick( GazeScaleCallback, this );
+	GazeSlider.SetExtents(1.58,0.7,2);
+	GazeSlider.SetValue(gazeScaleValue);
 
-	ButtonYSensitivity.AddToMenu( guiSys, PlaybackControlsMenu, MouseMenu );
-	ButtonYSensitivity.SetLocalPosition( PixelPos( MENU_X * 1, MENU_Y * 2, 1 ) );
-	ButtonYSensitivity.SetText( CinemaStrings::ButtonText_ButtonYSensitivity );
-	TextButtonHelper(ButtonYSensitivity);
-	ButtonYSensitivity.SetOnClick( YSensitivityCallback, this);
+	TrackpadScale.AddToMenu( guiSys, PlaybackControlsMenu, MouseMenu );
+	TrackpadScale.SetLocalPosition( PixelPos( MENU_X * 1, MENU_Y * 2, 1 ) );
+	TrackpadScale.SetText( CinemaStrings::ButtonText_LabelTrackpadScale );
+	TrackpadScale.SetLocalScale( Vector3f( 1.0f ) );
+	TrackpadScale.SetFontScale( 1.0f );
+	TrackpadScale.SetColor( Vector4f( 0.0f, 0.0f, 0.0f, 1.0f ) );
+	TrackpadScale.SetTextColor( Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) );
+	TrackpadScale.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 300, 80 );
+	SetUpSlider(guiSys, MouseMenu, TrackpadSlider, TrackpadSliderBackground, TrackpadSliderIndicator, TrackpadCurrentSetting, TrackpadNewSetting, 300,  MENU_X * 1, MENU_Y * 3);
+	TrackpadSlider.SetOnClick( TrackpadScaleCallback, this );
+	TrackpadSlider.SetExtents(4.0,0.25,2);
+	TrackpadSlider.SetValue(trackpadScaleValue);
 
 	StreamMenu = new UIContainer( Cinema );
 	StreamMenu->AddToMenu( guiSys, PlaybackControlsMenu, &PlaybackControlsScale );
@@ -565,28 +591,45 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
 	ScreenMenu->SetVisible(false);
 
 	ButtonSBS.AddToMenu( guiSys, PlaybackControlsMenu, ScreenMenu );
-	ButtonSBS.SetLocalPosition( PixelPos( MENU_X * -1, MENU_Y * 1, 1 ) );
+	ButtonSBS.SetLocalPosition( PixelPos( MENU_X * -2, MENU_Y * 2.25, 1 ) );
 	ButtonSBS.SetText( CinemaStrings::ButtonText_ButtonSBS );
 	TextButtonHelper(ButtonSBS);
 	ButtonSBS.SetOnClick( SBSCallback, this);
 
 	ButtonChangeSeat.AddToMenu( guiSys, PlaybackControlsMenu, ScreenMenu );
-	ButtonChangeSeat.SetLocalPosition( PixelPos( MENU_X * 1, MENU_Y * 1, 1 ) );
+	ButtonChangeSeat.SetLocalPosition( PixelPos( MENU_X * -2, MENU_Y * 1.25, 1 ) );
 	ButtonChangeSeat.SetText( CinemaStrings::ButtonText_ButtonChangeSeat );
 	TextButtonHelper(ButtonChangeSeat);
 	ButtonChangeSeat.SetOnClick( ChangeSeatCallback, this);
+	ButtonChangeSeat.SetIsEnabled( IsChangeSeatsEnabledCallback, this );
 
-	ButtonDistance.AddToMenu( guiSys, PlaybackControlsMenu, ScreenMenu );
-	ButtonDistance.SetLocalPosition( PixelPos( MENU_X * -1, MENU_Y * 2, 1 ) );
-	ButtonDistance.SetText( CinemaStrings::ButtonText_ButtonDistance );
-	TextButtonHelper(ButtonDistance);
-	ButtonDistance.SetOnClick( DistanceCallback, this);
+	ScreenDistance.AddToMenu( guiSys, PlaybackControlsMenu, ScreenMenu );
+	ScreenDistance.SetLocalPosition( PixelPos( MENU_X * -0.5, MENU_Y * 1.25, 1 ) );
+	ScreenDistance.SetText( CinemaStrings::ButtonText_ButtonDistance );
+	ScreenDistance.SetLocalScale( Vector3f( 1.0f ) );
+	ScreenDistance.SetFontScale( 1.0f );
+	ScreenDistance.SetColor( Vector4f( 0.0f, 0.0f, 0.0f, 1.0f ) );
+	ScreenDistance.SetTextColor( Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) );
+	ScreenDistance.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 240, 80 );
+	//ScreenDistance.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
+	SetUpSlider(guiSys, ScreenMenu, DistanceSlider, DistanceSliderBackground, DistanceSliderIndicator, DistanceCurrentSetting, DistanceNewSetting, 800, MENU_X * 2, MENU_Y * 1.25);
+	DistanceSlider.SetOnClick( DistanceCallback, this );
+	DistanceSlider.SetExtents(3.0,0.1,2);
+	DistanceSlider.SetValue(Cinema.SceneMgr.FreeScreenDistance);
 
-	ButtonSize.AddToMenu( guiSys, PlaybackControlsMenu, ScreenMenu );
-	ButtonSize.SetLocalPosition( PixelPos( MENU_X * 1, MENU_Y * 2, 1 ) );
-	ButtonSize.SetText( CinemaStrings::ButtonText_ButtonSize );
-	TextButtonHelper(ButtonSize);
-	ButtonSize.SetOnClick( SizeCallback, this);
+	ScreenSize.AddToMenu( guiSys, PlaybackControlsMenu, ScreenMenu );
+	ScreenSize.SetLocalPosition( PixelPos( MENU_X * -0.5, MENU_Y * 2.25 , 1 ) );
+	ScreenSize.SetText( CinemaStrings::ButtonText_ButtonSize );
+	ScreenSize.SetLocalScale( Vector3f( 1.0f ) );
+	ScreenSize.SetFontScale( 1.0f );
+	ScreenSize.SetColor( Vector4f( 0.0f, 0.0f, 0.0f, 1.0f ) );
+	ScreenSize.SetTextColor( Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) );
+	ScreenSize.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 240, 80 );
+	//ScreenSize.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
+	SetUpSlider(guiSys, ScreenMenu, SizeSlider, SizeSliderBackground, SizeSliderIndicator, SizeCurrentSetting, SizeNewSetting, 800, MENU_X * 2, MENU_Y * 2.25);
+	SizeSlider.SetOnClick( SizeCallback, this );
+	SizeSlider.SetExtents(4.0,-3.0,2);
+	SizeSlider.SetValue(Cinema.SceneMgr.FreeScreenScale);
 
 	ControllerMenu = new UIContainer( Cinema );
 	ControllerMenu->AddToMenu( guiSys, PlaybackControlsMenu, &PlaybackControlsScale );
@@ -598,18 +641,21 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
 	ButtonSpeed.SetText( CinemaStrings::ButtonText_ButtonSpeed );
 	TextButtonHelper(ButtonSpeed);
 	ButtonSpeed.SetOnClick( SpeedCallback, this);
+	ButtonSpeed.SetIsEnabled( DisableButton, this );
 
 	ButtonComfortMode.AddToMenu( guiSys, PlaybackControlsMenu, ControllerMenu );
 	ButtonComfortMode.SetLocalPosition( PixelPos( MENU_X * 1, MENU_Y * 1, 1 ) );
 	ButtonComfortMode.SetText( CinemaStrings::ButtonText_ButtonComfortMode );
 	TextButtonHelper(ButtonComfortMode);
 	ButtonComfortMode.SetOnClick( ComfortModeCallback, this);
+	ButtonComfortMode.SetIsEnabled( DisableButton, this );
 
 	ButtonMapKeyboard.AddToMenu( guiSys, PlaybackControlsMenu, ControllerMenu );
 	ButtonMapKeyboard.SetLocalPosition( PixelPos( MENU_X * -1, MENU_Y * 2, 1 ) );
 	ButtonMapKeyboard.SetText( CinemaStrings::ButtonText_ButtonMapKeyboard );
 	TextButtonHelper(ButtonMapKeyboard);
 	ButtonMapKeyboard.SetOnClick( MapKeyboardCallback, this);
+	ButtonMapKeyboard.SetIsEnabled( DisableButton, this );
 
 //*/
 }
@@ -620,8 +666,6 @@ void MoviePlayerView::OnOpen()
 	CurViewState = VIEWSTATE_OPEN;
 
 	Cinema.SceneMgr.ClearMovie();
-
-	ScrubBar.SetProgress( 0.0f );
 
 	RepositionScreen = false;
 	MoveScreenAlpha.Set( 0, 0, 0, 0.0f );
@@ -685,7 +729,6 @@ bool MoviePlayerView::Command( const char * msg )
 
 void MoviePlayerView::MovieLoaded( const int width, const int height, const int duration )
 {
-	ScrubBar.SetDuration( duration );
 }
 
 void MoviePlayerView::SetError( const char *text, bool showSDCard, bool showErrorIcon )
@@ -862,7 +905,7 @@ Vector2f MoviePlayerView::GazeCoordinatesOnScreen( const Matrix4f & viewMatrix, 
 	const Vector3f viewForward = MatrixForward( viewMatrix ).Normalized();
 
 	Vector3f screenForward;
-	if ( Cinema.SceneMgr.FreeScreenActive )
+	if (1 || Cinema.SceneMgr.FreeScreenActive )
 	{
 		// FIXME: free screen matrix is inverted compared to bounds screen matrix.  (MGH: No, everything's backwards!)
 		screenForward = -Vector3f( screenMatrix.M[0][2], screenMatrix.M[1][2], screenMatrix.M[2][2] ).Normalized();
@@ -902,7 +945,7 @@ void MoviePlayerView::HandleGazeMouse( const VrFrame & vrFrame, bool onscreen, c
 		Vector2f travel = screenCursor - lastMouse;
 		if(travel.x != 0.0 && travel.y != 0.0)
 		{
-			Native::MouseMove(Cinema.app, 1280 / 2 * 1.2 * travel.x, 720 / -2 * 1.2 * travel.y );
+			Native::MouseMove(Cinema.app, streamWidth / 2 * gazeScaleValue * travel.x, streamHeight / -2 * gazeScaleValue * travel.y );
 		}
 		lastMouse = screenCursor;
 	}
@@ -1022,7 +1065,7 @@ void MoviePlayerView::HandleTrackpadMouse( const VrFrame & vrFrame )
 		{
 			Vector2f travel = vrFrame.Input.touchRelative - lastMouse;
 			lastMouse = vrFrame.Input.touchRelative;
-			Native::MouseMove(Cinema.app, travel.x, travel.y );
+			Native::MouseMove(Cinema.app, travel.x * trackpadScaleValue, travel.y * trackpadScaleValue );
 		}
 		else
 		{
@@ -1148,11 +1191,6 @@ void MoviePlayerView::CarouselPressed()
 	Cinema.AppSelection( false );
 }
 
-void MoviePlayerView::ScrubBarClicked( const float progress )
-{
-
-}
-
 void MoviePlayerView::MouseMenuButtonPressed()
 {
 
@@ -1223,10 +1261,16 @@ bool MoviePlayerView::OffActive()
 	return mouseMode == MOUSE_OFF;
 }
 
-void MoviePlayerView::XSensitivityPressed()
-{}
-void MoviePlayerView::YSensitivityPressed()
-{}
+void MoviePlayerView::GazeScalePressed(const float value)
+{
+	gazeScaleValue = value;
+	GazeSlider.SetValue( value );
+}
+void MoviePlayerView::TrackpadScalePressed(const float value)
+{
+	trackpadScaleValue = value;
+	TrackpadSlider.SetValue( value );
+}
 
 // Stream controls
 void MoviePlayerView::Button1080p60Pressed()
@@ -1274,7 +1318,27 @@ void MoviePlayerView::HostAudioPressed()
 	Cinema.StartMoviePlayback(streamWidth, streamHeight, streamFPS, streamHostAudio);
 }
 void MoviePlayerView::SBSPressed()
-{}
+{
+	switch(Cinema.SceneMgr.CurrentMovieFormat)
+	{
+	case VT_2D:
+		Cinema.SceneMgr.CurrentMovieFormat = VT_LEFT_RIGHT_3D;
+		Cinema.SceneMgr.CurrentMovieWidth /= 2;
+		break;
+	case VT_LEFT_RIGHT_3D:
+		Cinema.SceneMgr.CurrentMovieFormat = VT_LEFT_RIGHT_3D_CROP;
+		Cinema.SceneMgr.CurrentMovieWidth *= 2;
+		break;
+	case VT_LEFT_RIGHT_3D_CROP:
+		Cinema.SceneMgr.CurrentMovieFormat = VT_LEFT_RIGHT_3D_FULL;
+		break;
+	case VT_LEFT_RIGHT_3D_FULL:
+		Cinema.SceneMgr.CurrentMovieFormat = VT_2D;
+		break;
+	default:
+		Cinema.SceneMgr.CurrentMovieFormat = VT_2D;
+	}
+}
 
 bool MoviePlayerView::Button1080p60IsSelected()
 {
@@ -1303,10 +1367,21 @@ void MoviePlayerView::ChangeSeatPressed()
 {
 	Cinema.SceneMgr.NextSeat();
 }
-void MoviePlayerView::DistancePressed()
-{}
-void MoviePlayerView::SizePressed()
-{}
+void MoviePlayerView::DistancePressed( const float value)
+{
+	Cinema.SceneMgr.FreeScreenDistance =  value;
+	DistanceSlider.SetValue( value );
+}
+void MoviePlayerView::SizePressed( const float value)
+{
+	Cinema.SceneMgr.FreeScreenScale = value;
+	SizeSlider.SetValue( value );
+}
+
+bool MoviePlayerView::IsChangeSeatsEnabled()
+{
+	return Cinema.SceneMgr.SceneSeatCount > 1;
+}
 
 // Controller... controls?
 void MoviePlayerView::SpeedPressed()
@@ -1321,8 +1396,6 @@ void MoviePlayerView::UpdateMenus()
 	ButtonGaze.UpdateButtonState();
 	ButtonTrackpad.UpdateButtonState();
 	ButtonOff.UpdateButtonState();
-	ButtonXSensitivity.UpdateButtonState();
-	ButtonYSensitivity.UpdateButtonState();
 
 	Button1080p60.UpdateButtonState();
 	Button1080p30.UpdateButtonState();
@@ -1332,8 +1405,6 @@ void MoviePlayerView::UpdateMenus()
 
 	ButtonSBS.UpdateButtonState();
 	ButtonChangeSeat.UpdateButtonState();
-	ButtonDistance.UpdateButtonState();
-	ButtonSize.UpdateButtonState();
 
 	ButtonSpeed.UpdateButtonState();
 	ButtonComfortMode.UpdateButtonState();
@@ -1475,7 +1546,7 @@ eMsgStatus ControlsGazeTimer::OnEvent_Impl( OvrGuiSys & guiSys, VrFrame const & 
 
 /*************************************************************************************/
 
-ScrubBarComponent::ScrubBarComponent() :
+SliderComponent::SliderComponent() :
 	VRMenuComponent( VRMenuEventFlags_t( VRMENU_EVENT_TOUCH_DOWN ) |
 		VRMENU_EVENT_TOUCH_DOWN |
 		VRMENU_EVENT_FRAME_UPDATE |
@@ -1484,7 +1555,8 @@ ScrubBarComponent::ScrubBarComponent() :
 	HasFocus( false ),
 	TouchDown( false ),
 	Progress( 0.0f ),
-	Duration( 0 ),
+	Max(1.0),
+	Min(0.0),
 	Background( NULL ),
 	ScrubBar( NULL ),
 	CurrentTime( NULL ),
@@ -1495,20 +1567,27 @@ ScrubBarComponent::ScrubBarComponent() :
 {
 }
 
-void ScrubBarComponent::SetDuration( const int duration )
+void SliderComponent::SetExtents( const float max, const float min, const int sigfigs )
 {
-	Duration = duration;
+	Max = max;
+	Min = min;
+	SigFigs = sigfigs;
 
 	SetProgress( Progress );
 }
 
-void ScrubBarComponent::SetOnClick( void ( *callback )( ScrubBarComponent *, void *, float ), void *object )
+float SliderComponent::ScaleValue(const float value)
+{
+	return Min + (Max - Min) * value;
+}
+
+void SliderComponent::SetOnClick( void ( *callback )( SliderComponent *, void *, float ), void *object )
 {
 	OnClickFunction = callback;
 	OnClickObject = object;
 }
 
-void ScrubBarComponent::SetWidgets( UIWidget *background, UIWidget *scrubBar, UILabel *currentTime, UILabel *seekTime, const int scrubBarWidth )
+void SliderComponent::SetWidgets( UIWidget *background, UIWidget *scrubBar, UILabel *currentTime, UILabel *seekTime, const int scrubBarWidth )
 {
 	Background 		= background;
 	ScrubBar 		= scrubBar;
@@ -1519,7 +1598,15 @@ void ScrubBarComponent::SetWidgets( UIWidget *background, UIWidget *scrubBar, UI
 	SeekTime->SetVisible( false );
 }
 
-void ScrubBarComponent::SetProgress( const float progress )
+void SliderComponent::SetValue( const float value )
+{
+	float prog = (value - Min) / (Max - Min) ;
+	if(prog>1.0) prog = 1.0;
+	if(prog<0.0) prog = 0.0;
+	SetProgress( prog );
+}
+
+void SliderComponent::SetProgress( const float progress )
 {
 	Progress = progress;
 	const float seekwidth = ScrubBarWidth * progress;
@@ -1533,32 +1620,30 @@ void ScrubBarComponent::SetProgress( const float progress )
 	pos = CurrentTime->GetLocalPosition();
 	pos.x = PixelScale( ScrubBarWidth * -0.5f + seekwidth );
 	CurrentTime->SetLocalPosition( pos );
-	SetTimeText( CurrentTime, Duration * progress );
+	SetText( CurrentTime, ScaleValue(progress) );
 }
 
-void ScrubBarComponent::SetTimeText( UILabel *label, const int time )
+void SliderComponent::SetText( UILabel *label, const float value )
 {
-	int seconds = time / 1000;
-	int minutes = seconds / 60;
-	int hours = minutes / 60;
-	seconds = seconds % 60;
-	minutes = minutes % 60;
-
-	if ( hours > 0 )
+	if( SigFigs == 0 )
 	{
-		label->SetText( StringUtils::Va( "%d:%02d:%02d", hours, minutes, seconds ) );
+		label->SetText( StringUtils::Va( "%d", (int) value ) );
 	}
-	else if ( minutes > 0 )
-	{
-		label->SetText( StringUtils::Va( "%d:%02d", minutes, seconds ) );
+	else if( SigFigs < 0 )
+	{ // Hex, just for fun
+		label->SetText( StringUtils::Va( "%#x", (int) value ) );
+	}
+	else if( SigFigs > 1000)
+	{ // Why are you adjusting numbers large enough to need exponent notation with a slider?
+		label->SetText( StringUtils::Va( "%.*g", SigFigs - 1000, value ) );
 	}
 	else
 	{
-		label->SetText( StringUtils::Va( "0:%02d", seconds ) );
+		label->SetText( StringUtils::Va( "%.*f", SigFigs, value ) );
 	}
 }
 
-eMsgStatus ScrubBarComponent::OnEvent_Impl( OvrGuiSys & guiSys, VrFrame const & vrFrame,
+eMsgStatus SliderComponent::OnEvent_Impl( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
     switch( event.EventType )
@@ -1585,7 +1670,7 @@ eMsgStatus ScrubBarComponent::OnEvent_Impl( OvrGuiSys & guiSys, VrFrame const & 
     }
 }
 
-eMsgStatus ScrubBarComponent::OnFrame( OvrGuiSys & guiSys, VrFrame const & vrFrame,
+eMsgStatus SliderComponent::OnFrame( OvrGuiSys & guiSys, VrFrame const & vrFrame,
         VRMenuObject * self, VRMenuEvent const & event )
 {
 	if ( TouchDown )
@@ -1619,14 +1704,14 @@ eMsgStatus ScrubBarComponent::OnFrame( OvrGuiSys & guiSys, VrFrame const & vrFra
 			pos.x = PixelScale( ScrubBarWidth * -0.5f + seekwidth );
 			SeekTime->SetLocalPosition( pos );
 
-			SetTimeText( SeekTime, Duration * progress );
+			SetText( SeekTime, ScaleValue(progress) );
 		}
 	}
 
 	return MSG_STATUS_ALIVE;
 }
 
-void ScrubBarComponent::OnClick( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuEvent const & event )
+void SliderComponent::OnClick( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuEvent const & event )
 {
 	if ( OnClickFunction == NULL )
 	{
@@ -1643,7 +1728,7 @@ void ScrubBarComponent::OnClick( OvrGuiSys & guiSys, VrFrame const & vrFrame, VR
 	const float progress = ( localHit.x - bounds.GetMins().x ) / bounds.GetSize().x;
 	if ( ( progress >= 0.0f ) && ( progress <= 1.0f ) )
 	{
-		( *OnClickFunction )( this, OnClickObject, progress );
+		( *OnClickFunction )( this, OnClickObject, ScaleValue(progress) );
 	}
 }
 

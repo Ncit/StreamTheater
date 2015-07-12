@@ -56,10 +56,10 @@ String CinemaStrings::ButtonText_ButtonSBS;
 String CinemaStrings::ButtonText_ButtonChangeSeat;
 String CinemaStrings::ButtonText_ButtonGaze;
 String CinemaStrings::ButtonText_ButtonTrackpad;
-String CinemaStrings::ButtonText_ButtonYSensitivity;
+String CinemaStrings::ButtonText_LabelTrackpadScale;
 String CinemaStrings::ButtonText_Button1080p60;
 String CinemaStrings::ButtonText_ButtonOff;
-String CinemaStrings::ButtonText_ButtonXSensitivity;
+String CinemaStrings::ButtonText_LabelGazeScale;
 
 void CinemaStrings::OneTimeInit( CinemaApp &cinema )
 {
@@ -101,10 +101,10 @@ void CinemaStrings::OneTimeInit( CinemaApp &cinema )
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonChangeSeat", 	"@string/ButtonText_ButtonChangeSeat", 		ButtonText_ButtonChangeSeat );
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonGaze",	 	"@string/ButtonText_ButtonGaze", 			ButtonText_ButtonGaze );
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonTrackpad", 	"@string/ButtonText_ButtonTrackpad", 		ButtonText_ButtonTrackpad );
-	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonYSensitivity","@string/ButtonText_ButtonYSensitivity", 	ButtonText_ButtonYSensitivity );
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_Button1080p60", 	"@string/ButtonText_Button1080p60", 		ButtonText_Button1080p60 );
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonOff", 		"@string/ButtonText_ButtonOff", 			ButtonText_ButtonOff );
-	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonXSensitivity","@string/ButtonText_ButtonXSensitivity", 	ButtonText_ButtonXSensitivity );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_LabelGazeScale",	"@string/ButtonText_LabelGazeScale", 		ButtonText_LabelGazeScale );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_LabelTrackpadScale","@string/ButtonText_LabelTrackpadScale", 	ButtonText_LabelTrackpadScale );
 
 }
 

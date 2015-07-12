@@ -733,7 +733,7 @@ bool SceneManager::Command( const char * msg )
 				break;
 		}
 
-		Cinema.MovieLoaded( CurrentMovieWidth, CurrentMovieHeight, MovieDuration );
+		//Cinema.MovieLoaded( CurrentMovieWidth, CurrentMovieHeight, MovieDuration );
 
 		// Create the texture that we will mip map from the external image
 		for ( int i = 0 ; i < 3 ; i++ )
@@ -881,6 +881,17 @@ Matrix4f SceneManager::DrawEyeView( const int eye, const float fovDegrees )
 			0, 0, 1, 0,
 			0, 0, 0, 1 );
 
+	const Matrix4f cropRight(
+			0.5f, 0, 0, 0.5f,
+			0, 0.5f, 0, 0.25f,
+			0, 0, 1, 0,
+			0, 0, 0, 1 );
+	const Matrix4f cropLeft(
+			0.5f, 0, 0, 0,
+			0, 0.5f, 0, 0.25f,
+			0, 0, 1, 0,
+			0, 0, 0, 1 );
+
 	const Matrix4f rotate90(
 			0, 1, 0, 0,
 			-1, 0, 0, 1,
@@ -903,6 +914,9 @@ Matrix4f SceneManager::DrawEyeView( const int eye, const float fovDegrees )
 
 	switch ( CurrentMovieFormat )
 	{
+		case VT_LEFT_RIGHT_3D_CROP:
+			texMatrix = ( stereoEye ? cropRight : cropLeft );
+			break;
 		case VT_LEFT_RIGHT_3D:
 		case VT_LEFT_RIGHT_3D_FULL:
 			texMatrix = ( stereoEye ? stretchRight : stretchLeft );
@@ -1033,7 +1047,7 @@ Matrix4f SceneManager::Frame( const VrFrame & vrFrame )
 		FrameUpdateNeeded = false;
 		CurrentMipMappedMovieTexture = (CurrentMipMappedMovieTexture+1)%3;
 		glActiveTexture( GL_TEXTURE1 );
-		if ( CurrentMovieFormat == VT_LEFT_RIGHT_3D || CurrentMovieFormat == VT_LEFT_RIGHT_3D_FULL )
+		if ( CurrentMovieFormat == VT_LEFT_RIGHT_3D || CurrentMovieFormat == VT_LEFT_RIGHT_3D_CROP || CurrentMovieFormat == VT_LEFT_RIGHT_3D_FULL )
 		{
 			glBindTexture( GL_TEXTURE_2D, ScreenVignetteSbsTexture );
 		}

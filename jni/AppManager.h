@@ -32,6 +32,7 @@ enum MovieFormat
 	VT_UNKNOWN,
 	VT_2D,
 	VT_LEFT_RIGHT_3D,			// Left & right are scaled horizontally by 50%.
+	VT_LEFT_RIGHT_3D_CROP,		// Left & right are unscaled but top and bottom 25% need to be cropped
 	VT_LEFT_RIGHT_3D_FULL,		// Left & right are unscaled.
 	VT_TOP_BOTTOM_3D,			// Top & bottom are scaled vertically by 50%.
 	VT_TOP_BOTTOM_3D_FULL,		// Top & bottom are unscaled.

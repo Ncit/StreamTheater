@@ -75,20 +75,22 @@ private:
 									VRMenuObject * self, VRMenuEvent const & event );
 };
 
-class ScrubBarComponent : public VRMenuComponent
+class SliderComponent : public VRMenuComponent
 {
 public:
 	static const int 		TYPE_ID = 152414;
 
-							ScrubBarComponent();
+							SliderComponent();
 
 	virtual int				GetTypeId() const { return TYPE_ID; }
 
-	void					SetDuration( const int duration );
-	void					SetOnClick( void ( *callback )( ScrubBarComponent *, void *, float ), void *object );
+	void					SetExtents( const float max, const float min, const int sigfigs );
+	void					SetOnClick( void ( *callback )( SliderComponent *, void *, float ), void *object );
 	void					SetWidgets( UIWidget *background, UIWidget *scrubBar, UILabel *currentTime, UILabel *seekTime, const int scrubBarWidth );
 	void 					SetProgress( const float progress );
+	void					SetValue( const float value );
 
+	float					ScaleValue(const float value);
 	bool					IsScrubbing() const { return TouchDown; }
 
 private:
@@ -96,7 +98,9 @@ private:
 	bool					TouchDown;
 
 	float					Progress;
-	int						Duration;
+	float					Max;
+	float					Min;
+	int						SigFigs;
 
 	UIWidget *				Background;
 	UIWidget *				ScrubBar;
@@ -104,7 +108,7 @@ private:
 	UILabel *				SeekTime;
 	int 					ScrubBarWidth;
 
-	void 					( *OnClickFunction )( ScrubBarComponent *button, void *object, float progress );
+	void 					( *OnClickFunction )( SliderComponent *button, void *object, float progress );
 	void *					OnClickObject;
 
 private:
@@ -116,7 +120,7 @@ private:
 
 	void 					OnClick( OvrGuiSys & guiSys, VrFrame const & vrFrame, VRMenuEvent const & event );
 
-	void 					SetTimeText( UILabel *label, const int time );
+	void 					SetText( UILabel *label, const float value );
 };
 
 class MoviePlayerView : public View
@@ -149,9 +153,6 @@ private:
 	bool					uiActive;
 
 	bool					RepositionScreen;
-
-	static const int		MaxSeekSpeed;
-	static const int 		ScrubBarWidth;
 
 	static const double 	GazeTimeTimeout;
 
@@ -199,13 +200,6 @@ private:
 	UIButton				FastForwardButton;
 	UIButton				CarouselButton;
 
-	UIImage					SeekbarBackground;
-	UIImage					SeekbarProgress;
-	ScrubBarComponent 		ScrubBar;
-
-	UILabel 				CurrentTime;
-	UILabel 				SeekTime;
-
 	UITexture				MouseTexture;
 	UITexture				MouseHoverTexture;
 	UITexture				MousePressedTexture;
@@ -227,8 +221,19 @@ private:
 	UITextButton			ButtonGaze;
 	UITextButton			ButtonTrackpad;
 	UITextButton			ButtonOff;
-	UITextButton			ButtonXSensitivity;
-	UITextButton			ButtonYSensitivity;
+	UILabel					GazeScale;
+	UIImage					GazeSliderBackground;
+	UIImage					GazeSliderIndicator;
+	UILabel 				GazeCurrentSetting;
+	UILabel 				GazeNewSetting;
+	SliderComponent 		GazeSlider;
+
+	UILabel					TrackpadScale;
+	UIImage					TrackpadSliderBackground;
+	UIImage					TrackpadSliderIndicator;
+	UILabel 				TrackpadCurrentSetting;
+	UILabel 				TrackpadNewSetting;
+	SliderComponent 		TrackpadSlider;
 
 	UIButton				StreamMenuButton;
 	UIContainer *			StreamMenu;
@@ -242,8 +247,20 @@ private:
 	UIContainer *			ScreenMenu;
 	UITextButton			ButtonSBS;
 	UITextButton			ButtonChangeSeat;
-	UITextButton			ButtonDistance;
-	UITextButton			ButtonSize;
+
+	UILabel					ScreenDistance;
+	UIImage					DistanceSliderBackground;
+	UIImage					DistanceSliderIndicator;
+	UILabel 				DistanceCurrentSetting;
+	UILabel 				DistanceNewSetting;
+	SliderComponent 		DistanceSlider;
+
+	UILabel					ScreenSize;
+	UIImage					SizeSliderBackground;
+	UIImage					SizeSliderIndicator;
+	UILabel 				SizeCurrentSetting;
+	UILabel 				SizeNewSetting;
+	SliderComponent 		SizeSlider;
 
 	UIButton				ControllerMenuButton;
 	UIContainer *			ControllerMenu;
@@ -266,6 +283,8 @@ private:
 	bool					mouseDownMiddle;
 
 	MouseMode				mouseMode;
+	float					gazeScaleValue;
+	float					trackpadScaleValue;
 
 	int						streamWidth;
 	int 					streamHeight;
@@ -274,6 +293,8 @@ private:
 
 private:
 	void					TextButtonHelper(UITextButton& button);
+	void					SetUpSlider(OvrGuiSys & guiSys, UIWidget *parent, SliderComponent& scrub, UIImage& bg,
+								UIImage& ind, UILabel& cur, UILabel& set, int slideWidth, int xoff, int yoff);
 	void 					CreateMenu( OvrGuiSys & guiSys );
 
 	void					BackPressed();
@@ -286,8 +307,6 @@ private:
 	friend void 			FastForwardPressedCallback( UIButton *button, void *object );
 	void					CarouselPressed();
 	friend void 			CarouselPressedCallback( UIButton *button, void *object );
-	void					ScrubBarClicked( const float progress );
-	friend void				ScrubBarCallback( ScrubBarComponent *, void *, float );
 
 	friend void		MouseMenuButtonCallback( UIButton *button, void *object );
 	void			MouseMenuButtonPressed();
@@ -304,10 +323,10 @@ private:
 	void			TrackpadPressed();
 	friend void		OffCallback( UITextButton *button, void *object );
 	void			OffPressed();
-	friend void		XSensitivityCallback( UITextButton *button, void *object );
-	void			XSensitivityPressed();
-	friend void		YSensitivityCallback( UITextButton *button, void *object );
-	void			YSensitivityPressed();
+	friend void		GazeScaleCallback( SliderComponent *button, void *object, const float value );
+	void			GazeScalePressed(const float value);
+	friend void		TrackpadScaleCallback( SliderComponent *button, void *object, const float value );
+	void			TrackpadScalePressed(const float value);
 
 	friend bool		GazeActiveCallback( UITextButton *button, void *object );
 	bool			GazeActive();
@@ -344,10 +363,13 @@ private:
 
 	friend void		ChangeSeatCallback( UITextButton *button, void *object );
 	void			ChangeSeatPressed();
-	friend void		DistanceCallback( UITextButton *button, void *object );
-	void			DistancePressed();
-	friend void		SizeCallback( UITextButton *button, void *object );
-	void			SizePressed();
+	friend void		DistanceCallback( SliderComponent *button, void *object, const float value );
+	void			DistancePressed( const float value);
+	friend void		SizeCallback( SliderComponent *button, void *object, const float value );
+	void			SizePressed( const float value);
+
+	friend bool		IsChangeSeatsEnabledCallback( UITextButton *button, void *object );
+	bool			IsChangeSeatsEnabled();
 
 
 	friend void		SpeedCallback( UITextButton *button, void *object );

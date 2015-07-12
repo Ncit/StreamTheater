@@ -64,10 +64,10 @@ public:
 	static String	ButtonText_ButtonChangeSeat;
 	static String	ButtonText_ButtonGaze;
 	static String	ButtonText_ButtonTrackpad;
-	static String	ButtonText_ButtonYSensitivity;
+	static String	ButtonText_LabelTrackpadScale;
 	static String	ButtonText_Button1080p60;
 	static String	ButtonText_ButtonOff;
-	static String	ButtonText_ButtonXSensitivity;
+	static String	ButtonText_LabelGazeScale;
 };
 
 } // namespace VRMatterStreamTheater
