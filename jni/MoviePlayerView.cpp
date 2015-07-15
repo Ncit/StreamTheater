@@ -408,9 +408,9 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
 	ScreenHoverTexture.LoadTextureFromApplicationPackage( "assets/screenbutton.png" );
 	ScreenPressedTexture.LoadTextureFromApplicationPackage( "assets/screenbutton.png" );
 
-	ControllerTexture.LoadTextureFromApplicationPackage( "assets/controllerbutton.png" );
-	ControllerHoverTexture.LoadTextureFromApplicationPackage( "assets/controllerbutton.png" );
-	ControllerPressedTexture.LoadTextureFromApplicationPackage( "assets/controllerbutton.png" );
+	ControllerTexture.LoadTextureFromApplicationPackage( "assets/exitbutton.png" );
+	ControllerHoverTexture.LoadTextureFromApplicationPackage( "assets/exitbutton.png" );
+	ControllerPressedTexture.LoadTextureFromApplicationPackage( "assets/exitbutton.png" );
 
     // ==============================================================================
     //
@@ -1223,13 +1223,23 @@ void MoviePlayerView::ScreenMenuButtonPressed()
 }
 void MoviePlayerView::ControllerMenuButtonPressed()
 {
-
-	Cinema.app->PlaySound( "touch_up" );
-	UpdateMenus();
-	MouseMenu->SetVisible(false);
-	StreamMenu->SetVisible(false);
-	ScreenMenu->SetVisible(false);
-	ControllerMenu->SetVisible(!ControllerMenu->GetVisible());
+	HideUI();
+	if ( Cinema.AllowTheaterSelection() )
+	{
+		LOG( "Opening TheaterSelection" );
+		Cinema.TheaterSelection();
+	}
+	else
+	{
+		LOG( "Opening MovieSelection" );
+		Cinema.AppSelection( true );
+	}
+//	Cinema.app->PlaySound( "touch_up" );
+//	UpdateMenus();
+//	MouseMenu->SetVisible(false);
+//	StreamMenu->SetVisible(false);
+//	ScreenMenu->SetVisible(false);
+//	ControllerMenu->SetVisible(!ControllerMenu->GetVisible());
 }
 
 // Mouse controls
