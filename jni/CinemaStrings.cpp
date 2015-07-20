@@ -61,6 +61,9 @@ String CinemaStrings::ButtonText_Button1080p60;
 String CinemaStrings::ButtonText_ButtonOff;
 String CinemaStrings::ButtonText_LabelGazeScale;
 
+String CinemaStrings::Error_UnknownHost;
+String CinemaStrings::Error_AddPCFailed;
+
 void CinemaStrings::OneTimeInit( CinemaApp &cinema )
 {
 	LOG( "CinemaStrings::OneTimeInit" );
@@ -106,6 +109,8 @@ void CinemaStrings::OneTimeInit( CinemaApp &cinema )
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_LabelGazeScale",	"@string/ButtonText_LabelGazeScale", 		ButtonText_LabelGazeScale );
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_LabelTrackpadScale","@string/ButtonText_LabelTrackpadScale", 	ButtonText_LabelTrackpadScale );
 
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/addpc_unknown_host",			"@string/addpc_unknown_host", 				Error_UnknownHost );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/addpc_fail",					"@string/addpc_fail", 						Error_AddPCFailed );
 }
 
 } // namespace VRMatterStreamTheater

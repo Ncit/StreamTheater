@@ -268,6 +268,24 @@ public class PcSelector {
         }).start();
     }
 
+    public int addPCbyIP(final String host)
+    {
+        try {
+            InetAddress addr = InetAddress.getByName(host);
+
+            if (!managerBinder.addComputerBlocking(addr))
+            {
+            	return 1;
+            }
+            else 
+            {
+                return 0;
+            }
+        } catch (UnknownHostException e) {
+            return 2;
+        }
+    }
+    
     private void updateComputer(ComputerDetails details) {
         int i = 0;
         boolean found = false;

@@ -26,6 +26,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "UI/UIContainer.h"
 #include "UI/UILabel.h"
 #include "UI/UIImage.h"
+#include "UI/UITextButton.h"
 
 using namespace OVR;
 
@@ -142,6 +143,19 @@ private:
 	bool								RepositionScreen;
 	bool								HadSelection;
 
+	int									newPCWidth;
+	int									newPCHeight;
+	GLuint								newPCTex;
+
+	UIContainer *						newPCMenu;
+	UITexture							bgTintTexture;
+	UIImage								newPCbg;
+	UILabel								newPCIPLabel;
+	Array<UITextButton*>				newPCIPButtons;
+	int 								IPoctets[4];
+	int									currentOctet;
+	String								IPString;
+
 private:
 	const PcDef *						GetSelectedPc() const;
 
@@ -155,6 +169,12 @@ private:
 	void								UpdateSelectionFrame( const VrFrame & vrFrame );
 
 	bool								ErrorShown() const;
+
+	friend void							NewPCIPButtonCallback( UITextButton *button, void *object );
+	void								NewPCIPButtonPressed( UITextButton *button);
+
+	bool								BackPressed();
+
 };
 
 } // namespace VRMatterStreamTheater

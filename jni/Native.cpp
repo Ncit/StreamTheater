@@ -126,6 +126,7 @@ static jmethodID 	pairPcMethodId = NULL;
 static jmethodID 	getPcPairStateMethodId = NULL;
 static jmethodID 	getPcStateMethodId = NULL;
 static jmethodID 	getPcReachabilityMethodId = NULL;
+static jmethodID	addPCbyIPMethodId = NULL;
 static jmethodID 	initAppSelectorMethodId = NULL;
 static jmethodID	mouseMoveMethodId = NULL;
 static jmethodID	mouseClickMethodId = NULL;
@@ -165,6 +166,7 @@ void Native::OneTimeInit( App *app, jclass mainActivityClass )
 	getPcPairStateMethodId 				= GetMethodID( app, mainActivityClass, "getPcPairState", "(Ljava/lang/String;)I" );
 	getPcStateMethodId 					= GetMethodID( app, mainActivityClass, "getPcState", "(Ljava/lang/String;)I" );
 	getPcReachabilityMethodId 			= GetMethodID( app, mainActivityClass, "getPcReachability", "(Ljava/lang/String;)I" );
+	addPCbyIPMethodId					= GetMethodID( app, mainActivityClass, "addPCbyIP", "(Ljava/lang/String;)I" );
 	initAppSelectorMethodId 			= GetMethodID( app, mainActivityClass, "initAppSelector", "(Ljava/lang/String;)V" );
 	mouseMoveMethodId 					= GetMethodID( app, mainActivityClass, "mouseMove", "(II)V" );
 	mouseClickMethodId 					= GetMethodID( app, mainActivityClass, "mouseClick", "(IZ)V" );
@@ -313,6 +315,14 @@ void Native::stopAppUpdates(App *app)
 void Native::startAppUpdates(App *app)
 {
 	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), startAppUpdatesMethodId );
+}
+
+int Native::addPCbyIP(App *app, const char* ip)
+{
+	jstring jstrIP = app->GetVrJni()->NewStringUTF( ip );
+	int result = app->GetVrJni()->CallIntMethod( app->GetJavaObject(), addPCbyIPMethodId, jstrIP );
+	app->GetVrJni()->DeleteLocalRef( jstrIP );
+	return result;
 }
 
 } // namespace VRMatterStreamTheater

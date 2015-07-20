@@ -68,6 +68,9 @@ public:
 	static String	ButtonText_Button1080p60;
 	static String	ButtonText_ButtonOff;
 	static String	ButtonText_LabelGazeScale;
+
+	static String	Error_UnknownHost;
+	static String	Error_AddPCFailed;
 };
 
 } // namespace VRMatterStreamTheater

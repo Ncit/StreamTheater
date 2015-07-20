@@ -497,6 +497,11 @@ public class MainActivity extends VrActivity implements SurfaceHolder.Callback,
 		return pcSelector.reachabilityStateFromUUID(compUUID);
 	}
 	
+	public int addPCbyIP(final String IP)
+	{
+		return pcSelector.addPCbyIP(IP);
+	}
+	
 	public void startPcUpdates()
 	{
 		pcSelector.startComputerUpdates();

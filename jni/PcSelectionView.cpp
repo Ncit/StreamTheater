@@ -89,7 +89,19 @@ PcSelectionView::PcSelectionView( CinemaApp &cinema ) :
 	MoviesIndex( 0 ),
 	LastMovieDisplayed( NULL ),
 	RepositionScreen( false ),
-	HadSelection( false )
+	HadSelection( false ),
+
+	newPCWidth( 0 ),
+	newPCHeight( 0 ),
+	newPCTex(),
+	newPCMenu( NULL ),
+	bgTintTexture(),
+	newPCbg( Cinema ),
+	newPCIPLabel( Cinema ),
+	newPCIPButtons(),
+	IPoctets(),
+	currentOctet(0),
+	IPString("0_.0.0.0")
 
 {
 	// This is called at library load time, so the system is not initialized
@@ -145,16 +157,8 @@ void PcSelectionView::OnOpen()
 	const double now = vrapi_GetTimeInSeconds();
 	SelectionFader.Set( now, 0, now + 0.1, 1.0f );
 
-	if ( Cinema.InLobby ) //TODO: Have this do stuff conditionally for whether we're in app selection
-	{
-		CategoryRoot->SetVisible( true );
-		Menu->SetFlags( VRMENU_FLAG_BACK_KEY_EXITS_APP );
-	}
-	else
-	{
-		CategoryRoot->SetVisible( false );
-		Menu->SetFlags( VRMenuFlags_t() );
-	}
+	CategoryRoot->SetVisible( true );
+	Menu->SetFlags( VRMENU_FLAG_SHORT_PRESS_HANDLED_BY_APP );
 
 	ResumeIcon->SetVisible( false );
 	TimerIcon->SetVisible( false );
@@ -190,6 +194,25 @@ bool PcSelectionView::Command( const char * msg )
 	return false;
 }
 
+bool PcSelectionView::BackPressed()
+{
+	if(ErrorShown())
+	{
+		ClearError();
+		return true;
+	}
+	if(newPCMenu->GetVisible())
+	{
+		newPCMenu->SetVisible(false);
+		IPoctets[0] = IPoctets[1] = IPoctets[2] = IPoctets[3] = 0;
+		currentOctet = 0;
+		IPString = "_.0.0.0";
+
+		return true;
+	}
+	return false;
+}
+
 bool PcSelectionView::OnKeyEvent( const int keyCode, const int repeatCount, const KeyEventType eventType )
 {
 	switch ( keyCode )
@@ -202,6 +225,9 @@ bool PcSelectionView::OnKeyEvent( const int keyCode, const int repeatCount, cons
 					LOG( "KEY_EVENT_DOUBLE_TAP" );
 					return true;
 					break;
+				case KEY_EVENT_SHORT_PRESS:
+					return BackPressed();
+					break;
 				default:
 					break;
 			}
@@ -211,6 +237,11 @@ bool PcSelectionView::OnKeyEvent( const int keyCode, const int repeatCount, cons
 }
 
 //=======================================================================================
+
+void NewPCIPButtonCallback( UITextButton *button, void *object )
+{
+	( ( PcSelectionView * )object )->NewPCIPButtonPressed(button);
+}
 
 void PcSelectionView::CreateMenu( OvrGuiSys & guiSys )
 {
@@ -229,6 +260,11 @@ void PcSelectionView::CreateMenu( OvrGuiSys & guiSys )
 	ResumeIconTexture.LoadTextureFromApplicationPackage( "assets/resume.png" );
 	ErrorIconTexture.LoadTextureFromApplicationPackage( "assets/error.png" );
 	SDCardTexture.LoadTextureFromApplicationPackage( "assets/sdcard.png" );
+
+	newPCTex = LoadTextureFromApplicationPackage(
+			"assets/generic_add_poster.png",
+			TextureFlags_t(TEXTUREFLAG_NO_DEFAULT), newPCWidth, newPCHeight);
+	bgTintTexture.LoadTextureFromApplicationPackage( "assets/backgroundTint.png" );
 
  	// ==============================================================================
 	//
@@ -522,6 +558,115 @@ void PcSelectionView::CreateMenu( OvrGuiSys & guiSys )
 	MoveScreenLabel->SetText( CinemaStrings::MoviePlayer_Reorient );
 	MoveScreenLabel->SetTextOffset( Vector3f( 0.0f, -24 * VRMenuObject::DEFAULT_TEXEL_SCALE, 0.0f ) );  // offset to be below gaze cursor
 	MoveScreenLabel->SetVisible( false );
+
+	// ==============================================================================
+	//
+	// IP Entry
+	//
+	newPCMenu= new UIContainer( Cinema );
+	newPCMenu->AddToMenu( guiSys, Menu );
+	newPCMenu->SetLocalPose( forward, Vector3f( 0.0f, 1.5f, -3.0f ) );
+	newPCMenu->SetVisible(false);
+
+	newPCbg.AddToMenu( guiSys, Menu, newPCMenu);
+	newPCbg.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, bgTintTexture, 550, 1000 );
+
+	newPCIPLabel.AddToMenu( guiSys, Menu, &newPCbg );
+	newPCIPLabel.SetLocalPosition( Vector3f( 0.0f, 0.8f, 0.1f ) );
+	newPCIPLabel.SetFontScale( 1.4f );
+	newPCIPLabel.SetText( IPString );
+	newPCIPLabel.SetTextOffset( Vector3f( 0.0f, 0.0f, 0.01f ) );
+	newPCIPLabel.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, bgTintTexture, 550, 120 );
+
+	const int numButtons = 13;
+	const char* buttons[numButtons] = {"7","8","9","4","5","6","1","2","3","0",".","<","Enter"};
+	int cols = 3;
+	newPCIPButtons.Resize(numButtons);
+	for(int i = 0; i < numButtons; i++ )
+	{
+		UITextButton *button = new UITextButton( Cinema );
+		button->AddToMenu( guiSys, Menu, &newPCbg );
+		button->SetLocalPosition( Vector3f( -0.3f + (i % cols) * 0.3f, 0.45f + (i / cols) * -0.3f, 0.15f ) );
+		button->SetText( buttons[i] );
+		button->SetLocalScale( Vector3f( 1.0f ) );
+		button->SetFontScale( 1.0f );
+		button->SetColor( Vector4f( 0.0f, 0.0f, 0.0f, 1.0f ) );
+		button->SetImage( 0, SURFACE_TEXTURE_DIFFUSE, bgTintTexture, 120, 120 );
+		button->SetOnClick( NewPCIPButtonCallback, this);
+		button->UpdateButtonState();
+		newPCIPButtons[i] = button;
+	}
+	newPCIPButtons[numButtons - 1]->SetImage( 0, SURFACE_TEXTURE_DIFFUSE, bgTintTexture, 320, 120 );
+	newPCIPButtons[numButtons - 1]->SetLocalPosition(Vector3f( 0.0f, 0.45f + ( (numButtons -1) / cols) * -0.3f, 0.15f ));
+
+}
+
+void PcSelectionView::NewPCIPButtonPressed( UITextButton *button)
+{
+	char bLabel = button->GetText()[0];
+
+	switch(bLabel)
+	{
+	case '<':
+		if( IPoctets[currentOctet] == 0 && currentOctet > 0) currentOctet--;
+		IPoctets[currentOctet] /= 10;
+		break;
+	case '.':
+		currentOctet++;
+		if(currentOctet > 3) currentOctet = 3;
+		break;
+	case 'E':
+		newPCMenu->SetVisible(false);
+		for(int i=0;i<=3;i++)
+		{
+			if( i != 0 ) IPString += ".";
+			IPString += StringUtils::Va( "%i", IPoctets[i] );
+			int error = Native::addPCbyIP(Cinema.app, IPString.ToCStr());
+			if ( error == 2 )
+			{
+				SetError( CinemaStrings::Error_UnknownHost.ToCStr(), false, false );
+			}
+			else if( error == 1 )
+			{
+				SetError( CinemaStrings::Error_AddPCFailed.ToCStr(), false, false );
+			}
+		}
+
+		IPoctets[0] = IPoctets[1] = IPoctets[2] = IPoctets[3] = 0;
+		currentOctet = 0;
+		break;
+	case '0':
+		if(IPoctets[currentOctet]==0)
+		{
+			currentOctet++;
+			if(currentOctet > 3) currentOctet = 3;
+		}
+	default: // numbers
+		int number = bLabel - '0';
+		if(IPoctets[currentOctet] * 10 + number > 255)
+		{
+			currentOctet++;
+			if(currentOctet > 3) currentOctet = 3;
+		}
+		if(IPoctets[currentOctet] * 10 + number <= 255)
+		{
+			IPoctets[currentOctet] = IPoctets[currentOctet] * 10 + number;
+		}
+		if(IPoctets[currentOctet] >= 26)
+		{
+			currentOctet++;
+			if(currentOctet > 3) currentOctet = 3;
+		}
+		break;
+	}
+	IPString = "";
+	for(int i=0;i<=3;i++)
+	{
+		if( i != 0 ) IPString += ".";
+		if( i != currentOctet || IPoctets[i] != 0) IPString += StringUtils::Va( "%i", IPoctets[i] );
+		if( i == currentOctet ) IPString += "_";
+	}
+	newPCIPLabel.SetText( IPString );
 }
 
 Vector3f PcSelectionView::ScalePosition( const Vector3f &startPos, const float scale, const float menuOffset ) const
@@ -574,6 +719,13 @@ void PcSelectionView::Select()
 
 	MoviesIndex = MovieBrowser->GetSelection();
 
+	if (MoviesIndex >= (int)MovieList.GetSize())
+	{
+		// open up manual IP entry menu
+		newPCMenu->SetVisible(true);
+		return;
+	}
+
 	Cinema.SetPc(MovieList[MoviesIndex]);
 
 	Native::stopPcUpdates(Cinema.app);
@@ -625,11 +777,21 @@ void PcSelectionView::SetPcList( const Array<const PcDef *> &movies, const PcDef
 		item->userFlags 	= 0;
 		MovieBrowserItems.PushBack( item );
 	}
+
+	CarouselItem *addPCitem		= new CarouselItem();
+	addPCitem->texture 			= newPCTex;
+	addPCitem->textureWidth 	= newPCWidth;
+	addPCitem->textureHeight	= newPCHeight;
+	addPCitem->userFlags 		= 0;
+	MovieBrowserItems.PushBack( addPCitem );
+
 	MovieBrowser->SetItems( MovieBrowserItems );
 
 	MovieTitle->SetText( "" );
 	LastMovieDisplayed = NULL;
 
+	if(MoviesIndex > MovieList.GetSizeI()) MoviesIndex = 0;
+	/*
 	MoviesIndex = 0;
 	if ( nextMovie != NULL )
 	{
@@ -645,8 +807,8 @@ void PcSelectionView::SetPcList( const Array<const PcDef *> &movies, const PcDef
 	}
 
 	MovieBrowser->SetSelectionIndex( MoviesIndex );
-
-	if ( MovieList.GetSize() == 0 )
+*/
+/*	if ( MovieList.GetSize() == 0 )
 	{
 		if ( CurrentCategory == CATEGORY_LIMELIGHT )
 		{
@@ -661,6 +823,7 @@ void PcSelectionView::SetPcList( const Array<const PcDef *> &movies, const PcDef
 	{
 		ClearError();
 	}
+	*/
 }
 
 void PcSelectionView::SetCategory( const PcCategory category )
@@ -708,7 +871,7 @@ void PcSelectionView::UpdatePcTitle()
 		}
 		else
 		{
-			MovieTitle->SetText( "" );
+			MovieTitle->SetText( "Add PC manually" );
 		}
 
 		LastMovieDisplayed = currentMovie;
@@ -821,6 +984,7 @@ void PcSelectionView::ClearError()
 	PlainErrorMessage->SetVisible( false );
 	TitleRoot->SetVisible( true );
 	MovieRoot->SetVisible( true );
+	CategoryRoot->SetVisible( true );
 
 	SwipeHintComponent::ShowSwipeHints = true;
 }
@@ -897,7 +1061,7 @@ Matrix4f PcSelectionView::Frame( const VrFrame & vrFrame )
 		}
 		else if ( ErrorMessageClicked && ( ( vrFrame.Input.buttonState & ( BUTTON_TOUCH | BUTTON_A ) ) == 0 ) )
 		{
-			Menu->Close();
+			ClearError();
 		}
 	}
 

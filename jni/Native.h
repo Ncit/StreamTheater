@@ -70,6 +70,8 @@ public:
     static void			startPcUpdates(App *app);
     static void			stopAppUpdates(App *app);
     static void			startAppUpdates(App *app);
+
+    static int			addPCbyIP(App *app, const char* ip);
 };
 
 } // namespace VRMatterStreamTheater
