@@ -542,7 +542,7 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
 	TrackpadScale.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 300, 80 );
 	SetUpSlider(guiSys, MouseMenu, TrackpadSlider, TrackpadSliderBackground, TrackpadSliderIndicator, TrackpadCurrentSetting, TrackpadNewSetting, 300,  MENU_X * 1, MENU_Y * 3);
 	TrackpadSlider.SetOnClick( TrackpadScaleCallback, this );
-	TrackpadSlider.SetExtents(4.0,0.25,2);
+	TrackpadSlider.SetExtents(4.0,-4.0,2);
 	TrackpadSlider.SetValue(trackpadScaleValue);
 
 	StreamMenu = new UIContainer( Cinema );
@@ -1065,7 +1065,7 @@ void MoviePlayerView::HandleTrackpadMouse( const VrFrame & vrFrame )
 		{
 			Vector2f travel = vrFrame.Input.touchRelative - lastMouse;
 			lastMouse = vrFrame.Input.touchRelative;
-			Native::MouseMove(Cinema.app, travel.x * trackpadScaleValue, travel.y * trackpadScaleValue );
+			Native::MouseMove(Cinema.app, travel.x * trackpadScaleValue, travel.y * abs(trackpadScaleValue) );
 		}
 		else
 		{
