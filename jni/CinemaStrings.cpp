@@ -43,6 +43,15 @@ String CinemaStrings::Error_UnableToPlayMovie;
 
 String CinemaStrings::MoviePlayer_Reorient;
 
+String CinemaStrings::ButtonText_ButtonSaveApp;
+String CinemaStrings::ButtonText_ButtonSaveDefault;
+String CinemaStrings::ButtonText_ButtonResetSettings;
+String CinemaStrings::ButtonText_ButtonSaveSettings1;
+String CinemaStrings::ButtonText_ButtonSaveSettings2;
+String CinemaStrings::ButtonText_ButtonSaveSettings3;
+String CinemaStrings::ButtonText_ButtonLoadSettings1;
+String CinemaStrings::ButtonText_ButtonLoadSettings2;
+String CinemaStrings::ButtonText_ButtonLoadSettings3;
 String CinemaStrings::ButtonText_ButtonMapKeyboard;
 String CinemaStrings::ButtonText_ButtonSpeed;
 String CinemaStrings::ButtonText_ButtonComfortMode;
@@ -90,6 +99,16 @@ void CinemaStrings::OneTimeInit( CinemaApp &cinema )
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/Error_UnableToPlayMovie", 	"@string/Error_UnableToPlayMovie",	Error_UnableToPlayMovie );
 
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/MoviePlayer_Reorient", 	"@string/MoviePlayer_Reorient", 	MoviePlayer_Reorient );
+
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonSaveApp", 		"@string/ButtonText_ButtonSaveApp", 		ButtonText_ButtonSaveApp );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonSaveDefault", 	"@string/ButtonText_ButtonSaveDefault", 	ButtonText_ButtonSaveDefault );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonResetSettings",	"@string/ButtonText_ButtonResetSettings",	ButtonText_ButtonResetSettings );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonSaveSettings1",	"@string/ButtonText_ButtonSaveSettings1", 	ButtonText_ButtonSaveSettings1 );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonSaveSettings2",	"@string/ButtonText_ButtonSaveSettings2", 	ButtonText_ButtonSaveSettings2 );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonSaveSettings3",	"@string/ButtonText_ButtonSaveSettings3", 	ButtonText_ButtonSaveSettings3 );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonLoadSettings1",	"@string/ButtonText_ButtonLoadSettings1", 	ButtonText_ButtonLoadSettings1 );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonLoadSettings2",	"@string/ButtonText_ButtonLoadSettings2", 	ButtonText_ButtonLoadSettings2 );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonLoadSettings3",	"@string/ButtonText_ButtonLoadSettings3", 	ButtonText_ButtonLoadSettings3 );
 
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonMapKeyboard", "@string/ButtonText_ButtonMapKeyboard", 	ButtonText_ButtonMapKeyboard );
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonSpeed", 		"@string/ButtonText_ButtonSpeed", 			ButtonText_ButtonSpeed );
