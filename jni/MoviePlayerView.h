@@ -26,6 +26,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "UI/UIImage.h"
 #include "UI/UIButton.h"
 #include "UI/UITextButton.h"
+#include "Settings.h"
 
 using namespace OVR;
 
@@ -216,6 +217,17 @@ private:
 	UITexture				ControllerHoverTexture;
 	UITexture				ControllerPressedTexture;
 
+	UIContainer *			SaveMenu;
+	UITextButton			ButtonSaveApp;
+	UITextButton			ButtonSaveDefault;
+	UITextButton			ButtonResetSettings;
+	UITextButton			ButtonSaveSettings1;
+	UITextButton			ButtonSaveSettings2;
+	UITextButton			ButtonSaveSettings3;
+	UITextButton			ButtonLoadSettings1;
+	UITextButton			ButtonLoadSettings2;
+	UITextButton			ButtonLoadSettings3;
+
 	UIButton				MouseMenuButton;
 	UIContainer *			MouseMenu;
 	UITextButton			ButtonGaze;
@@ -268,6 +280,17 @@ private:
 	UITextButton			ButtonComfortMode;
 	UITextButton			ButtonMapKeyboard;
 
+	float					settingsVersion;
+	String					defaultSettingsPath;
+	String					settings1Path;
+	String					settings2Path;
+	String					settings3Path;
+	String					appSettingsPath;
+	Settings*				defaultSettings;
+	Settings*				settings1;
+	Settings*				settings2;
+	Settings*				settings3;
+	Settings*				appSettings;
 
 	bool					BackgroundClicked;
 	bool					UIOpened;							// Used to ignore button A or touchpad until release so we don't close the UI immediately after opening it
@@ -291,22 +314,23 @@ private:
 	int						streamFPS;
 	bool					streamHostAudio;
 
+	float					GazeMin;
+	float					GazeMax;
+	float					TrackpadMin;
+	float					TrackpadMax;
+	float					VoidScreenDistanceMin;
+	float					VoidScreenDistanceMax;
+	float					VoidScreenScaleMin;
+	float					VoidScreenScaleMax;
+
 private:
-	void					TextButtonHelper(UITextButton& button);
+	void					TextButtonHelper(UITextButton& button, float scale = 1.0f, int w = 320, int h = 120);
 	void					SetUpSlider(OvrGuiSys & guiSys, UIWidget *parent, SliderComponent& scrub, UIImage& bg,
 								UIImage& ind, UILabel& cur, UILabel& set, int slideWidth, int xoff, int yoff);
 	void 					CreateMenu( OvrGuiSys & guiSys );
 
 	void					BackPressed();
 	void					BackPressedDouble();
-
-	friend void 			PlayPressedCallback( UIButton *button, void *object );
-	void					RewindPressed();
-	friend void 			RewindPressedCallback( UIButton *button, void *object );
-	void					FastForwardPressed();
-	friend void 			FastForwardPressedCallback( UIButton *button, void *object );
-	void					CarouselPressed();
-	friend void 			CarouselPressedCallback( UIButton *button, void *object );
 
 	friend void		MouseMenuButtonCallback( UIButton *button, void *object );
 	void			MouseMenuButtonPressed();
@@ -316,6 +340,25 @@ private:
 	void			ScreenMenuButtonPressed();
 	friend void		ControllerMenuButtonCallback( UIButton *button, void *object );
 	void			ControllerMenuButtonPressed();
+
+	friend void		SaveAppCallback( UITextButton *button, void *object );
+	void			SaveAppPressed();
+	friend void		SaveDefaultCallback( UITextButton *button, void *object );
+	void			SaveDefaultPressed();
+	friend void		ResetDefaultCallback( UITextButton *button, void *object );
+	void			ResetDefaultPressed();
+	friend void		Save1Callback( UITextButton *button, void *object );
+	void			Save1Pressed();
+	friend void		Save2Callback( UITextButton *button, void *object );
+	void			Save2Pressed();
+	friend void		Save3Callback( UITextButton *button, void *object );
+	void			Save3Pressed();
+	friend void		Load1Callback( UITextButton *button, void *object );
+	void			Load1Pressed();
+	friend void		Load2Callback( UITextButton *button, void *object );
+	void			Load2Pressed();
+	friend void		Load3Callback( UITextButton *button, void *object );
+	void			Load3Pressed();
 
 	friend void		GazeCallback( UITextButton *button, void *object );
 	void			GazePressed();
@@ -382,6 +425,8 @@ private:
 
 	Vector2f 				GazeCoordinatesOnScreen( const Matrix4f & viewMatrix, const Matrix4f panelMatrix ) const;
 
+	void					LoadSettings(Settings* set);
+	void					InitializeSettings();
 	void					UpdateMenus();
 
 	void 					UpdateUI( const VrFrame & vrFrame );

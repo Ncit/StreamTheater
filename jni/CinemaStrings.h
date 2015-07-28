@@ -51,6 +51,15 @@ public:
 
 	static String	MoviePlayer_Reorient;
 
+	static String	ButtonText_ButtonSaveApp;
+	static String	ButtonText_ButtonSaveDefault;
+	static String	ButtonText_ButtonResetSettings;
+	static String	ButtonText_ButtonSaveSettings1;
+	static String	ButtonText_ButtonSaveSettings2;
+	static String	ButtonText_ButtonSaveSettings3;
+	static String	ButtonText_ButtonLoadSettings1;
+	static String	ButtonText_ButtonLoadSettings2;
+	static String	ButtonText_ButtonLoadSettings3;
 	static String	ButtonText_ButtonMapKeyboard;
 	static String	ButtonText_ButtonSpeed;
 	static String	ButtonText_ButtonComfortMode;

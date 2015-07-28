@@ -32,6 +32,7 @@ LOCAL_SRC_FILES	:= 	CinemaApp.cpp \
 					ResumeMovieComponent.cpp \
 					SwipeHintComponent.cpp \
 					CinemaStrings.cpp \
+					Settings.cpp \
 					UI/UITexture.cpp \
 					UI/UIMenu.cpp \
 					UI/UIWidget.cpp \
