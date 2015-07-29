@@ -26,7 +26,6 @@ import android.view.SurfaceHolder;
 public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
 
     private ByteBuffer[] videoDecoderInputBuffers;
-    private ByteBuffer videoDecoderInputBuffer;
     private MediaCodec videoDecoder;
     private Thread rendererThread;
     private final boolean needsSpsBitstreamFixup, isExynos4;
@@ -47,7 +46,7 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
     private int numPpsIn;
     private int numIframeIn;
 
-    //@TargetApi(Build.VERSION_CODES.KITKAT)
+    @TargetApi(Build.VERSION_CODES.KITKAT)
     public MediaCodecDecoderRenderer() {
         //dumpDecoders();
 
@@ -135,15 +134,17 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
             }
         }
 
-        if (buf != null || codecFlags != 0) {
-            throw new RendererException(this, e, buf, codecFlags);
-        }
-        else {
-            throw new RendererException(this, e);
+        // Only throw if this happens at the beginning of a stream
+        if (totalFrames < 60) {
+            if (buf != null || codecFlags != 0) {
+                throw new RendererException(this, e, buf, codecFlags);
+            }
+            else {
+                throw new RendererException(this, e);
+            }
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP) 
     private void startDirectSubmitRendererThread()
     {
         rendererThread = new Thread() {
@@ -165,17 +166,6 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
 
                                 lastIndex = outIndex;
                                 presentationTimeUs = info.presentationTimeUs;
-                            }
-                            
-                            ByteBuffer outputBuffer;
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                            	outputBuffer = videoDecoder.getOutputBuffer(lastIndex);
-                            } else {
-                            	outputBuffer = videoDecoder.getOutputBuffers()[lastIndex];
-                            }
-                            if (info.size != 0) {
-                            	outputBuffer.position(info.offset);
-                            	outputBuffer.limit(info.offset + info.size);
                             }
 
                             // Render the last buffer
@@ -233,7 +223,6 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
         return index;
     }
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP) 
     private void startLegacyRendererThread()
     {
         rendererThread = new Thread() {
@@ -262,14 +251,8 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
                                 if (du == null || inputIndex == -1) {
                                     break;
                                 }
-                                
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                                	videoDecoderInputBuffer = videoDecoder.getInputBuffer(inputIndex);
-                                } else {
-                                	videoDecoderInputBuffer = videoDecoderInputBuffers[inputIndex];
-                                }
 
-                                submitDecodeUnit(du, videoDecoderInputBuffer, inputIndex);
+                                submitDecodeUnit(du, videoDecoderInputBuffers[inputIndex], inputIndex);
 
                                 du = null;
                                 inputIndex = -1;
@@ -315,14 +298,7 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
                             LimeLog.warning("Receiving an input buffer took too long: "+(submissionTime - lastDuDequeueTime)+" ms");
                         }
 
-                        
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        	videoDecoderInputBuffer = videoDecoder.getInputBuffer(inputIndex);
-                        } else {
-                        	videoDecoderInputBuffer = videoDecoderInputBuffers[inputIndex];
-                        }
-
-                        submitDecodeUnit(du, videoDecoderInputBuffer, inputIndex);
+                        submitDecodeUnit(du, videoDecoderInputBuffers[inputIndex], inputIndex);
 
                         // DU and input buffer have both been consumed
                         du = null;
@@ -342,17 +318,6 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
                                 videoDecoder.releaseOutputBuffer(lastIndex, false);
                                 lastIndex = outIndex;
                                 presentationTimeUs = info.presentationTimeUs;
-                            }
-                                                        
-                            ByteBuffer outputBuffer;
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                            	outputBuffer = videoDecoder.getOutputBuffer(lastIndex);
-                            } else {
-                            	outputBuffer = videoDecoder.getOutputBuffers()[lastIndex];
-                            }
-                            if (info.size != 0) {
-                            	outputBuffer.position(info.offset);
-                            	outputBuffer.limit(info.offset + info.size);
                             }
 
                             // Render the last buffer
@@ -521,19 +486,49 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
                 LimeLog.info("Patching num_ref_frames in SPS");
                 sps.num_ref_frames = 1;
 
+                // GFE 2.5.11 changed the SPS to add additional extensions
+                // Some devices don't like these so we remove them here.
+                sps.vuiParams.video_signal_type_present_flag = false;
+                sps.vuiParams.colour_description_present_flag = false;
+                sps.vuiParams.colour_primaries = 2;
+                sps.vuiParams.transfer_characteristics = 2;
+                sps.vuiParams.matrix_coefficients = 2;
+                sps.vuiParams.chroma_loc_info_present_flag = false;
+                sps.vuiParams.chroma_sample_loc_type_bottom_field = 0;
+                sps.vuiParams.chroma_sample_loc_type_top_field = 0;
+
                 if (needsSpsBitstreamFixup || isExynos4) {
                     // The SPS that comes in the current H264 bytestream doesn't set bitstream_restriction_flag
                     // or max_dec_frame_buffering which increases decoding latency on Tegra.
-                    LimeLog.info("Adding bitstream restrictions");
 
-                    sps.vuiParams.bitstreamRestriction = new VUIParameters.BitstreamRestriction();
-                    sps.vuiParams.bitstreamRestriction.motion_vectors_over_pic_boundaries_flag = true;
+                    // GFE 2.5.11 started sending bitstream restrictions
+                    if (sps.vuiParams.bitstreamRestriction == null) {
+                        LimeLog.info("Adding bitstream restrictions");
+                        sps.vuiParams.bitstreamRestriction = new VUIParameters.BitstreamRestriction();
+                        sps.vuiParams.bitstreamRestriction.motion_vectors_over_pic_boundaries_flag = true;
+                        sps.vuiParams.bitstreamRestriction.log2_max_mv_length_horizontal = 16;
+                        sps.vuiParams.bitstreamRestriction.log2_max_mv_length_vertical = 16;
+                        sps.vuiParams.bitstreamRestriction.num_reorder_frames = 0;
+                    }
+                    else {
+                        LimeLog.info("Patching bitstream restrictions");
+                    }
+
+                    // Some devices throw errors if max_dec_frame_buffering < num_ref_frames
+                    sps.vuiParams.bitstreamRestriction.max_dec_frame_buffering = sps.num_ref_frames;
+
+                    // These values are the defaults for the fields, but they are more aggressive
+                    // than what GFE sends in 2.5.11, but it doesn't seem to cause picture problems.
                     sps.vuiParams.bitstreamRestriction.max_bytes_per_pic_denom = 2;
                     sps.vuiParams.bitstreamRestriction.max_bits_per_mb_denom = 1;
-                    sps.vuiParams.bitstreamRestriction.log2_max_mv_length_horizontal = 16;
-                    sps.vuiParams.bitstreamRestriction.log2_max_mv_length_vertical = 16;
-                    sps.vuiParams.bitstreamRestriction.num_reorder_frames = 0;
-                    sps.vuiParams.bitstreamRestriction.max_dec_frame_buffering = 1;
+
+                    // log2_max_mv_length_horizontal and log2_max_mv_length_vertical are set to more
+                    // conservative values by GFE 2.5.11. We'll let those values stand.
+                }
+                else {
+                    // Devices that didn't/couldn't get bitstream restrictions before GFE 2.5.11
+                    // will continue to not receive them now
+                    sps.vuiParams.bitstreamRestriction = null;
                 }
 
                 // If we need to hack this SPS to say we're baseline, do so now
@@ -585,17 +580,9 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void replaySps() {
         int inputIndex = dequeueInputBuffer(true, true);
-        
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-        	videoDecoderInputBuffer = videoDecoder.getInputBuffer(inputIndex);
-        } else {
-        	videoDecoderInputBuffer = videoDecoderInputBuffers[inputIndex];
-        }
-
-        ByteBuffer inputBuffer = videoDecoderInputBuffer;
+        ByteBuffer inputBuffer = videoDecoderInputBuffers[inputIndex];
 
         inputBuffer.clear();
 
@@ -663,7 +650,6 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP) 
     @Override
     public void directSubmitDecodeUnit(DecodeUnit du) {
         int inputIndex;
@@ -678,15 +664,9 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
                 handleDecoderException(e, null, 0);
             }
         }
-        
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-        	videoDecoderInputBuffer = videoDecoder.getInputBuffer(inputIndex);
-        } else {
-        	videoDecoderInputBuffer = videoDecoderInputBuffers[inputIndex];
-        }
 
         if (inputIndex >= 0) {
-            submitDecodeUnit(du, videoDecoderInputBuffer, inputIndex);
+            submitDecodeUnit(du, videoDecoderInputBuffers[inputIndex], inputIndex);
         }
     }
 
