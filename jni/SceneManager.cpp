@@ -1039,6 +1039,7 @@ Matrix4f SceneManager::Frame( const VrFrame & vrFrame )
 		{
 			FrameUpdateNeeded = true;
 		}
+		Cinema.MovieScreenUpdated();
 	}
 
 	// build the mip maps

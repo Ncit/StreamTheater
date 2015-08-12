@@ -26,6 +26,9 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "UI/UIContainer.h"
 #include "UI/UILabel.h"
 #include "UI/UIImage.h"
+#include "UI/UIButton.h"
+#include "UI/UITextButton.h"
+#include "Settings.h"
 
 using namespace OVR;
 
@@ -87,6 +90,8 @@ private:
 	UITexture							ResumeIconTexture;
 	UITexture							ErrorIconTexture;
 	UITexture							SDCardTexture;
+	UITexture							CloseIconTexture;
+	UITexture							SettingsIconTexture;
 
 	UIMenu *							Menu;
 
@@ -114,6 +119,8 @@ private:
 	UIImage * 							RightSwipes[ 3 ];
 
 	UILabel	*							ResumeIcon;
+	UIButton *							CloseAppButton;
+	UIButton *							SettingsButton;
 
 	UILabel *							TimerIcon;
 	UILabel *							TimerText;
@@ -143,9 +150,39 @@ private:
 	bool								RepositionScreen;
 	bool								HadSelection;
 
+	UIContainer *						settingsMenu;
+	UITexture							bgTintTexture;
+	UIImage								newPCbg;
+
+	UITextButton *						ButtonGaze;
+	UITextButton *						ButtonTrackpad;
+	UITextButton *						ButtonOff;
+	UITextButton *						Button1080p60;
+	UITextButton *						Button1080p30;
+	UITextButton *						Button720p60;
+	UITextButton *						Button720p30;
+	UITextButton *						ButtonHostAudio;
+	UITextButton *						ButtonSaveApp;
+	UITextButton *						ButtonSaveDefault;
+
+	int									mouseMode;
+	int									streamWidth;
+	int									streamHeight;
+	int									streamFPS;
+	bool								streamHostAudio;
+
+	float								settingsVersion;
+	String								defaultSettingsPath;
+	String								appSettingsPath;
+	Settings*							defaultSettings;
+	Settings*							appSettings;
+
+
+
 private:
 	const PcDef *						GetSelectedApp() const;
 
+	void								TextButtonHelper(UITextButton* button, float scale = 1.0f, int w = 300, int h = 120);
 	void 								CreateMenu( OvrGuiSys & guiSys );
 	Vector3f 							ScalePosition( const Vector3f &startPos, const float scale, const float menuOffset ) const;
 	void 								UpdateMenuPosition();
@@ -154,6 +191,23 @@ private:
 
 	void								UpdateAppTitle();
 	void								UpdateSelectionFrame( const VrFrame & vrFrame );
+
+	friend void							AppCloseAppButtonCallback( UIButton *button, void *object );
+	void								CloseAppButtonPressed();
+
+	friend void							SettingsButtonCallback( UIButton *button, void *object );
+	void								SettingsButtonPressed();
+
+	friend void							SettingsCallback( UITextButton *button, void *object );
+	void								SettingsPressed( UITextButton *button );
+
+	friend bool							SettingsSelectedCallback( UITextButton *button, void *object );
+	bool								SettingsIsSelected( UITextButton *button );
+
+	friend bool							SettingsActiveCallback( UITextButton *button, void *object );
+	bool								SettingsIsActive( UITextButton *button );
+
+	bool								BackPressed();
 
 	bool								ErrorShown() const;
 };

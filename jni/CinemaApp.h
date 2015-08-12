@@ -85,6 +85,8 @@ public:
 	void					ShowError( const String& msg );
 	void					ClearError();
 
+	void					MovieScreenUpdated();
+
 public:
 	OvrGuiSys *				GuiSys;
 	double					StartTime;

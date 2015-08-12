@@ -27,6 +27,7 @@ of patent rights can be found in the PATENTS file in the same directory.
 #include "UI/UILabel.h"
 #include "UI/UIImage.h"
 #include "UI/UITextButton.h"
+#include "UI/UIButton.h"
 
 using namespace OVR;
 
@@ -87,6 +88,7 @@ private:
 	UITexture							ResumeIconTexture;
 	UITexture							ErrorIconTexture;
 	UITexture							SDCardTexture;
+	UITexture							CloseIconTexture;
 
 	UIMenu *							Menu;
 
@@ -114,6 +116,7 @@ private:
 	UIImage * 							RightSwipes[ 3 ];
 
 	UILabel	*							ResumeIcon;
+	UIButton *							CloseAppButton;
 
 	UILabel *							TimerIcon;
 	UILabel *							TimerText;
@@ -171,7 +174,10 @@ private:
 	bool								ErrorShown() const;
 
 	friend void							NewPCIPButtonCallback( UITextButton *button, void *object );
-	void								NewPCIPButtonPressed( UITextButton *button);
+	void								NewPCIPButtonPressed( UITextButton *button );
+
+	friend void							CloseAppButtonCallback( UIButton *button, void *object );
+	void								CloseAppButtonPressed();
 
 	bool								BackPressed();
 

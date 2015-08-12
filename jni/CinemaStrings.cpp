@@ -69,6 +69,13 @@ String CinemaStrings::ButtonText_LabelTrackpadScale;
 String CinemaStrings::ButtonText_Button1080p60;
 String CinemaStrings::ButtonText_ButtonOff;
 String CinemaStrings::ButtonText_LabelGazeScale;
+String CinemaStrings::ButtonText_LabelLatency;
+String CinemaStrings::ButtonText_LabelVRXScale;
+String CinemaStrings::ButtonText_LabelVRYScale;
+String CinemaStrings::ButtonText_CloseApp;
+String CinemaStrings::ButtonText_Settings;
+
+String CinemaStrings::HelpText;
 
 String CinemaStrings::Error_UnknownHost;
 String CinemaStrings::Error_AddPCFailed;
@@ -127,6 +134,14 @@ void CinemaStrings::OneTimeInit( CinemaApp &cinema )
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_ButtonOff", 		"@string/ButtonText_ButtonOff", 			ButtonText_ButtonOff );
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_LabelGazeScale",	"@string/ButtonText_LabelGazeScale", 		ButtonText_LabelGazeScale );
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_LabelTrackpadScale","@string/ButtonText_LabelTrackpadScale", 	ButtonText_LabelTrackpadScale );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_LabelLatency",		"@string/ButtonText_LabelLatency", 			ButtonText_LabelLatency );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_LabelVRXScale",		"@string/ButtonText_LabelVRXScale", 		ButtonText_LabelVRXScale );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_LabelVRYScale",		"@string/ButtonText_LabelVRYScale", 		ButtonText_LabelVRYScale );
+
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_CloseApp",			"@string/ButtonText_CloseApp", 				ButtonText_CloseApp );
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/ButtonText_Settings",			"@string/ButtonText_Settings", 				ButtonText_Settings );
+
+	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/HelpText",						"@string/HelpText", 						HelpText );
 
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/addpc_unknown_host",			"@string/addpc_unknown_host", 				Error_UnknownHost );
 	VrLocale::GetString( app->GetVrJni(), app->GetJavaObject(), "@string/addpc_fail",					"@string/addpc_fail", 						Error_AddPCFailed );

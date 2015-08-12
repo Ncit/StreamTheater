@@ -15,8 +15,10 @@ import com.limelight.binding.crypto.AndroidCryptoProvider;
 import com.limelight.computers.ComputerManagerListener;
 import com.limelight.computers.ComputerManagerService;
 import com.limelight.nvstream.http.ComputerDetails;
+import com.limelight.nvstream.http.NvApp;
 import com.limelight.nvstream.http.NvHTTP;
 import com.limelight.nvstream.http.PairingManager;
+import com.limelight.utils.ServerHelper;
 
 import android.app.Service;
 import android.content.ComponentName;
@@ -309,9 +311,26 @@ public class PcSelector {
         else if(details.pairState == PairingManager.PairState.PAIRED)		pairInt= PS_PAIRED;
         else if(details.pairState == PairingManager.PairState.PIN_WRONG)	pairInt= PS_PIN_WRONG;
         else pairInt= PS_FAILED;
-        MainActivity.nativeAddPc(activity.getAppPtr(), details.name, details.uuid.toString(), pairInt, managerBinder.getUniqueId());
+        
+        int reachInt=0;
+        if(details.reachability == ComputerDetails.Reachability.LOCAL) reachInt = RS_LOCAL;
+        else if(details.reachability == ComputerDetails.Reachability.REMOTE) reachInt = RS_REMOTE;
+        else if(details.reachability == ComputerDetails.Reachability.OFFLINE) reachInt = RS_OFFLINE;
+        else reachInt = RS_UNKNOWN;
+        MainActivity.nativeAddPc(activity.getAppPtr(), details.name, details.uuid.toString(), pairInt, reachInt, managerBinder.getUniqueId(), details.runningGameId != 0);
     }
 
+    public void closeApp(final String compUUID)
+    {
+    	ComputerDetails comp = findByUUID(compUUID);
+    	if(comp != null)
+    	{
+	    	ServerHelper.doQuit(activity,
+	                ServerHelper.getCurrentAddressFromComputer(comp),
+	                new NvApp("app", 0), managerBinder, null);
+    	}
+    }
+    
     public class ComputerObject {
         public ComputerDetails details;
 

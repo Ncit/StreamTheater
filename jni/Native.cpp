@@ -56,7 +56,7 @@ jobject Java_com_vrmatter_streamtheater_MainActivity_nativePrepareNewVideo( JNIE
 }
 
 void Java_com_vrmatter_streamtheater_MainActivity_nativeDisplayMessage( JNIEnv *jni, jclass clazz, jlong interfacePtr, jstring text, int time, bool isError ) {}
-void Java_com_vrmatter_streamtheater_MainActivity_nativeAddPc( JNIEnv *jni, jclass clazz, jlong interfacePtr, jstring name, jstring uuid, int psi, jstring binding)
+void Java_com_vrmatter_streamtheater_MainActivity_nativeAddPc( JNIEnv *jni, jclass clazz, jlong interfacePtr, jstring name, jstring uuid, int psi, int reach, jstring binding, bool isRunning)
 {
 	CinemaApp *cinema = ( CinemaApp * )( ( (App *)interfacePtr )->GetAppInterface() );
 	JavaUTFChars utfName( jni, name );
@@ -64,7 +64,8 @@ void Java_com_vrmatter_streamtheater_MainActivity_nativeAddPc( JNIEnv *jni, jcla
 	JavaUTFChars utfBind( jni, binding );
 
 	Native::PairState ps = (Native::PairState) psi;
-	cinema->PcMgr.AddPc(utfName.ToStr(), utfUUID.ToStr(), ps, utfBind.ToStr());
+	Native::Reachability rs = (Native::Reachability) reach;
+	cinema->PcMgr.AddPc(utfName.ToStr(), utfUUID.ToStr(), ps, rs, utfBind.ToStr(), isRunning);
 }
 void Java_com_vrmatter_streamtheater_MainActivity_nativeRemovePc( JNIEnv *jni, jclass clazz, jlong interfacePtr, jstring name)
 {
@@ -72,12 +73,12 @@ void Java_com_vrmatter_streamtheater_MainActivity_nativeRemovePc( JNIEnv *jni, j
 	JavaUTFChars utfName( jni, name );
 	cinema->PcMgr.RemovePc(utfName.ToStr());
 }
-void Java_com_vrmatter_streamtheater_MainActivity_nativeAddApp( JNIEnv *jni, jclass clazz, jlong interfacePtr, jstring name, jstring posterfilename, int id)
+void Java_com_vrmatter_streamtheater_MainActivity_nativeAddApp( JNIEnv *jni, jclass clazz, jlong interfacePtr, jstring name, jstring posterfilename, int id, bool isRunning)
 {
 	CinemaApp *cinema = ( CinemaApp * )( ( (App *)interfacePtr )->GetAppInterface() );
 	JavaUTFChars utfName( jni, name );
 	JavaUTFChars utfPosterFileName( jni, posterfilename );
-	cinema->AppMgr.AddApp(utfName.ToStr(), utfPosterFileName.ToStr(), id);
+	cinema->AppMgr.AddApp(utfName.ToStr(), utfPosterFileName.ToStr(), id, isRunning);
 }
 void Java_com_vrmatter_streamtheater_MainActivity_nativeRemoveApp( JNIEnv *jni, jclass clazz, jlong interfacePtr, int id)
 {
@@ -135,6 +136,9 @@ static jmethodID	stopPcUpdatesMethodId = NULL;
 static jmethodID	startPcUpdatesMethodId = NULL;
 static jmethodID	stopAppUpdatesMethodId = NULL;
 static jmethodID	startAppUpdatesMethodId = NULL;
+static jmethodID	getLastFrameTimestampMethodId = NULL;
+static jmethodID	currentTimeMillisMethodId = NULL;
+static jmethodID	closeAppMethodId = NULL;
 
 // Error checks and exits on failure
 static jmethodID GetMethodID( App *app, jclass cls, const char * name, const char * signature )
@@ -159,7 +163,7 @@ void Native::OneTimeInit( App *app, jclass mainActivityClass )
 	isPlayingMethodId 					= GetMethodID( app, mainActivityClass, "isPlaying", "()Z" );
 	isPlaybackFinishedMethodId			= GetMethodID( app, mainActivityClass, "isPlaybackFinished", "()Z" );
 	hadPlaybackErrorMethodId			= GetMethodID( app, mainActivityClass, "hadPlaybackError", "()Z" );
-	startMovieMethodId 					= GetMethodID( app, mainActivityClass, "startMovie", "(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;IIIZ)V" );
+	startMovieMethodId 					= GetMethodID( app, mainActivityClass, "startMovie", "(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;IIIZZ)V" );
 	stopMovieMethodId 					= GetMethodID( app, mainActivityClass, "stopMovie", "()V" );
 	initPcSelectorMethodId 				= GetMethodID( app, mainActivityClass, "initPcSelector", "()V" );
 	pairPcMethodId 						= GetMethodID( app, mainActivityClass, "pairPc", "(Ljava/lang/String;)V" );
@@ -175,6 +179,9 @@ void Native::OneTimeInit( App *app, jclass mainActivityClass )
 	startPcUpdatesMethodId				= GetMethodID( app, mainActivityClass, "startPcUpdates", "()V" );
 	stopAppUpdatesMethodId				= GetMethodID( app, mainActivityClass, "stopAppUpdates", "()V" );
 	startAppUpdatesMethodId				= GetMethodID( app, mainActivityClass, "startAppUpdates", "()V" );
+	getLastFrameTimestampMethodId		= GetMethodID( app, mainActivityClass, "getLastFrameTimestamp", "()J" );
+	currentTimeMillisMethodId			= GetMethodID( app, mainActivityClass, "currentTimeMillis", "()J" );
+	closeAppMethodId					= GetMethodID( app, mainActivityClass, "closeApp", "(Ljava/lang/String;I)V" );
 	LOG( "Native::OneTimeInit: %3.1f seconds", vrapi_GetTimeInSeconds() - start );
 }
 
@@ -229,7 +236,7 @@ bool Native::HadPlaybackError( App *app )
 	return ( result != 0 );
 }
 
-void Native::StartMovie( App *app, const char * uuid, const char * appName, int id, const char * binder, int width, int height, int fps, bool hostAudio )
+void Native::StartMovie( App *app, const char * uuid, const char * appName, int id, const char * binder, int width, int height, int fps, bool hostAudio, bool remote )
 {
 	LOG( "StartMovie( %s )", appName );
 
@@ -237,7 +244,7 @@ void Native::StartMovie( App *app, const char * uuid, const char * appName, int 
 	jstring jstrAppName = app->GetVrJni()->NewStringUTF( appName );
 	jstring jstrBinder = app->GetVrJni()->NewStringUTF( binder );
 
-	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), startMovieMethodId, jstrUUID, jstrAppName, id, jstrBinder, width, height, fps, hostAudio );
+	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), startMovieMethodId, jstrUUID, jstrAppName, id, jstrBinder, width, height, fps, hostAudio, remote );
 
 	app->GetVrJni()->DeleteLocalRef( jstrUUID );
 	app->GetVrJni()->DeleteLocalRef( jstrAppName );
@@ -315,6 +322,21 @@ void Native::stopAppUpdates(App *app)
 void Native::startAppUpdates(App *app)
 {
 	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), startAppUpdatesMethodId );
+}
+void Native::closeApp(App *app, const char* uuid, int appID)
+{
+	jstring jstrUUID = app->GetVrJni()->NewStringUTF( uuid );
+	app->GetVrJni()->CallVoidMethod( app->GetJavaObject(), closeAppMethodId, jstrUUID, appID );
+	app->GetVrJni()->DeleteLocalRef( jstrUUID );
+}
+
+long Native::getLastFrameTimestamp(App *app)
+{
+	return app->GetVrJni()->CallLongMethod( app->GetJavaObject(), getLastFrameTimestampMethodId );
+}
+long Native::currentTimeMillis(App *app)
+{
+	return app->GetVrJni()->CallLongMethod( app->GetJavaObject(), currentTimeMillisMethodId );
 }
 
 int Native::addPCbyIP(App *app, const char* ip)

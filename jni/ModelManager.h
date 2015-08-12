@@ -38,7 +38,8 @@ public:
 							UseFreeScreen( false ),
 							UseSeats( false ),
 							UseDynamicProgram( false ), 
-							Loaded( false ) { }
+							Loaded( false ),
+							UseVRScreen( false ) { }
 
 	ModelFile *			SceneModel;
 	String				Filename;
@@ -49,6 +50,7 @@ public:
 	bool 				UseSeats;
 	bool 				UseDynamicProgram;
 	bool				Loaded;
+	bool				UseVRScreen;
 };
 
 class ModelManager
@@ -71,6 +73,7 @@ public:
 	Array<SceneDef *>	Theaters;
 	SceneDef *			BoxOffice;
 	SceneDef *			VoidScene;
+	SceneDef *			VRScene;
 
 	String				LaunchIntent;
 

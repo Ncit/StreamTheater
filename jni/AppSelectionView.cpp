@@ -13,6 +13,8 @@ of patent rights can be found in the PATENTS file in the same directory.
 
 *************************************************************************************/
 
+#include <unistd.h>
+
 #include <android/keycodes.h>
 #include "Kernel/OVR_String_Utils.h"
 #include "App.h"
@@ -55,6 +57,8 @@ AppSelectionView::AppSelectionView( CinemaApp &cinema ) :
 	ResumeIconTexture(),
 	ErrorIconTexture(),
 	SDCardTexture(),
+	CloseIconTexture(),
+	SettingsIconTexture(),
 	Menu( NULL ),
 	CenterRoot( NULL ),
 	ErrorMessage( NULL ),
@@ -72,6 +76,8 @@ AppSelectionView::AppSelectionView( CinemaApp &cinema ) :
 	LeftSwipes(),
 	RightSwipes(),
 	ResumeIcon( NULL ),
+	CloseAppButton( NULL ),
+	SettingsButton( NULL ),
 	TimerIcon( NULL ),
 	TimerText( NULL ),
 	TimerStartTime( 0 ),
@@ -89,8 +95,30 @@ AppSelectionView::AppSelectionView( CinemaApp &cinema ) :
 	MoviesIndex( 0 ),
 	LastMovieDisplayed( NULL ),
 	RepositionScreen( false ),
-	HadSelection( false )
-
+	HadSelection( false ),
+	settingsMenu( NULL ),
+	bgTintTexture(),
+	newPCbg( Cinema ),
+	ButtonGaze( NULL ),
+	ButtonTrackpad( NULL ),
+	ButtonOff( NULL ),
+	Button1080p60( NULL ),
+	Button1080p30( NULL ),
+	Button720p60( NULL ),
+	Button720p30( NULL ),
+	ButtonHostAudio( NULL ),
+	ButtonSaveApp( NULL ),
+	ButtonSaveDefault( NULL ),
+	mouseMode( MOUSE_GAZE ),
+	streamWidth( 1280 ),
+	streamHeight( 720 ),
+	streamFPS( 60 ),
+	streamHostAudio( 0 ),
+	settingsVersion(1.0f),
+	defaultSettingsPath(""),
+	appSettingsPath(""),
+	defaultSettings( NULL ),
+	appSettings( NULL )
 {
 	// This is called at library load time, so the system is not initialized
 	// properly yet.
@@ -207,6 +235,24 @@ bool AppSelectionView::Command( const char * msg )
 	return false;
 }
 
+bool AppSelectionView::BackPressed()
+{
+	if(ErrorShown())
+	{
+		ClearError();
+		return true;
+	}
+	if(settingsMenu->GetVisible())
+	{
+		settingsMenu->SetVisible(false);
+
+		return true;
+	}
+
+	Cinema.PcSelection(true);
+	return true;
+}
+
 bool AppSelectionView::OnKeyEvent( const int keyCode, const int repeatCount, const KeyEventType eventType )
 {
 	switch ( keyCode )
@@ -220,7 +266,7 @@ bool AppSelectionView::OnKeyEvent( const int keyCode, const int repeatCount, con
 					return true;
 					break;
 				case KEY_EVENT_SHORT_PRESS:
-					Cinema.PcSelection(true);
+					BackPressed();
 					return true;
 					break;
 				default:
@@ -232,6 +278,42 @@ bool AppSelectionView::OnKeyEvent( const int keyCode, const int repeatCount, con
 }
 
 //=======================================================================================
+
+void AppCloseAppButtonCallback( UIButton *button, void *object )
+{
+	( ( AppSelectionView * )object )->CloseAppButtonPressed();
+}
+
+void SettingsButtonCallback( UIButton *button, void *object )
+{
+	( ( AppSelectionView * )object )->SettingsButtonPressed();
+}
+
+void SettingsCallback( UITextButton *button, void *object )
+{
+	( ( AppSelectionView * )object )->SettingsPressed(button);
+}
+
+bool SettingsSelectedCallback( UITextButton *button, void *object )
+{
+	return ( ( AppSelectionView * )object )->SettingsIsSelected(button);
+}
+
+bool SettingsActiveCallback( UITextButton *button, void *object )
+{
+	return ( ( AppSelectionView * )object )->SettingsIsActive(button);
+}
+
+
+
+void AppSelectionView::TextButtonHelper(UITextButton* button, float scale, int w, int h)
+{
+	button->SetLocalScale( Vector3f( scale ) );
+	button->SetFontScale( 1.0f );
+	button->SetColor( Vector4f( 0.0f, 0.0f, 0.0f, 1.0f ) );
+	button->SetTextColor( Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) );
+	button->SetImage( 0, SURFACE_TEXTURE_DIFFUSE, bgTintTexture, w, h );
+}
 
 void AppSelectionView::CreateMenu( OvrGuiSys & guiSys )
 {
@@ -250,6 +332,10 @@ void AppSelectionView::CreateMenu( OvrGuiSys & guiSys )
 	ResumeIconTexture.LoadTextureFromApplicationPackage( "assets/resume.png" );
 	ErrorIconTexture.LoadTextureFromApplicationPackage( "assets/error.png" );
 	SDCardTexture.LoadTextureFromApplicationPackage( "assets/sdcard.png" );
+	CloseIconTexture.LoadTextureFromApplicationPackage( "assets/close.png" );
+	SettingsIconTexture.LoadTextureFromApplicationPackage( "assets/settings.png" );
+
+	bgTintTexture.LoadTextureFromApplicationPackage( "assets/backgroundTint.png" );
 
  	// ==============================================================================
 	//
@@ -505,6 +591,30 @@ void AppSelectionView::CreateMenu( OvrGuiSys & guiSys )
 
 	// ==============================================================================
 	//
+	// close app button
+	//
+	CloseAppButton = new UIButton( Cinema );
+	CloseAppButton->AddToMenu( guiSys, Menu, MovieRoot );
+	CloseAppButton->SetLocalPose( forward, CenterPosition + Vector3f( 0.8f, -1.28f, 0.5f ) );
+	CloseAppButton->SetButtonImages( CloseIconTexture, CloseIconTexture, CloseIconTexture );
+	CloseAppButton->SetLocalScale( 3.0f );
+	CloseAppButton->SetVisible( false );
+	CloseAppButton->SetOnClick( AppCloseAppButtonCallback, this );
+
+	// ==============================================================================
+	//
+	// settings button
+	//
+	SettingsButton = new UIButton( Cinema );
+	SettingsButton->AddToMenu( guiSys, Menu, MovieRoot );
+	SettingsButton->SetLocalPose( forward, CenterPosition + Vector3f( -0.8f, -1.28f, 0.5f ) );
+	SettingsButton->SetButtonImages( SettingsIconTexture, SettingsIconTexture, SettingsIconTexture );
+	SettingsButton->SetLocalScale( 3.0f );
+	SettingsButton->SetVisible( true );
+	SettingsButton->SetOnClick( SettingsButtonCallback, this );
+
+	// ==============================================================================
+	//
 	// timer
 	//
 	TimerIcon = new UILabel( Cinema );
@@ -543,6 +653,288 @@ void AppSelectionView::CreateMenu( OvrGuiSys & guiSys )
 	MoveScreenLabel->SetText( CinemaStrings::MoviePlayer_Reorient );
 	MoveScreenLabel->SetTextOffset( Vector3f( 0.0f, -24 * VRMenuObject::DEFAULT_TEXEL_SCALE, 0.0f ) );  // offset to be below gaze cursor
 	MoveScreenLabel->SetVisible( false );
+
+	// ==============================================================================
+	//
+	// Settings
+	//
+	settingsMenu = new UIContainer( Cinema );
+	settingsMenu->AddToMenu( guiSys, Menu );
+	settingsMenu->SetLocalPose( forward, Vector3f( 0.0f, 1.5f, -3.0f ) );
+	settingsMenu->SetVisible(false);
+
+	newPCbg.AddToMenu( guiSys, Menu, settingsMenu);
+	newPCbg.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, bgTintTexture, 700, 800 );
+
+	static const float column1 = -0.32f;
+	static const float column2 = 0.32f;
+	static const float rowstart = 0.775f;
+	static const float rowinc = -0.25f;
+	float rowpos = rowstart;
+
+	Button1080p60 = new UITextButton( Cinema );
+	Button1080p60->AddToMenu( guiSys, Menu, settingsMenu );
+	Button1080p60->SetLocalPosition( Vector3f( column1, rowpos += rowinc, 0.1f ) );
+	Button1080p60->SetText( CinemaStrings::ButtonText_Button1080p60 );
+	TextButtonHelper(Button1080p60);
+	Button1080p60->SetOnClick( SettingsCallback, this);
+	Button1080p60->SetIsSelected( SettingsSelectedCallback, this);
+
+	Button1080p30 = new UITextButton( Cinema );
+	Button1080p30->AddToMenu( guiSys, Menu, settingsMenu );
+	Button1080p30->SetLocalPosition( Vector3f( column1, rowpos += rowinc, 0.1f ) );
+	Button1080p30->SetText( CinemaStrings::ButtonText_Button1080p30 );
+	TextButtonHelper(Button1080p30);
+	Button1080p30->SetOnClick( SettingsCallback, this);
+	Button1080p30->SetIsSelected( SettingsSelectedCallback, this);
+
+	Button720p60 = new UITextButton( Cinema );
+	Button720p60->AddToMenu( guiSys, Menu, settingsMenu );
+	Button720p60->SetLocalPosition( Vector3f( column1, rowpos += rowinc, 0.1f ) );
+	Button720p60->SetText( CinemaStrings::ButtonText_Button720p60 );
+	TextButtonHelper(Button720p60);
+	Button720p60->SetOnClick( SettingsCallback, this);
+	Button720p60->SetIsSelected( SettingsSelectedCallback, this);
+
+	Button720p30 = new UITextButton( Cinema );
+	Button720p30->AddToMenu( guiSys, Menu, settingsMenu );
+	Button720p30->SetLocalPosition( Vector3f( column1, rowpos += rowinc, 0.1f ) );
+	Button720p30->SetText( CinemaStrings::ButtonText_Button720p30 );
+	TextButtonHelper(Button720p30);
+	Button720p30->SetOnClick( SettingsCallback, this);
+	Button720p30->SetIsSelected( SettingsSelectedCallback, this);
+
+	// skip 1/4 a space
+	rowpos += rowinc /4;
+
+	ButtonHostAudio = new UITextButton( Cinema );
+	ButtonHostAudio->AddToMenu( guiSys, Menu, settingsMenu );
+	ButtonHostAudio->SetLocalPosition( Vector3f( column1, rowpos += rowinc, 0.1f ) );
+	ButtonHostAudio->SetText( CinemaStrings::ButtonText_ButtonHostAudio );
+	TextButtonHelper(ButtonHostAudio);
+	ButtonHostAudio->SetOnClick( SettingsCallback, this);
+	ButtonHostAudio->SetIsSelected( SettingsSelectedCallback, this);
+
+	// restart next column
+	rowpos = rowstart;
+
+	ButtonGaze = new UITextButton( Cinema );
+	ButtonGaze->AddToMenu( guiSys, Menu, settingsMenu );
+	ButtonGaze->SetLocalPosition( Vector3f( column2, rowpos += rowinc, 0.1f ) );
+	ButtonGaze->SetText( CinemaStrings::ButtonText_ButtonGaze );
+	TextButtonHelper(ButtonGaze);
+	ButtonGaze->SetOnClick( SettingsCallback, this);
+	ButtonGaze->SetIsSelected( SettingsSelectedCallback, this);
+
+	ButtonTrackpad = new UITextButton( Cinema );
+	ButtonTrackpad->AddToMenu( guiSys, Menu, settingsMenu );
+	ButtonTrackpad->SetLocalPosition( Vector3f( column2, rowpos += rowinc, 0.1f ) );
+	ButtonTrackpad->SetText( CinemaStrings::ButtonText_ButtonTrackpad );
+	TextButtonHelper(ButtonTrackpad);
+	ButtonTrackpad->SetOnClick( SettingsCallback, this);
+	ButtonTrackpad->SetIsSelected( SettingsSelectedCallback, this);
+
+	ButtonOff = new UITextButton( Cinema );
+	ButtonOff->AddToMenu( guiSys, Menu, settingsMenu );
+	ButtonOff->SetLocalPosition( Vector3f( column2, rowpos += rowinc, 0.1f ) );
+	ButtonOff->SetText( CinemaStrings::ButtonText_ButtonOff );
+	TextButtonHelper(ButtonOff);
+	ButtonOff->SetOnClick( SettingsCallback, this);
+	ButtonOff->SetIsSelected( SettingsSelectedCallback, this);
+
+	// skip half a space
+	rowpos += rowinc /2;
+
+	ButtonSaveApp = new UITextButton( Cinema );
+	ButtonSaveApp->AddToMenu( guiSys, Menu, settingsMenu );
+	ButtonSaveApp->SetLocalPosition( Vector3f( column2, rowpos += rowinc, 0.1f ) );
+	ButtonSaveApp->SetText( CinemaStrings::ButtonText_ButtonSaveApp );
+	TextButtonHelper(ButtonSaveApp);
+	ButtonSaveApp->SetOnClick( SettingsCallback, this );
+	ButtonSaveApp->SetIsEnabled( SettingsActiveCallback, this );
+
+	ButtonSaveDefault = new UITextButton( Cinema );
+	ButtonSaveDefault->AddToMenu( guiSys, Menu, settingsMenu );
+	ButtonSaveDefault->SetLocalPosition( Vector3f( column2, rowpos += rowinc, 0.1f ) );
+	ButtonSaveDefault->SetText( CinemaStrings::ButtonText_ButtonSaveDefault );
+	TextButtonHelper(ButtonSaveDefault);
+	ButtonSaveDefault->SetOnClick( SettingsCallback, this);
+	ButtonSaveDefault->SetIsEnabled( SettingsActiveCallback, this );
+
+}
+
+void AppSelectionView::CloseAppButtonPressed()
+{
+	const PcDef* pc = Cinema.GetCurrentPc();
+	const PcDef* app = NULL;
+
+	int selected = MovieBrowser->GetSelection();
+	if(selected < AppList.GetSizeI())
+	{
+		app = AppList[selected];
+	}
+	if(pc && app)
+	{
+		Native::closeApp( Cinema.app, pc->UUID, app->Id);
+	}
+}
+
+void AppSelectionView::SettingsButtonPressed()
+{
+	int appIndex = MovieBrowser->GetSelection();
+
+	const PcDef* app = AppList[appIndex];
+
+	String	outPath;
+	const bool validDir = Cinema.app->GetStoragePaths().GetPathIfValidPermission(
+					EST_INTERNAL_STORAGE, EFT_FILES, "", W_OK | R_OK, outPath );
+
+	if(validDir)
+	{
+		if(defaultSettings == NULL)
+		{
+			defaultSettingsPath = outPath + "settings.json";
+			defaultSettings = new Settings(defaultSettingsPath);
+
+			defaultSettings->Define("StreamTheaterSettingsVersion", &settingsVersion);
+			defaultSettings->Define("MouseMode", (int*)&mouseMode);
+			defaultSettings->Define("StreamWidth", &streamWidth);
+			defaultSettings->Define("StreamHeight", &streamHeight);
+			defaultSettings->Define("StreamFPS", &streamFPS);
+			defaultSettings->Define("EnableHostAudio", &streamHostAudio);
+		}
+
+		if(appSettings != NULL)
+		{
+			delete(appSettings);
+			appSettings = NULL;
+		}
+
+		appSettingsPath = outPath + "settings." + app->Name + ".json";
+		appSettings = new Settings(appSettingsPath);
+		appSettings->CopyDefines(*defaultSettings);
+
+		defaultSettings->Load();
+		appSettings->Load();
+	}
+
+	ButtonGaze->UpdateButtonState();
+	ButtonTrackpad->UpdateButtonState();
+	ButtonOff->UpdateButtonState();
+	Button1080p60->UpdateButtonState();
+	Button1080p30->UpdateButtonState();
+	Button720p60->UpdateButtonState();
+	Button720p30->UpdateButtonState();
+	ButtonHostAudio->UpdateButtonState();
+	ButtonSaveApp->UpdateButtonState();
+	ButtonSaveDefault->UpdateButtonState();
+
+	settingsMenu->SetVisible(true);
+}
+
+void AppSelectionView::SettingsPressed( UITextButton *button)
+{
+	if( button->GetText() == CinemaStrings::ButtonText_ButtonGaze )
+	{
+		mouseMode = MOUSE_GAZE;
+	}
+	else if( button->GetText() == CinemaStrings::ButtonText_ButtonTrackpad )
+	{
+		mouseMode = MOUSE_TRACKPAD;
+	}
+	else if( button->GetText() == CinemaStrings::ButtonText_ButtonOff )
+	{
+		mouseMode = MOUSE_OFF;
+	}
+	else if( button->GetText() == CinemaStrings::ButtonText_Button1080p60 )
+	{
+		streamWidth = 1920; streamHeight = 1080; streamFPS = 60;
+	}
+	else if( button->GetText() == CinemaStrings::ButtonText_Button1080p30 )
+	{
+		streamWidth = 1920; streamHeight = 1080; streamFPS = 30;
+	}
+	else if( button->GetText() == CinemaStrings::ButtonText_Button720p60 )
+	{
+		streamWidth = 1280; streamHeight = 720; streamFPS = 60;
+	}
+	else if( button->GetText() == CinemaStrings::ButtonText_Button720p30 )
+	{
+		streamWidth = 1280; streamHeight = 720; streamFPS = 30;
+	}
+	else if( button->GetText() == CinemaStrings::ButtonText_ButtonHostAudio )
+	{
+		streamHostAudio = !streamHostAudio;
+	}
+	else if( button->GetText() == CinemaStrings::ButtonText_ButtonSaveApp )
+	{
+		appSettings->SaveChanged();
+	}
+	else if( button->GetText() == CinemaStrings::ButtonText_ButtonSaveDefault )
+	{
+		defaultSettings->SaveAll();
+	}
+
+	ButtonGaze->UpdateButtonState();
+	ButtonTrackpad->UpdateButtonState();
+	ButtonOff->UpdateButtonState();
+	Button1080p60->UpdateButtonState();
+	Button1080p30->UpdateButtonState();
+	Button720p60->UpdateButtonState();
+	Button720p30->UpdateButtonState();
+	ButtonHostAudio->UpdateButtonState();
+	ButtonSaveApp->UpdateButtonState();
+	ButtonSaveDefault->UpdateButtonState();
+}
+
+bool AppSelectionView::SettingsIsSelected( UITextButton *button)
+{
+	if( button->GetText() == CinemaStrings::ButtonText_ButtonGaze )
+	{
+		return mouseMode == MOUSE_GAZE;
+	}
+	else if( button->GetText() == CinemaStrings::ButtonText_ButtonTrackpad )
+	{
+		return mouseMode == MOUSE_TRACKPAD;
+	}
+	else if( button->GetText() == CinemaStrings::ButtonText_ButtonOff )
+	{
+		return mouseMode == MOUSE_OFF;
+	}
+	else if( button->GetText() == CinemaStrings::ButtonText_Button1080p60 )
+	{
+		return streamWidth == 1920 && streamHeight == 1080 && streamFPS == 60;
+	}
+	else if( button->GetText() == CinemaStrings::ButtonText_Button1080p30 )
+	{
+		return streamWidth == 1920 && streamHeight == 1080 && streamFPS == 30;
+	}
+	else if( button->GetText() == CinemaStrings::ButtonText_Button720p60 )
+	{
+		return streamWidth == 1280 && streamHeight == 720 && streamFPS == 60;
+	}
+	else if( button->GetText() == CinemaStrings::ButtonText_Button720p30 )
+	{
+		return streamWidth == 1280 && streamHeight == 720 && streamFPS == 30;
+	}
+	else if( button->GetText() == CinemaStrings::ButtonText_ButtonHostAudio )
+	{
+		return streamHostAudio;
+	}
+	return false;
+}
+
+bool AppSelectionView::SettingsIsActive( UITextButton *button)
+{
+	if( button->GetText() == CinemaStrings::ButtonText_ButtonSaveApp )
+	{
+		return appSettings->IsChanged();
+	}
+	else if( button->GetText() == CinemaStrings::ButtonText_ButtonSaveDefault )
+	{
+		return defaultSettings->IsChanged();
+	}
+	return false;
 }
 
 Vector3f AppSelectionView::ScalePosition( const Vector3f &startPos, const float scale, const float menuOffset ) const
@@ -777,15 +1169,19 @@ void AppSelectionView::UpdateSelectionFrame( const VrFrame & vrFrame )
 
 	SelectionFrame->SetColor( Vector4f( SelectionFader.Value( now ) ) );
 
-	if ( !ShowTimer && !Cinema.InLobby && ( MoviesIndex == MovieBrowser->GetSelection() ) )
+	int selected = MovieBrowser->GetSelection();
+	if ( selected >= 0 && AppList.GetSizeI() > selected && AppList[ selected ]->isRunning )
 	{
 		ResumeIcon->SetColor( Vector4f( SelectionFader.Value( now ) ) );
 		ResumeIcon->SetTextColor( Vector4f( SelectionFader.Value( now ) ) );
 		ResumeIcon->SetVisible( true );
+
+		CloseAppButton->SetVisible( true );
 	}
 	else
 	{
 		ResumeIcon->SetVisible( false );
+		CloseAppButton->SetVisible( false );
 	}
 
 	if ( ShowTimer && ( TimerStartTime != 0 ) )

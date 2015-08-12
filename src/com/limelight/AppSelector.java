@@ -280,7 +280,7 @@ public class AppSelector {
 //		    	activity.createVideoThumbnail(computer.uuid.toString(), app.getAppId(), fileName, 228, 344);
 //		    }
 		    
-		    MainActivity.nativeAddApp(activity.getAppPtr(), app.getAppName(), fileName, app.getAppId());
+		    MainActivity.nativeAddApp(activity.getAppPtr(), app.getAppName(), fileName, app.getAppId(), app.getIsRunning());
 		}
 		
 		// Next handle app removals
@@ -315,5 +315,28 @@ public class AppSelector {
 		if (updated) {
 		    
 		}
+    }
+    
+    public void closeApp(int appID)
+    {
+    	for(NvApp app : appList)
+    	{
+    		if(app.getAppId() == appID)
+    		{
+    			suspendGridUpdates = true;
+    			ServerHelper.doQuit(activity,
+                        ServerHelper.getCurrentAddressFromComputer(computer),
+                        app, managerBinder, new Runnable() {
+                            @Override
+                            public void run() {
+                                // Trigger a poll immediately
+                                suspendGridUpdates = false;
+                                if (poller != null) {
+                                    poller.pollNow();
+                                }
+                            }
+    			});
+    		}
+    	}
     }
 }

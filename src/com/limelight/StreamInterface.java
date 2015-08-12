@@ -89,8 +89,14 @@ public class StreamInterface implements SurfaceHolder.Callback,
     public static final String EXTRA_APP_ID = "AppId";
     public static final String EXTRA_UNIQUEID = "UniqueId";
     public static final String EXTRA_STREAMING_REMOTE = "Remote";
+    
+    public long getLastFrameTimestamp() {
+    	if(decoderRenderer != null)
+    		return decoderRenderer.getLastFrameTimestamp();
+    	return 0;
+    }
 
-	public StreamInterface(MainActivity creatingActivity, String compUUID, String appName, int appId, String uniqueId, SurfaceHolder sh, int width, int height, int fps, boolean hostAudio) {
+	public StreamInterface(MainActivity creatingActivity, String compUUID, String appName, int appId, String uniqueId, SurfaceHolder sh, int width, int height, int fps, boolean hostAudio, boolean remote) {
 		activity = creatingActivity;
 		
 		ComputerDetails computer = activity.pcSelector.findByUUID(compUUID);
@@ -134,9 +140,6 @@ public class StreamInterface implements SurfaceHolder.Callback,
         wifiLock = wifiMgr.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "Limelight");
         wifiLock.setReferenceCounted(false);
         wifiLock.acquire();
-
-        //TODO: Add remote stuff
-        boolean remote = activity.getIntent().getBooleanExtra(EXTRA_STREAMING_REMOTE, false);
 
         if (appId == StreamConfiguration.INVALID_APP_ID) {
         	//TODO: This needs to go back to app selection

@@ -117,11 +117,30 @@ MoviePlayerView::MoviePlayerView( CinemaApp &cinema ) :
 	SizeCurrentSetting( Cinema ),
 	SizeNewSetting( Cinema ),
 	SizeSlider(),
-	ControllerMenuButton( Cinema ),
-	ControllerMenu( NULL ),
-	ButtonSpeed( Cinema ),
-	ButtonComfortMode( Cinema ),
-	ButtonMapKeyboard( Cinema ),
+	HelpMenuButton( Cinema ),
+	HelpMenu( NULL ),
+	HelpText( Cinema ),
+	ExitButton( Cinema ),
+	VRModeMenuButton( Cinema ),
+	VRModeMenu( NULL ),
+	LatencyScale( Cinema ),
+	LatencySliderBackground( Cinema ),
+	LatencySliderIndicator( Cinema ),
+	LatencyCurrentSetting( Cinema ),
+	LatencyNewSetting( Cinema ),
+	LatencySlider(),
+	VRXScale( Cinema ),
+	VRXSliderBackground( Cinema ),
+	VRXSliderIndicator( Cinema ),
+	VRXCurrentSetting( Cinema ),
+	VRXNewSetting( Cinema ),
+	VRXSlider(),
+	VRYScale( Cinema ),
+	VRYSliderBackground( Cinema ),
+	VRYSliderIndicator( Cinema ),
+	VRYCurrentSetting( Cinema ),
+	VRYNewSetting( Cinema ),
+	VRYSlider(),
 	settingsVersion(1.0f),
 	defaultSettingsPath(""),
 	settings1Path(""),
@@ -158,7 +177,22 @@ MoviePlayerView::MoviePlayerView( CinemaApp &cinema ) :
 	VoidScreenDistanceMin(0.1),
 	VoidScreenDistanceMax(3.0),
 	VoidScreenScaleMin(-3.0),
-	VoidScreenScaleMax(4.0)
+	VoidScreenScaleMax(4.0),
+	oldPoses(),
+	calibrationStage(0),
+	lastPose(),
+	trackCalibrationYaw(500),
+	trackCalibrationPitch(500),
+	latencyAddition(24),
+	screenMotionPaused( false ),
+	vrXscale( 1.0f ),
+	vrYscale( 1.0f ),
+	VRLatencyMax( 60 ),
+	VRLatencyMin( 0 ),
+	VRXScaleMax( 6.0f ),
+	VRXScaleMin( 0.0f ),
+	VRYScaleMax( 6.0f ),
+	VRYScaleMin( 0.0f )
 {
 }
 
@@ -213,7 +247,9 @@ Vector3f PixelPos( const float x, const float y, const float z )
 void MouseMenuButtonCallback		( UIButton *button, void *object ) { ( ( MoviePlayerView * )object )->MouseMenuButtonPressed(); }
 void StreamMenuButtonCallback		( UIButton *button, void *object ) { ( ( MoviePlayerView * )object )->StreamMenuButtonPressed(); }
 void ScreenMenuButtonCallback		( UIButton *button, void *object ) { ( ( MoviePlayerView * )object )->ScreenMenuButtonPressed(); }
-void ControllerMenuButtonCallback	( UIButton *button, void *object ) { ( ( MoviePlayerView * )object )->ControllerMenuButtonPressed(); }
+void VRModeMenuButtonCallback		( UIButton *button, void *object ) { ( ( MoviePlayerView * )object )->VRModeMenuButtonPressed(); }
+void HelpMenuButtonCallback			( UIButton *button, void *object ) { ( ( MoviePlayerView * )object )->HelpMenuButtonPressed(); }
+void ExitButtonCallback				( UIButton *button, void *object ) { ( ( MoviePlayerView * )object )->ExitButtonPressed(); }
 
 void SaveAppCallback				( UITextButton *button, void *object ) { ( ( MoviePlayerView * )object )->SaveAppPressed(); }
 void SaveDefaultCallback			( UITextButton *button, void *object ) { ( ( MoviePlayerView * )object )->SaveDefaultPressed(); }
@@ -250,6 +286,10 @@ void ChangeSeatCallback				( UITextButton *button, void *object ) { ( ( MoviePla
 void DistanceCallback				( SliderComponent *button, void *object, const float value ) { ( ( MoviePlayerView * )object )->DistancePressed( value ); }
 void SizeCallback					( SliderComponent *button, void *object, const float value ) { ( ( MoviePlayerView * )object )->SizePressed( value ); }
 bool IsChangeSeatsEnabledCallback	( UITextButton *button, void *object ) { return ( ( MoviePlayerView * )object )->IsChangeSeatsEnabled(); }
+
+void LatencyCallback				( SliderComponent *button, void *object, const float value ) { ( ( MoviePlayerView * )object )->LatencyPressed( value ); }
+void VRXCallback					( SliderComponent *button, void *object, const float value ) { ( ( MoviePlayerView * )object )->VRXPressed( value ); }
+void VRYCallback					( SliderComponent *button, void *object, const float value ) { ( ( MoviePlayerView * )object )->VRYPressed( value ); }
 
 void SpeedCallback					( UITextButton *button, void *object ) { ( ( MoviePlayerView * )object )->SpeedPressed(); }
 void ComfortModeCallback			( UITextButton *button, void *object ) { ( ( MoviePlayerView * )object )->ComfortModePressed(); }
@@ -343,6 +383,19 @@ void MoviePlayerView::InitializeSettings()
 			defaultSettings->Define("VoidScreenScaleMax", &VoidScreenScaleMax);
 			defaultSettings->Define("VoidScreenScaleMin", &VoidScreenScaleMin);
 
+			if(Cinema.SceneMgr.SceneInfo.UseVRScreen)
+			{ // Don't save or load VR screen settings if we're not using it
+				defaultSettings->Define("VRScreenLatency", &latencyAddition);
+				defaultSettings->Define("VRScreenXScale", &vrXscale);
+				defaultSettings->Define("VRScreenYScale", &vrYscale);
+				defaultSettings->Define("VRScreenLatencyMax", &VRLatencyMax);
+				defaultSettings->Define("VRScreenLatencyMin", &VRLatencyMin);
+				defaultSettings->Define("VRScreenXScaleMax", &VRXScaleMax);
+				defaultSettings->Define("VRScreenXScaleMin", &VRXScaleMin);
+				defaultSettings->Define("VRScreenYScaleMax", &VRYScaleMax);
+				defaultSettings->Define("VRScreenYScaleMin", &VRYScaleMin);
+			}
+
 			defaultSettings->Load();
 		}
 
@@ -379,14 +432,7 @@ void MoviePlayerView::InitializeSettings()
 			Cinema.SceneMgr.CurrentMovieWidth /= 2;
 		}
 
-		GazeSlider.SetExtents(GazeMax,GazeMin,2);
-		GazeSlider.SetValue(gazeScaleValue);
-		TrackpadSlider.SetExtents(TrackpadMax,TrackpadMin,2);
-		TrackpadSlider.SetValue(trackpadScaleValue);
-		DistanceSlider.SetExtents(VoidScreenDistanceMax,VoidScreenDistanceMin,2);
-		DistanceSlider.SetValue(Cinema.SceneMgr.FreeScreenDistance);
-		SizeSlider.SetExtents(VoidScreenScaleMax,VoidScreenScaleMin,2);
-		SizeSlider.SetValue(Cinema.SceneMgr.FreeScreenScale);
+		UpdateMenus();
 	}
 }
 
@@ -431,9 +477,17 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
 	ScreenHoverTexture.LoadTextureFromApplicationPackage( "assets/screenbutton.png" );
 	ScreenPressedTexture.LoadTextureFromApplicationPackage( "assets/screenbutton.png" );
 
-	ControllerTexture.LoadTextureFromApplicationPackage( "assets/exitbutton.png" );
-	ControllerHoverTexture.LoadTextureFromApplicationPackage( "assets/exitbutton.png" );
-	ControllerPressedTexture.LoadTextureFromApplicationPackage( "assets/exitbutton.png" );
+	HelpTexture.LoadTextureFromApplicationPackage( "assets/help.png" );
+	HelpHoverTexture.LoadTextureFromApplicationPackage( "assets/help.png" );
+	HelpPressedTexture.LoadTextureFromApplicationPackage( "assets/help.png" );
+
+	ExitTexture.LoadTextureFromApplicationPackage( "assets/exitbutton.png" );
+	ExitHoverTexture.LoadTextureFromApplicationPackage( "assets/exitbutton.png" );
+	ExitPressedTexture.LoadTextureFromApplicationPackage( "assets/exitbutton.png" );
+
+	VRModeTexture.LoadTextureFromApplicationPackage( "assets/vrbutton.png" );
+	VRModeHoverTexture.LoadTextureFromApplicationPackage( "assets/vrbutton.png" );
+	VRModePressedTexture.LoadTextureFromApplicationPackage( "assets/vrbutton.png" );
 
     // ==============================================================================
     //
@@ -481,36 +535,61 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
     //
     ControlsBackground.AddToMenuFlags( guiSys, PlaybackControlsMenu, &PlaybackControlsScale, VRMenuObjectFlags_t( VRMENUOBJECT_RENDER_HIERARCHY_ORDER ) );
     ControlsBackground.SetLocalPosition( PixelPos( 0, 550, 0 ) );
-    ControlsBackground.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 1004, 168 );
+    ControlsBackground.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 1200, 168 );
     ControlsBackground.AddComponent( &GazeTimer );
 
  	MouseMenuButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
- 	MouseMenuButton.SetLocalPosition( PixelPos( -450, 0, 1 ) );
  	MouseMenuButton.SetLocalScale( Vector3f( 2.0f ) );
  	MouseMenuButton.SetButtonImages( MouseTexture, MouseHoverTexture, MousePressedTexture );
  	MouseMenuButton.SetOnClick( MouseMenuButtonCallback, this );
  	MouseMenuButton.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
 
  	StreamMenuButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
- 	StreamMenuButton.SetLocalPosition( PixelPos( -150, 0, 1 ) );
  	StreamMenuButton.SetLocalScale( Vector3f( 2.0f ) );
  	StreamMenuButton.SetButtonImages( StreamTexture, StreamHoverTexture, StreamPressedTexture );
  	StreamMenuButton.SetOnClick( StreamMenuButtonCallback, this );
  	StreamMenuButton.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
 
  	ScreenMenuButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
-	ScreenMenuButton.SetLocalPosition( PixelPos( 150, 0, 1 ) );
  	ScreenMenuButton.SetLocalScale( Vector3f( 2.0f ) );
  	ScreenMenuButton.SetButtonImages( ScreenTexture, ScreenHoverTexture, ScreenPressedTexture );
  	ScreenMenuButton.SetOnClick( ScreenMenuButtonCallback, this );
  	ScreenMenuButton.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
 
-	ControllerMenuButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
-	ControllerMenuButton.SetLocalPosition( PixelPos( 450, 0, 1 ) );
-	ControllerMenuButton.SetLocalScale( Vector3f( 2.0f ) );
-	ControllerMenuButton.SetButtonImages( ControllerTexture, ControllerHoverTexture, ControllerPressedTexture );
-	ControllerMenuButton.SetOnClick( ControllerMenuButtonCallback, this );
-	ControllerMenuButton.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
+ 	VRModeMenuButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
+ 	VRModeMenuButton.SetLocalScale( Vector3f( 2.0f ) );
+ 	VRModeMenuButton.SetButtonImages( VRModeTexture, VRModeHoverTexture, VRModePressedTexture );
+ 	VRModeMenuButton.SetOnClick( VRModeMenuButtonCallback, this );
+ 	VRModeMenuButton.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
+
+	HelpMenuButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
+	HelpMenuButton.SetLocalScale( Vector3f( 2.0f ) );
+	HelpMenuButton.SetButtonImages( HelpTexture, HelpTexture, HelpTexture );
+	HelpMenuButton.SetOnClick( HelpMenuButtonCallback, this );
+	HelpMenuButton.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
+
+	ExitButton.AddToMenu( guiSys, PlaybackControlsMenu, &ControlsBackground );
+	ExitButton.SetLocalScale( Vector3f( 2.0f ) );
+	ExitButton.SetButtonImages( ExitTexture, ExitHoverTexture, ExitPressedTexture );
+	ExitButton.SetOnClick( ExitButtonCallback, this );
+	ExitButton.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
+
+	static const int MenuButtonsWidth = 1100;
+	static const int MenuButtonsCount = 6;
+	static const int MenuButtonsStep = MenuButtonsWidth / ( MenuButtonsCount - 1 );
+	int menuButtonPos = 0 - MenuButtonsWidth / 2;
+
+ 	MouseMenuButton.SetLocalPosition( PixelPos( menuButtonPos, 0, 1 ) );
+ 	menuButtonPos += MenuButtonsStep;
+ 	StreamMenuButton.SetLocalPosition( PixelPos( menuButtonPos, 0, 1 ) );
+ 	menuButtonPos += MenuButtonsStep;
+	ScreenMenuButton.SetLocalPosition( PixelPos( menuButtonPos, 0, 1 ) );
+ 	menuButtonPos += MenuButtonsStep;
+ 	VRModeMenuButton.SetLocalPosition( PixelPos( menuButtonPos, 0, 1 ) );
+ 	menuButtonPos += MenuButtonsStep;
+	HelpMenuButton.SetLocalPosition( PixelPos( menuButtonPos, 0, 1 ) );
+ 	menuButtonPos += MenuButtonsStep;
+	ExitButton.SetLocalPosition( PixelPos( menuButtonPos, 0, 1 ) );
 
 	const static int MENU_X = 200;
 	const static int MENU_Y = -150;
@@ -518,17 +597,17 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
 
 	SaveMenu = new UIContainer( Cinema );
 	SaveMenu->AddToMenu( guiSys, PlaybackControlsMenu, &PlaybackControlsScale );
-	SaveMenu->SetLocalPosition( PixelPos( 0, -400, 1 ) );
+	SaveMenu->SetLocalPosition( PixelPos( 0, -500, 1 ) );
 	SaveMenu->SetVisible(false);
 
 	ButtonSaveApp.AddToMenu( guiSys, PlaybackControlsMenu, SaveMenu );
-	ButtonSaveApp.SetLocalPosition( PixelPos( 400, 0, 1 ) );
+	ButtonSaveApp.SetLocalPosition( PixelPos( 800, 130, 1 ) );
 	ButtonSaveApp.SetText( CinemaStrings::ButtonText_ButtonSaveApp );
 	TextButtonHelper(ButtonSaveApp, 0.5f);
 	ButtonSaveApp.SetOnClick( SaveAppCallback, this);
 
 	ButtonSaveDefault.AddToMenu( guiSys, PlaybackControlsMenu, SaveMenu );
-	ButtonSaveDefault.SetLocalPosition( PixelPos( 600, 0, 1 ) );
+	ButtonSaveDefault.SetLocalPosition( PixelPos( 800, 65, 1 ) );
 	ButtonSaveDefault.SetText( CinemaStrings::ButtonText_ButtonSaveDefault );
 	TextButtonHelper(ButtonSaveDefault, 0.5f);
 	ButtonSaveDefault.SetOnClick( SaveDefaultCallback, this);
@@ -540,37 +619,37 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
 	ButtonResetSettings.SetOnClick( ResetDefaultCallback, this);
 
 	ButtonSaveSettings1.AddToMenu( guiSys, PlaybackControlsMenu, SaveMenu );
-	ButtonSaveSettings1.SetLocalPosition( PixelPos( 400, 65, 1 ) );
+	ButtonSaveSettings1.SetLocalPosition( PixelPos( 200, 65, 1 ) );
 	ButtonSaveSettings1.SetText( CinemaStrings::ButtonText_ButtonSaveSettings1 );
 	TextButtonHelper(ButtonSaveSettings1, 0.5f);
 	ButtonSaveSettings1.SetOnClick( Save1Callback, this);
 
 	ButtonSaveSettings2.AddToMenu( guiSys, PlaybackControlsMenu, SaveMenu );
-	ButtonSaveSettings2.SetLocalPosition( PixelPos( 600, 65, 1 ) );
+	ButtonSaveSettings2.SetLocalPosition( PixelPos( 400, 65, 1 ) );
 	ButtonSaveSettings2.SetText( CinemaStrings::ButtonText_ButtonSaveSettings2 );
 	TextButtonHelper(ButtonSaveSettings2, 0.5f);
 	ButtonSaveSettings2.SetOnClick( Save2Callback, this);
 
 	ButtonSaveSettings3.AddToMenu( guiSys, PlaybackControlsMenu, SaveMenu );
-	ButtonSaveSettings3.SetLocalPosition( PixelPos( 800, 65, 1 ) );
+	ButtonSaveSettings3.SetLocalPosition( PixelPos( 600, 65, 1 ) );
 	ButtonSaveSettings3.SetText( CinemaStrings::ButtonText_ButtonSaveSettings3 );
 	TextButtonHelper(ButtonSaveSettings3, 0.5f);
 	ButtonSaveSettings3.SetOnClick( Save3Callback, this);
 
 	ButtonLoadSettings1.AddToMenu( guiSys, PlaybackControlsMenu, SaveMenu );
-	ButtonLoadSettings1.SetLocalPosition( PixelPos( 400, 130, 1 ) );
+	ButtonLoadSettings1.SetLocalPosition( PixelPos( 200, 0, 1 ) );
 	ButtonLoadSettings1.SetText( CinemaStrings::ButtonText_ButtonLoadSettings1 );
 	TextButtonHelper(ButtonLoadSettings1, 0.5f);
 	ButtonLoadSettings1.SetOnClick( Load1Callback, this);
 
 	ButtonLoadSettings2.AddToMenu( guiSys, PlaybackControlsMenu, SaveMenu );
-	ButtonLoadSettings2.SetLocalPosition( PixelPos( 600, 130, 1 ) );
+	ButtonLoadSettings2.SetLocalPosition( PixelPos( 400, 0, 1 ) );
 	ButtonLoadSettings2.SetText( CinemaStrings::ButtonText_ButtonLoadSettings2 );
 	TextButtonHelper(ButtonLoadSettings2, 0.5f);
 	ButtonLoadSettings2.SetOnClick( Load2Callback, this);
 
 	ButtonLoadSettings3.AddToMenu( guiSys, PlaybackControlsMenu, SaveMenu );
-	ButtonLoadSettings3.SetLocalPosition( PixelPos( 800, 130, 1 ) );
+	ButtonLoadSettings3.SetLocalPosition( PixelPos( 600, 0, 1 ) );
 	ButtonLoadSettings3.SetText( CinemaStrings::ButtonText_ButtonLoadSettings3 );
 	TextButtonHelper(ButtonLoadSettings3, 0.5f);
 	ButtonLoadSettings3.SetOnClick( Load3Callback, this);
@@ -611,8 +690,6 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
 	GazeScale.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 300, 80 );
 	SetUpSlider(guiSys, MouseMenu, GazeSlider, GazeSliderBackground, GazeSliderIndicator, GazeCurrentSetting, GazeNewSetting, 300, MENU_X * -1, MENU_Y * 3);
 	GazeSlider.SetOnClick( GazeScaleCallback, this );
-	GazeSlider.SetExtents(1.58,0.7,2);
-	GazeSlider.SetValue(gazeScaleValue);
 
 	TrackpadScale.AddToMenu( guiSys, PlaybackControlsMenu, MouseMenu );
 	TrackpadScale.SetLocalPosition( PixelPos( MENU_X * 1, MENU_Y * 2, 1 ) );
@@ -624,8 +701,6 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
 	TrackpadScale.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 300, 80 );
 	SetUpSlider(guiSys, MouseMenu, TrackpadSlider, TrackpadSliderBackground, TrackpadSliderIndicator, TrackpadCurrentSetting, TrackpadNewSetting, 300,  MENU_X * 1, MENU_Y * 3);
 	TrackpadSlider.SetOnClick( TrackpadScaleCallback, this );
-	TrackpadSlider.SetExtents(4.0,-4.0,2);
-	TrackpadSlider.SetValue(trackpadScaleValue);
 
 	StreamMenu = new UIContainer( Cinema );
 	StreamMenu->AddToMenu( guiSys, PlaybackControlsMenu, &PlaybackControlsScale );
@@ -696,8 +771,6 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
 	//ScreenDistance.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
 	SetUpSlider(guiSys, ScreenMenu, DistanceSlider, DistanceSliderBackground, DistanceSliderIndicator, DistanceCurrentSetting, DistanceNewSetting, 800, MENU_X * 2, MENU_Y * 1.25);
 	DistanceSlider.SetOnClick( DistanceCallback, this );
-	DistanceSlider.SetExtents(3.0,0.1,2);
-	DistanceSlider.SetValue(Cinema.SceneMgr.FreeScreenDistance);
 
 	ScreenSize.AddToMenu( guiSys, PlaybackControlsMenu, ScreenMenu );
 	ScreenSize.SetLocalPosition( PixelPos( MENU_X * -0.5, MENU_Y * 2.25 , 1 ) );
@@ -710,35 +783,58 @@ void MoviePlayerView::CreateMenu( OvrGuiSys & guiSys )
 	//ScreenSize.GetMenuObject()->SetLocalBoundsExpand( PixelPos( 20, 0, 0 ), Vector3f::ZERO );
 	SetUpSlider(guiSys, ScreenMenu, SizeSlider, SizeSliderBackground, SizeSliderIndicator, SizeCurrentSetting, SizeNewSetting, 800, MENU_X * 2, MENU_Y * 2.25);
 	SizeSlider.SetOnClick( SizeCallback, this );
-	SizeSlider.SetExtents(4.0,-3.0,2);
-	SizeSlider.SetValue(Cinema.SceneMgr.FreeScreenScale);
 
-	ControllerMenu = new UIContainer( Cinema );
-	ControllerMenu->AddToMenu( guiSys, PlaybackControlsMenu, &PlaybackControlsScale );
-	ControllerMenu->SetLocalPosition( PixelPos( 0, MENU_TOP, 1 ) );
-	ControllerMenu->SetVisible(false);
+	VRModeMenu = new UIContainer( Cinema );
+	VRModeMenu->AddToMenu( guiSys, PlaybackControlsMenu, &PlaybackControlsScale );
+	VRModeMenu->SetLocalPosition( PixelPos( 0, MENU_TOP, 1 ) );
+	VRModeMenu->SetVisible(false);
 
-	ButtonSpeed.AddToMenu( guiSys, PlaybackControlsMenu, ControllerMenu );
-	ButtonSpeed.SetLocalPosition( PixelPos( MENU_X * -1, MENU_Y * 1, 1 ) );
-	ButtonSpeed.SetText( CinemaStrings::ButtonText_ButtonSpeed );
-	TextButtonHelper(ButtonSpeed);
-	ButtonSpeed.SetOnClick( SpeedCallback, this);
-	ButtonSpeed.SetIsEnabled( DisableButton, this );
+	LatencyScale.AddToMenu( guiSys, PlaybackControlsMenu, VRModeMenu );
+	LatencyScale.SetLocalPosition( PixelPos( MENU_X * 0, MENU_Y * 1, 1 ) );
+	LatencyScale.SetText( CinemaStrings::ButtonText_LabelLatency );
+	LatencyScale.SetLocalScale( Vector3f( 1.0f ) );
+	LatencyScale.SetFontScale( 1.0f );
+	LatencyScale.SetColor( Vector4f( 0.0f, 0.0f, 0.0f, 1.0f ) );
+	LatencyScale.SetTextColor( Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) );
+	LatencyScale.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 300, 80 );
+	SetUpSlider(guiSys, VRModeMenu, LatencySlider, LatencySliderBackground, LatencySliderIndicator, LatencyCurrentSetting, LatencyNewSetting, 300,  MENU_X * 0, MENU_Y * 1.75);
+	LatencySlider.SetOnClick( LatencyCallback, this );
 
-	ButtonComfortMode.AddToMenu( guiSys, PlaybackControlsMenu, ControllerMenu );
-	ButtonComfortMode.SetLocalPosition( PixelPos( MENU_X * 1, MENU_Y * 1, 1 ) );
-	ButtonComfortMode.SetText( CinemaStrings::ButtonText_ButtonComfortMode );
-	TextButtonHelper(ButtonComfortMode);
-	ButtonComfortMode.SetOnClick( ComfortModeCallback, this);
-	ButtonComfortMode.SetIsEnabled( DisableButton, this );
+	VRXScale.AddToMenu( guiSys, PlaybackControlsMenu, VRModeMenu );
+	VRXScale.SetLocalPosition( PixelPos( MENU_X * -1, MENU_Y * 2.5, 1 ) );
+	VRXScale.SetText( CinemaStrings::ButtonText_LabelVRXScale );
+	VRXScale.SetLocalScale( Vector3f( 1.0f ) );
+	VRXScale.SetFontScale( 1.0f );
+	VRXScale.SetColor( Vector4f( 0.0f, 0.0f, 0.0f, 1.0f ) );
+	VRXScale.SetTextColor( Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) );
+	VRXScale.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 300, 80 );
+	SetUpSlider(guiSys, VRModeMenu, VRXSlider, VRXSliderBackground, VRXSliderIndicator, VRXCurrentSetting, VRXNewSetting, 300,  MENU_X * -1, MENU_Y * 3.25);
+	VRXSlider.SetOnClick( VRXCallback, this );
 
-	ButtonMapKeyboard.AddToMenu( guiSys, PlaybackControlsMenu, ControllerMenu );
-	ButtonMapKeyboard.SetLocalPosition( PixelPos( MENU_X * -1, MENU_Y * 2, 1 ) );
-	ButtonMapKeyboard.SetText( CinemaStrings::ButtonText_ButtonMapKeyboard );
-	TextButtonHelper(ButtonMapKeyboard);
-	ButtonMapKeyboard.SetOnClick( MapKeyboardCallback, this);
-	ButtonMapKeyboard.SetIsEnabled( DisableButton, this );
+	VRYScale.AddToMenu( guiSys, PlaybackControlsMenu, VRModeMenu );
+	VRYScale.SetLocalPosition( PixelPos( MENU_X * 1, MENU_Y * 2.5, 1 ) );
+	VRYScale.SetText( CinemaStrings::ButtonText_LabelVRYScale );
+	VRYScale.SetLocalScale( Vector3f( 1.0f ) );
+	VRYScale.SetFontScale( 1.0f );
+	VRYScale.SetColor( Vector4f( 0.0f, 0.0f, 0.0f, 1.0f ) );
+	VRYScale.SetTextColor( Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) );
+	VRYScale.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 300, 80 );
+	SetUpSlider(guiSys, VRModeMenu, VRYSlider, VRYSliderBackground, VRYSliderIndicator, VRYCurrentSetting, VRYNewSetting, 300,  MENU_X * 1, MENU_Y * 3.25);
+	VRYSlider.SetOnClick( VRYCallback, this );
 
+	HelpMenu = new UIContainer( Cinema );
+	HelpMenu->AddToMenu( guiSys, PlaybackControlsMenu, &PlaybackControlsScale );
+	HelpMenu->SetLocalPosition( PixelPos( 0, MENU_TOP, 1 ) );
+	HelpMenu->SetVisible(false);
+
+	HelpText.AddToMenu( guiSys, PlaybackControlsMenu, HelpMenu );
+	HelpText.SetLocalPosition( PixelPos( MENU_X * 0, MENU_Y * 1, 1 ) );
+	HelpText.SetLocalScale( Vector3f( 1.0f ) );
+	HelpText.SetFontScale( 1.0f );
+	HelpText.SetColor( Vector4f( 0.0f, 0.0f, 0.0f, 1.0f ) );
+	HelpText.SetTextColor( Vector4f( 1.0f, 1.0f, 1.0f, 1.0f ) );
+	HelpText.SetImage( 0, SURFACE_TEXTURE_DIFFUSE, BackgroundTintTexture, 1200, 600 );
+	HelpText.SetTextWordWrapped( CinemaStrings::HelpText, Cinema.GetGuiSys().GetDefaultFont(), HelpText.GetWorldScale().x * 2);
 //*/
 }
 
@@ -758,6 +854,16 @@ void MoviePlayerView::OnOpen()
 	Cinema.SceneMgr.LightsOff( 1.5f );
 
 	Cinema.StartMoviePlayback(streamWidth, streamHeight, streamFPS, streamHostAudio);
+
+	if ( Cinema.SceneMgr.SceneInfo.UseVRScreen )
+	{
+		screenMotionPaused = true;
+		VRModeMenuButton.SetVisible(true);
+	}
+	else
+	{
+		VRModeMenuButton.SetVisible(false);
+	}
 
 	MovieTitleLabel.SetText( Cinema.GetCurrentMovie()->Name );
 	Bounds3f titleBounds = MovieTitleLabel.GetTextLocalBounds( Cinema.GetGuiSys().GetDefaultFont() ) * VRMenuObject::TEXELS_PER_METER;
@@ -826,6 +932,12 @@ void MoviePlayerView::BackPressed()
 {
 	LOG( "BackPressed" );
 
+	if( screenMotionPaused )
+	{
+		screenMotionPaused = false;
+		return;
+	}
+
 	if(uiActive)
 	{
 		HideUI();
@@ -841,7 +953,19 @@ void MoviePlayerView::BackPressedDouble()
 	LOG( "BackPressed" );
 
 	HideUI();
-	if ( Cinema.AllowTheaterSelection() )
+
+	if ( Cinema.SceneMgr.SceneInfo.UseVRScreen )
+	{
+		if ( calibrationStage > 0 )
+		{
+			calibrationStage = -1;
+		}
+		else
+		{
+			uiActive = !uiActive;
+		}
+	}
+	else if ( Cinema.AllowTheaterSelection() )
 	{
 		LOG( "Opening TheaterSelection" );
 		Cinema.TheaterSelection();
@@ -910,6 +1034,7 @@ void MoviePlayerView::ShowUI()
 
 	PlaybackControlsMenu->Open();
 	GazeTimer.SetGazeTime();
+	MovieTitleLabel.SetVisible(true);
 
 	PlaybackControlsScale.SetLocalScale( Vector3f( Cinema.SceneMgr.GetScreenSize().y * ( 500.0f / 1080.0f ) ) );
 	PlaybackControlsPosition.SetLocalPose( Cinema.SceneMgr.GetScreenPose() );
@@ -924,7 +1049,8 @@ void MoviePlayerView::HideUI()
 	MouseMenu->SetVisible(false);
 	ScreenMenu->SetVisible(false);
 	StreamMenu->SetVisible(false);
-	ControllerMenu->SetVisible(false);
+	VRModeMenu->SetVisible(false);
+	HelpMenu->SetVisible(false);
 	PlaybackControlsMenu->Close();
 
 	Cinema.GetGuiSys().GetGazeCursor().HideCursor();
@@ -1021,6 +1147,157 @@ Vector2f MoviePlayerView::GazeCoordinatesOnScreen( const Matrix4f & viewMatrix, 
 	const Vector3f localCoordinate = panelInvert.Transform( impact );
 
 	return Vector2f( localCoordinate.x, localCoordinate.y );
+}
+
+
+Matrix4f MoviePlayerView::InterpolatePoseAtTime( long time )
+{
+	OldScreenPose* before = oldPoses.GetFirst();
+	OldScreenPose* after = oldPoses.GetFirst();
+	while(after->time < time && !oldPoses.IsLast(after))
+	{
+		OldScreenPose* tooOld = before;
+		before = after;
+		after = oldPoses.GetNext(after);
+		if(tooOld != before) {
+			oldPoses.Remove(tooOld);
+		}
+	}
+
+//	if(before->time == after->time)
+	{
+		return after->pose;
+	}
+	return ( before->pose * (time - before->time)
+			+ after->pose * (after->time - time) )
+			/ (after->time - before->time);
+}
+
+void MoviePlayerView::RecordPose( long time, Matrix4f pose )
+{
+	OldScreenPose* p = new OldScreenPose();
+	p->time = time;
+	p->pose = pose;
+	oldPoses.PushBack(p);
+}
+
+void MoviePlayerView::HandleCalibration( const VrFrame & vrFrame )
+{
+	switch(calibrationStage) {
+	case -1: // TODO: Calibration was canceled, display a temporary message
+		break;
+	case 1: // Look up
+		break;
+	case 2: // Look down
+		break;
+	case 3: // Look center
+		break;
+	case 4: // Look at a recognizable object
+		break;
+	case 5: // Spin in a complete circle and look at the object again
+		break;
+	default:
+		calibrationStage = -1;
+		break;
+	}
+
+}
+
+// This gets called right after the screen is updated by the scene manager
+// to minimize the number of times where we have the wrong timestamp
+void MoviePlayerView::MovieScreenUpdated()
+{
+	if(Cinema.SceneMgr.SceneInfo.UseVRScreen && !uiActive && !screenMotionPaused )
+
+	{  // Move screen around according to lag delay
+		Matrix4f pose;
+
+		//FIXME: MovieTextureTimestamp should be used here but it's broken on lollipop!
+		long timestamp = Native::getLastFrameTimestamp(Cinema.app);
+		//LOG("Timestamp %lu %lu !!!!!!!!!!!! %lu", newts, currentPoseTime, currentPoseTime - newts);
+
+		if(timestamp != 0)
+		{
+			pose = InterpolatePoseAtTime(timestamp - latencyAddition);
+		} else {
+			pose = lastPose;
+		}
+		float y, p, r;
+		pose.ToEulerAngles<Axis_Y,Axis_X,Axis_Z,Rotate_CCW, Handed_R>(&y, &p, &r);
+		Matrix4f unrotRollMatrix( Quatf( Axis_Z, -r ) );
+		pose = pose * unrotRollMatrix;
+		Cinema.SceneMgr.FreeScreenPose = pose;
+	}
+}
+
+void MoviePlayerView::CheckVRInput( const VrFrame & vrFrame )
+{
+	Matrix4f currentPose = Cinema.SceneMgr.Scene.CenterViewMatrix().Inverted();
+	// static double timediff = Native::currentTimeMillis(Cinema.app) - (vrapi_GetTimeInSeconds() * 1000.0);
+	// ((long)(vrapi_GetPredictedDisplayTime(GetOvrMobile(), 1) * 1000.0)) - timediff;
+	long currentPoseTime = Native::currentTimeMillis(Cinema.app);
+	RecordPose( currentPoseTime, currentPose );
+
+	float cy, cp, cr, ly, lp, lr;
+	currentPose.ToEulerAngles<Axis_Y,Axis_X,Axis_Z,Rotate_CCW, Handed_R>(&cy, &cp, &cr);
+	lastPose.ToEulerAngles<Axis_Y,Axis_X,Axis_Z,Rotate_CCW, Handed_R>(&ly, &lp, &lr);
+
+	float yaw = cy - ly;
+	float pitch = cp - lp;
+	if(yaw > M_PI) yaw -= 2 * M_PI;
+	if(yaw < -M_PI) yaw += 2 * M_PI;
+
+	Vector2f mouse;
+	mouse.x = - trackCalibrationYaw * yaw * vrXscale;
+	mouse.y = - trackCalibrationPitch * pitch * vrYscale;
+
+	if( mouse.x != 0 || mouse.y != 0)
+	{
+		lastPose = currentPose;
+	}
+
+	if(calibrationStage) {
+		HandleCalibration( vrFrame );
+	}
+
+	if(uiActive)
+	{
+	}
+	else if( screenMotionPaused )
+	{
+		const Vector2f screenCursor = GazeCoordinatesOnScreen( Cinema.SceneMgr.Scene.CenterViewMatrix(), Cinema.SceneMgr.ScreenMatrix() );
+		bool onscreen = false;
+		if ( InsideUnit( screenCursor ) )
+		{
+			onscreen = true;
+		}
+		else if ( uiActive )
+		{
+			onscreen = GazeTimer.IsFocused();
+		}
+
+		if( mouseMode == MOUSE_GAZE)
+		{
+			HandleGazeMouse(vrFrame, onscreen, screenCursor);
+		}
+		else if( mouseMode == MOUSE_TRACKPAD)
+		{
+			HandleTrackpadMouse(vrFrame);
+		}
+	}
+	else
+	{
+		if(mouse.x != 0.0 && mouse.y != 0.0)
+		{
+			Native::MouseMove(Cinema.app, mouse.x, mouse.y );
+		}
+
+		// Touching the trackpad will freeze the screen and activate mouse controls until back is hit.
+		if ( vrFrame.Input.buttonReleased & BUTTON_TOUCH )
+		{
+			screenMotionPaused = true;
+		}
+	}
 }
 
 #define SCROLL_CLICKS 8
@@ -1191,6 +1468,12 @@ void MoviePlayerView::HandleTrackpadMouse( const VrFrame & vrFrame )
 
 void MoviePlayerView::CheckInput( const VrFrame & vrFrame )
 {
+	if ( Cinema.SceneMgr.SceneInfo.UseVRScreen )
+	{   // Handle VR input differently
+		CheckVRInput(vrFrame);
+		return;
+	}
+
 	// while we're holding down the button or touchpad, reposition screen
 	if ( RepositionScreen ) {
 		if ( vrFrame.Input.buttonState & BUTTON_TOUCH ) {
@@ -1235,7 +1518,7 @@ void MoviePlayerView::CheckInput( const VrFrame & vrFrame )
 
 	if ( Cinema.SceneMgr.FreeScreenActive )
 	{
-		if ( !onscreen )
+		if ( !uiActive && !onscreen )
 		{
 			// outside of screen, so show reposition message
 			const double now = vrapi_GetTimeInSeconds();
@@ -1269,7 +1552,8 @@ void MoviePlayerView::MouseMenuButtonPressed()
 	MouseMenu->SetVisible(!MouseMenu->GetVisible());
 	StreamMenu->SetVisible(false);
 	ScreenMenu->SetVisible(false);
-	ControllerMenu->SetVisible(false);
+	VRModeMenu->SetVisible(false);
+	HelpMenu->SetVisible(false);
 
 	SaveMenu->SetVisible(MouseMenu->GetVisible());
 }
@@ -1281,7 +1565,8 @@ void MoviePlayerView::StreamMenuButtonPressed()
 	MouseMenu->SetVisible(false);
 	StreamMenu->SetVisible(!StreamMenu->GetVisible());
 	ScreenMenu->SetVisible(false);
-	ControllerMenu->SetVisible(false);
+	VRModeMenu->SetVisible(false);
+	HelpMenu->SetVisible(false);
 
 	SaveMenu->SetVisible(StreamMenu->GetVisible());
 }
@@ -1293,11 +1578,40 @@ void MoviePlayerView::ScreenMenuButtonPressed()
 	MouseMenu->SetVisible(false);
 	StreamMenu->SetVisible(false);
 	ScreenMenu->SetVisible(!ScreenMenu->GetVisible());
-	ControllerMenu->SetVisible(false);
+	VRModeMenu->SetVisible(false);
+	HelpMenu->SetVisible(false);
 
 	SaveMenu->SetVisible(ScreenMenu->GetVisible());
 }
-void MoviePlayerView::ControllerMenuButtonPressed()
+void MoviePlayerView::VRModeMenuButtonPressed()
+{
+
+	Cinema.app->PlaySound( "touch_up" );
+	UpdateMenus();
+	MouseMenu->SetVisible(false);
+	StreamMenu->SetVisible(false);
+	ScreenMenu->SetVisible(false);
+	VRModeMenu->SetVisible(!VRModeMenu->GetVisible());
+	HelpMenu->SetVisible(false);
+
+	SaveMenu->SetVisible(VRModeMenu->GetVisible());
+}
+void MoviePlayerView::HelpMenuButtonPressed()
+{
+
+	Cinema.app->PlaySound( "touch_up" );
+	UpdateMenus();
+	MouseMenu->SetVisible(false);
+	StreamMenu->SetVisible(false);
+	ScreenMenu->SetVisible(false);
+	VRModeMenu->SetVisible(false);
+	HelpMenu->SetVisible(!HelpMenu->GetVisible());
+
+	MovieTitleLabel.SetVisible(false);
+
+	SaveMenu->SetVisible(HelpMenu->GetVisible());
+}
+void MoviePlayerView::ExitButtonPressed()
 {
 	HideUI();
 	if ( Cinema.AllowTheaterSelection() )
@@ -1310,14 +1624,6 @@ void MoviePlayerView::ControllerMenuButtonPressed()
 		LOG( "Opening MovieSelection" );
 		Cinema.AppSelection( true );
 	}
-//	Cinema.app->PlaySound( "touch_up" );
-//	UpdateMenus();
-//	MouseMenu->SetVisible(false);
-//	StreamMenu->SetVisible(false);
-//	ScreenMenu->SetVisible(false);
-//	ControllerMenu->SetVisible(!ControllerMenu->GetVisible());
-
-//	SaveMenu->SetVisible(ControllerMenu->GetVisible());
 }
 
 // Save settings
@@ -1379,6 +1685,15 @@ void MoviePlayerView::ResetDefaultPressed()
 	VoidScreenScaleMax = 4.0;
 	Cinema.SceneMgr.FreeScreenDistance = 1.5;
 	Cinema.SceneMgr.FreeScreenScale = 1.0;
+	latencyAddition = 24;
+	vrXscale = 1.0;
+	vrYscale = 1.0;
+	VRLatencyMax = 60;
+	VRLatencyMin = 0;
+	VRXScaleMax = 6.0f;
+	VRXScaleMin = 0.0f;
+	VRYScaleMax = 6.0f;
+	VRYScaleMin = 0.0f;
 
 	InitializeSettings();
 
@@ -1538,6 +1853,22 @@ void MoviePlayerView::HostAudioPressed()
 	UpdateMenus();
 	Cinema.StartMoviePlayback(streamWidth, streamHeight, streamFPS, streamHostAudio);
 }
+void MoviePlayerView::LatencyPressed(const float value)
+{
+	latencyAddition = (int)value;
+	LatencySlider.SetValue( value );
+}
+void MoviePlayerView::VRXPressed(const float value)
+{
+	vrXscale = value;
+	VRXSlider.SetValue( value );
+}
+void MoviePlayerView::VRYPressed(const float value)
+{
+	vrYscale = value;
+	VRYSlider.SetValue( value );
+}
+
 void MoviePlayerView::SBSPressed()
 {
 	switch(Cinema.SceneMgr.CurrentMovieFormat)
@@ -1627,9 +1958,30 @@ void MoviePlayerView::UpdateMenus()
 	ButtonSBS.UpdateButtonState();
 	ButtonChangeSeat.UpdateButtonState();
 
-	ButtonSpeed.UpdateButtonState();
-	ButtonComfortMode.UpdateButtonState();
-	ButtonMapKeyboard.UpdateButtonState();
+	ButtonSaveApp.UpdateButtonState();
+	ButtonSaveDefault.UpdateButtonState();
+	ButtonResetSettings.UpdateButtonState();
+	ButtonSaveSettings1.UpdateButtonState();
+	ButtonSaveSettings2.UpdateButtonState();
+	ButtonSaveSettings3.UpdateButtonState();
+	ButtonLoadSettings1.UpdateButtonState();
+	ButtonLoadSettings2.UpdateButtonState();
+	ButtonLoadSettings3.UpdateButtonState();
+
+	GazeSlider.SetExtents(GazeMax,GazeMin,2);
+	GazeSlider.SetValue(gazeScaleValue);
+	TrackpadSlider.SetExtents(TrackpadMax,TrackpadMin,2);
+	TrackpadSlider.SetValue(trackpadScaleValue);
+	DistanceSlider.SetExtents(VoidScreenDistanceMax,VoidScreenDistanceMin,2);
+	DistanceSlider.SetValue(Cinema.SceneMgr.FreeScreenDistance);
+	SizeSlider.SetExtents(VoidScreenScaleMax,VoidScreenScaleMin,2);
+	SizeSlider.SetValue(Cinema.SceneMgr.FreeScreenScale);
+	LatencySlider.SetExtents(VRLatencyMax, VRLatencyMin, 0);
+	LatencySlider.SetValue(latencyAddition);
+	VRXSlider.SetExtents(VRXScaleMax, VRXScaleMin, 2);
+	VRXSlider.SetValue(vrXscale);
+	VRYSlider.SetExtents(VRYScaleMax, VRYScaleMin, 2);
+	VRYSlider.SetValue(vrYscale);
 }
 
 void MoviePlayerView::UpdateUI( const VrFrame & vrFrame )

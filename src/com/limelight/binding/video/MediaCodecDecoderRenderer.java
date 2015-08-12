@@ -45,6 +45,8 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
     private int numSpsIn;
     private int numPpsIn;
     private int numIframeIn;
+    
+    private long presentationTimeUs;
 
     @TargetApi(Build.VERSION_CODES.KITKAT)
     public MediaCodecDecoderRenderer() {
@@ -157,7 +159,7 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
                         // Try to output a frame
                         int outIndex = videoDecoder.dequeueOutputBuffer(info, 50000);
                         if (outIndex >= 0) {
-                            long presentationTimeUs = info.presentationTimeUs;
+                            presentationTimeUs = info.presentationTimeUs;
                             int lastIndex = outIndex;
 
                             // Get the last output buffer in the queue
@@ -310,7 +312,7 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
                         int outIndex = videoDecoder.dequeueOutputBuffer(info, 0);
 
                         if (outIndex >= 0) {
-                            long presentationTimeUs = info.presentationTimeUs;
+                            presentationTimeUs = info.presentationTimeUs;
                             int lastIndex = outIndex;
 
                             // Get the last output buffer in the queue
@@ -618,6 +620,11 @@ public class MediaCodecDecoderRenderer extends EnhancedDecoderRenderer {
                 VideoDecoderRenderer.CAPABILITY_DIRECT_SUBMIT : 0;
 
         return caps;
+    }
+    
+    @Override
+    public long getLastFrameTimestamp() {
+    	return presentationTimeUs / 1000;
     }
 
     @Override

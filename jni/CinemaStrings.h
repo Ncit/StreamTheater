@@ -77,6 +77,13 @@ public:
 	static String	ButtonText_Button1080p60;
 	static String	ButtonText_ButtonOff;
 	static String	ButtonText_LabelGazeScale;
+	static String	ButtonText_LabelLatency;
+	static String	ButtonText_LabelVRXScale;
+	static String	ButtonText_LabelVRYScale;
+	static String	ButtonText_CloseApp;
+	static String	ButtonText_Settings;
+
+	static String	HelpText;
 
 	static String	Error_UnknownHost;
 	static String	Error_AddPCFailed;

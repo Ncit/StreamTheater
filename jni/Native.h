@@ -34,7 +34,7 @@ public:
 	static bool 		HadPlaybackError( App *app );
 
 
-	static void 		StartMovie( App *app, const char * uuid, const char * appName, int id, const char * binder, int width, int height, int fps, bool hostAudio );
+	static void 		StartMovie( App *app, const char * uuid, const char * appName, int id, const char * binder, int width, int height, int fps, bool hostAudio, bool remote );
 	static void 		StopMovie( App *app );
 
 	enum PairState {
@@ -70,6 +70,10 @@ public:
     static void			startPcUpdates(App *app);
     static void			stopAppUpdates(App *app);
     static void			startAppUpdates(App *app);
+    static void			closeApp(App *app, const char* uuid, int appID);
+
+    static long			getLastFrameTimestamp(App *app);
+    static long			currentTimeMillis(App *app);
 
     static int			addPCbyIP(App *app, const char* ip);
 };

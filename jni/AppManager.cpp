@@ -94,7 +94,7 @@ void AppManager::LoadApps()
 	LOG( "%i movies panels loaded, %3.1f seconds", Apps.GetSizeI(), vrapi_GetTimeInSeconds() - start );
 }
 
-void AppManager::AddApp(const String &name, const String &posterFileName, int id)
+void AppManager::AddApp(const String &name, const String &posterFileName, int id, bool isRunning)
 {
 	LOG( "App %s with id %i added!", name.ToCStr(), id);
 	AppDef *anApp = NULL;
@@ -115,6 +115,7 @@ void AppManager::AddApp(const String &name, const String &posterFileName, int id
 	anApp->Name = name;
 	anApp->Id = id;
 	anApp->PosterFileName = posterFileName;
+	anApp->isRunning = isRunning;
 
 	if( isNew ) ReadMetaData( anApp );
 	if( anApp->Poster == 0) LoadPoster(anApp);

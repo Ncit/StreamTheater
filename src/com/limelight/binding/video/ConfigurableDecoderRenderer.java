@@ -62,6 +62,16 @@ public class ConfigurableDecoderRenderer extends EnhancedDecoderRenderer {
     }
 
     @Override
+    public long getLastFrameTimestamp() {
+        if (decoderRenderer != null) {
+            return decoderRenderer.getLastFrameTimestamp();
+        }
+        else {
+            return 0;
+        }
+    }
+
+    @Override
     public int getAverageDecoderLatency() {
         if (decoderRenderer != null) {
             return decoderRenderer.getAverageDecoderLatency();

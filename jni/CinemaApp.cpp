@@ -252,7 +252,8 @@ void CinemaApp::StartMoviePlayback(int width, int height, int fps, bool hostAudi
 	if ( CurrentMovie != NULL )
 	{
 		MovieFinishedPlaying = false;
-		Native::StartMovie( app, CurrentPc->UUID.ToCStr(), CurrentMovie->Name.ToCStr(), CurrentMovie->Id, CurrentPc->Binding.ToCStr(), width, height, fps, hostAudio );
+		bool remote = CurrentPc->isRemote;
+		Native::StartMovie( app, CurrentPc->UUID.ToCStr(), CurrentMovie->Name.ToCStr(), CurrentMovie->Id, CurrentPc->Binding.ToCStr(), width, height, fps, hostAudio, remote );
 		ShouldResumeMovie = false;
 	}
 }
@@ -430,6 +431,11 @@ void CinemaApp::ClearError()
 {
 	View *view = ViewMgr.GetCurrentView();
 	if(view) view->ClearError();
+}
+
+void CinemaApp::MovieScreenUpdated()
+{
+	MoviePlayer.MovieScreenUpdated();
 }
 
 } // namespace VRMatterStreamTheater

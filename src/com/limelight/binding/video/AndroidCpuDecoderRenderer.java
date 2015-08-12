@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 
 import android.graphics.PixelFormat;
 import android.os.Build;
+import android.util.Log;
 import android.view.SurfaceHolder;
 
 import com.limelight.LimeLog;
@@ -37,6 +38,8 @@ public class AndroidCpuDecoderRenderer extends EnhancedDecoderRenderer {
     private long totalTimeMs;
 
     private final int cpuCount = Runtime.getRuntime().availableProcessors();
+    
+    private long lastFrameTimestamp = 0;
 
     @SuppressWarnings("unused")
     private int findOptimalPerformanceLevel() {
@@ -267,6 +270,7 @@ public class AndroidCpuDecoderRenderer extends EnhancedDecoderRenderer {
         boolean success = (AvcDecoder.decode(data, 0, decodeUnit.getDataLength()) == 0);
         if (success) {
             long timeAfterDecode = System.currentTimeMillis();
+            lastFrameTimestamp = decodeUnit.getReceiveTimestamp();
 
             // Add delta time to the totals (excluding probable outliers)
             long delta = timeAfterDecode - decodeUnit.getReceiveTimestamp();
@@ -284,6 +288,11 @@ public class AndroidCpuDecoderRenderer extends EnhancedDecoderRenderer {
         return 0;
     }
 
+    @Override
+    public long getLastFrameTimestamp() {
+    	return lastFrameTimestamp;
+    }
+    
     @Override
     public int getAverageDecoderLatency() {
         return 0;
