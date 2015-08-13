@@ -26,6 +26,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Environment;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -272,13 +273,16 @@ public class AppSelector {
 		    	appList.add(app);
 		        updated = true;
 		    }
-		    String fileName = activity.getFilesDir() + "/gameposters/" + app.getAppName() + ".png";
-		    //TODO: Get this working
-//		    File posterFile = new File( fileName );
-//		    if(!posterFile.exists())
-//		    {
-//		    	activity.createVideoThumbnail(computer.uuid.toString(), app.getAppId(), fileName, 228, 344);
-//		    }
+		    String fileName;		    
+		    File posterFile;
+		    posterFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "StreamTheater/" + app.getAppName() + ".png");
+		    fileName = posterFile.getAbsolutePath();
+		    LimeLog.info("Trying to load " + fileName );
+		    if(!posterFile.exists())
+		    {
+		    	LimeLog.info("Not found, creating!");
+		    	activity.createVideoThumbnail(computer.uuid.toString(), app.getAppId(), fileName, 228, 344);
+		    }
 		    
 		    MainActivity.nativeAddApp(activity.getAppPtr(), app.getAppName(), fileName, app.getAppId(), app.getIsRunning());
 		}

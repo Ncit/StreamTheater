@@ -62,6 +62,7 @@ public:
 	virtual void			OneTimeInit( const char * launchIntent );
 	virtual void			OneTimeShutdown();
 	void					LoadApps();
+	void					LoadPosters();
 	void					AddApp(const String &name, const String &posterFileName, int id, bool isRunning);
 	void					RemoveApp( int id);
 

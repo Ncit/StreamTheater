@@ -1400,6 +1400,7 @@ Matrix4f AppSelectionView::Frame( const VrFrame & vrFrame )
 	if (Cinema.AppMgr.updated) {
 		LOG("Updating App list");
 		Cinema.AppMgr.updated = false;
+		Cinema.AppMgr.LoadPosters();
 		SetAppList(Cinema.AppMgr.GetAppList(CurrentCategory), NULL);
 	}
 

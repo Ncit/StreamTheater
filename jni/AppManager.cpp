@@ -118,7 +118,6 @@ void AppManager::AddApp(const String &name, const String &posterFileName, int id
 	anApp->isRunning = isRunning;
 
 	if( isNew ) ReadMetaData( anApp );
-	if( anApp->Poster == 0) LoadPoster(anApp);
 
 	updated = true;
 }
@@ -170,18 +169,6 @@ void AppManager::LoadPoster( PcDef *anApp )
 	anApp->Poster = LoadTextureFromBuffer( posterFilename.ToCStr(), MemBufferFile( posterFilename.ToCStr() ),
 			TextureFlags_t( TEXTUREFLAG_NO_DEFAULT ), anApp->PosterWidth, anApp->PosterHeight );
 	LOG( "Poster loaded: %s %i %i %i", posterFilename.ToCStr(), anApp->Poster, anApp->PosterWidth, anApp->PosterHeight);
-	if ( anApp->Poster == 0 )
-	{
-		// no thumbnail found, so create it.  if it's on an external sdcard, posterFilename will contain the new filename at this point and will load it from the cache
-		if ( ( anApp->Poster == 0 )
-///* JNI wonkyness made this unhappy */					&& Native::CreateVideoThumbnail( Cinema.app, Cinema.GetCurrentPc()->UUID.ToCStr(), anApp->Id, posterFilename.ToCStr(), PosterWidth, PosterHeight )
-			)
-		{
-			anApp->Poster = LoadTextureFromBuffer( posterFilename.ToCStr(), MemBufferFile( posterFilename.ToCStr() ),
-				TextureFlags_t( TEXTUREFLAG_NO_DEFAULT ), anApp->PosterWidth, anApp->PosterHeight );
-		}
-	
-	}
 
 	// if all else failed, then just use the default poster
 	if ( anApp->Poster == 0 )
@@ -196,6 +183,16 @@ void AppManager::LoadPoster( PcDef *anApp )
 	}
 }
 
+void AppManager::LoadPosters()
+{
+	for(UPInt i=0; i < Apps.GetSize(); i++)
+	{
+		if( Apps[i]->Poster == 0 || Apps[i]->Poster == DefaultPoster )
+		{
+			LoadPoster(Apps[i]);
+		}
+	}
+}
 
 Array<const PcDef *> AppManager::GetAppList( PcCategory category ) const
 {
