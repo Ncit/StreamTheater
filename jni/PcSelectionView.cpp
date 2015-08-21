@@ -624,7 +624,7 @@ void PcSelectionView::CreateMenu( OvrGuiSys & guiSys )
 void PcSelectionView::NewPCIPButtonPressed( UITextButton *button)
 {
 	char bLabel = button->GetText()[0];
-
+	int error=0;
 	switch(bLabel)
 	{
 	case '<':
@@ -637,19 +637,20 @@ void PcSelectionView::NewPCIPButtonPressed( UITextButton *button)
 		break;
 	case 'E':
 		newPCMenu->SetVisible(false);
+		IPString = "";
 		for(int i=0;i<=3;i++)
 		{
 			if( i != 0 ) IPString += ".";
 			IPString += StringUtils::Va( "%i", IPoctets[i] );
-			int error = Native::addPCbyIP(Cinema.app, IPString.ToCStr());
-			if ( error == 2 )
-			{
-				SetError( CinemaStrings::Error_UnknownHost.ToCStr(), false, false );
-			}
-			else if( error == 1 )
-			{
-				SetError( CinemaStrings::Error_AddPCFailed.ToCStr(), false, false );
-			}
+		}
+		error = Native::addPCbyIP(Cinema.app, IPString.ToCStr());
+		if ( error == 2 )
+		{
+			SetError( CinemaStrings::Error_UnknownHost.ToCStr(), false, false );
+		}
+		else if( error == 1 )
+		{
+			SetError( CinemaStrings::Error_AddPCFailed.ToCStr(), false, false );
 		}
 
 		IPoctets[0] = IPoctets[1] = IPoctets[2] = IPoctets[3] = 0;
